@@ -1,4 +1,14 @@
-import { MaterialRate, LabourRate, Project } from "@buildcost/types";
+import {
+  MaterialRate,
+  LabourRate,
+  Project,
+  CalculatorTemplate,
+  MaterialWatchlistItem,
+  ProjectChecklistItem,
+  CalculationSnapshot,
+  EstimateVersion,
+  ShareLink
+} from "@buildcost/types";
 
 export const INITIAL_MATERIAL_RATES: MaterialRate[] = [
   // 1. CEMENT
@@ -725,5 +735,447 @@ export const INITIAL_LABOUR_RATES: LabourRate[] = [
     currency: "PKR",
     sourceName: "Master Painters Guild",
     verifiedAt: "Today"
+  }
+];
+
+export const INITIAL_TEMPLATES: CalculatorTemplate[] = [
+  {
+    id: "tpl_5_marla_double",
+    userId: "system",
+    title: "5 Marla Double Storey House",
+    description: "Typical LDA/CDA residential 5 Marla (225 sqft/marla) with 1,950 sqft covered area (Ground + First + Mumty).",
+    calculatorType: "house-estimate",
+    plotSize: 5,
+    plotUnit: "marla",
+    coveredArea: 1950,
+    floors: 2,
+    constructionQuality: "standard",
+    cityId: "lhe",
+    inputs: {
+      plotArea: 5,
+      plotUnit: "marla",
+      coveredArea: 1950,
+      numberOfFloors: 2,
+      constructionQuality: "standard",
+      cityId: "lhe"
+    },
+    isSystemPreset: true,
+    createdAt: "2026-08-01"
+  },
+  {
+    id: "tpl_10_marla_luxury",
+    userId: "system",
+    title: "10 Marla Luxury Residence",
+    description: "3,800 sqft covered area, 4 master bedrooms, designer tiles, porcelain washrooms, and imported fittings.",
+    calculatorType: "house-estimate",
+    plotSize: 10,
+    plotUnit: "marla",
+    coveredArea: 3800,
+    floors: 2,
+    constructionQuality: "luxury",
+    cityId: "isb",
+    inputs: {
+      plotArea: 10,
+      plotUnit: "marla",
+      coveredArea: 3800,
+      numberOfFloors: 2,
+      constructionQuality: "luxury",
+      cityId: "isb"
+    },
+    isSystemPreset: true,
+    createdAt: "2026-08-05"
+  },
+  {
+    id: "tpl_1_kanal_executive",
+    userId: "system",
+    title: "1 Kanal Executive Villa",
+    description: "6,200 sqft covered area with basement, double height lobby, solar structural prep, and premium Grade 60 steel.",
+    calculatorType: "house-estimate",
+    plotSize: 1,
+    plotUnit: "kanal",
+    coveredArea: 6200,
+    floors: 3,
+    constructionQuality: "premium",
+    cityId: "isb",
+    inputs: {
+      plotArea: 1,
+      plotUnit: "kanal",
+      coveredArea: 6200,
+      numberOfFloors: 3,
+      constructionQuality: "premium",
+      cityId: "isb"
+    },
+    isSystemPreset: true,
+    createdAt: "2026-08-10"
+  },
+  {
+    id: "tpl_office_renovation",
+    userId: "system",
+    title: "Commercial Office Renovation",
+    description: "1,500 sqft interior retrofit: false ceiling, 60x60cm porcelain floor tiles, plastic emulsion paint, and rewiring.",
+    calculatorType: "flooring",
+    coveredArea: 1500,
+    constructionQuality: "standard",
+    cityId: "khi",
+    inputs: {
+      areaSqft: 1500,
+      tileType: "porcelain",
+      includeSkirting: true
+    },
+    isSystemPreset: true,
+    createdAt: "2026-08-15"
+  },
+  {
+    id: "tpl_boundary_wall",
+    userId: "system",
+    title: "9-inch Brick Boundary Wall (300 Rft)",
+    description: "9-inch thick brickwork with 1:6 cement mortar, DPC layer, and RCC stiffener columns every 10 feet.",
+    calculatorType: "brickwork",
+    constructionQuality: "standard",
+    cityId: "rwp",
+    inputs: {
+      lengthFeet: 300,
+      heightFeet: 8,
+      thicknessInches: 9,
+      mortarRatio: "1:6"
+    },
+    isSystemPreset: true,
+    createdAt: "2026-08-20"
+  }
+];
+
+export const INITIAL_CHECKLIST: ProjectChecklistItem[] = [
+  {
+    id: "chk_1",
+    projectId: "proj_g13_plaza",
+    stage: "planning",
+    title: "CDA / Society Building Plan Approval & Demarcation",
+    description: "Architectural drawings sanctioned by local development authority and site demarcation letter obtained.",
+    status: "completed",
+    sortOrder: 1
+  },
+  {
+    id: "chk_2",
+    projectId: "proj_g13_plaza",
+    stage: "site_preparation",
+    title: "Soil Investigation & Site Clearing",
+    description: "Soil boring test conducted for bearing capacity (SBC > 1.25 tsf) and temporary water boring installed.",
+    status: "completed",
+    sortOrder: 2
+  },
+  {
+    id: "chk_3",
+    projectId: "proj_g13_plaza",
+    stage: "foundation",
+    title: "Raft Excavation, Lean Concrete & Termite Proofing",
+    description: "Chemical anti-termite treatment sprayed before 1:4:8 lean concrete sub-base.",
+    status: "in_progress",
+    sortOrder: 3
+  },
+  {
+    id: "chk_4",
+    projectId: "proj_g13_plaza",
+    stage: "structure",
+    title: "Basement Retaining Walls & Grade 60 Rebar Binding",
+    description: "Waterproofing admixture (Sika / Fosroc) added to 1:1.5:3 RCC pour.",
+    status: "in_progress",
+    sortOrder: 4
+  },
+  {
+    id: "chk_5",
+    projectId: "proj_g13_plaza",
+    stage: "masonry",
+    title: "9-Inch Exterior Awwal Brick Walls & DPC Bitumen Coating",
+    description: "First class kiln-fired bricks laid with 1:6 cement sand mortar.",
+    status: "not_started",
+    sortOrder: 5
+  },
+  {
+    id: "chk_6",
+    projectId: "proj_g13_plaza",
+    stage: "plaster",
+    title: "Internal 1/2-Inch (1:4) & External 3/4-Inch (1:3) Plastering",
+    description: "Minimum 14 days curing for all exposed plaster surfaces.",
+    status: "not_started",
+    sortOrder: 6
+  },
+  {
+    id: "chk_7",
+    projectId: "proj_g13_plaza",
+    stage: "electrical",
+    title: "Conduit Piping & Pakistan Cables 99.9% Copper Wiring",
+    description: "Pre-slab and wall groove electrical conduit routing with circuit breaker distribution.",
+    status: "not_started",
+    sortOrder: 7
+  },
+  {
+    id: "chk_8",
+    projectId: "proj_g13_plaza",
+    stage: "plumbing",
+    title: "PPRC Fresh Water & UPVC Drainage Pressure Testing",
+    description: "Hydrostatic pressure test at 10 bar for 24 hours prior to wall concealing.",
+    status: "not_started",
+    sortOrder: 8
+  },
+  {
+    id: "chk_9",
+    projectId: "proj_g13_plaza",
+    stage: "flooring",
+    title: "Floor Screed & Master/Stile Porcelain Tile Installation",
+    description: "Bonding agent adhesive used with tile spacers and matching epoxy grouting.",
+    status: "not_started",
+    sortOrder: 9
+  },
+  {
+    id: "chk_10",
+    projectId: "proj_g13_plaza",
+    stage: "paint",
+    title: "Putty Priming, Plastic Emulsion & WeatherCoat Exterior",
+    description: "Three coats of Berger/Dulux weather-resistant paint on all exterior elevations.",
+    status: "not_started",
+    sortOrder: 10
+  },
+  {
+    id: "chk_11",
+    projectId: "proj_g13_plaza",
+    stage: "doors_windows",
+    title: "Powder-Coated Aluminum Windows & Solid Ash Wood Doors",
+    description: "5mm tempered safety glass with heavy-duty weather stripping and stainless steel handles.",
+    status: "not_started",
+    sortOrder: 11
+  },
+  {
+    id: "chk_12",
+    projectId: "proj_g13_plaza",
+    stage: "final_inspection",
+    title: "Snag List Resolution & Completion Certificate",
+    description: "Final walkthrough with client, electrical load testing, and authority completion filing.",
+    status: "not_started",
+    sortOrder: 12
+  }
+];
+
+export const INITIAL_WATCHLIST: MaterialWatchlistItem[] = [
+  {
+    id: "wtch_cement",
+    userId: "usr_demo",
+    materialId: "mat_cement",
+    cityId: "isb",
+    targetAlertRate: 1450,
+    alertOnIncrease: true,
+    alertOnDecrease: true,
+    notifyEmail: true,
+    notifyInApp: true,
+    createdAt: "2026-08-25"
+  },
+  {
+    id: "wtch_steel",
+    userId: "usr_demo",
+    materialId: "mat_steel_g60",
+    cityId: "isb",
+    targetAlertRate: 260000,
+    alertOnIncrease: true,
+    alertOnDecrease: true,
+    notifyEmail: true,
+    notifyInApp: true,
+    createdAt: "2026-08-25"
+  },
+  {
+    id: "wtch_bricks",
+    userId: "usr_demo",
+    materialId: "mat_brick_awwal",
+    cityId: "lhe",
+    targetAlertRate: 14000,
+    alertOnIncrease: true,
+    alertOnDecrease: false,
+    notifyEmail: false,
+    notifyInApp: true,
+    createdAt: "2026-08-25"
+  },
+  {
+    id: "wtch_sand",
+    userId: "usr_demo",
+    materialId: "mat_sand_chenab",
+    cityId: "lhe",
+    targetAlertRate: 48,
+    alertOnIncrease: true,
+    alertOnDecrease: false,
+    notifyEmail: false,
+    notifyInApp: true,
+    createdAt: "2026-08-25"
+  }
+];
+
+export const INITIAL_CALCULATIONS: CalculationSnapshot[] = [
+  {
+    id: "calc_5_marla_sample",
+    projectId: "proj_dha_phase5",
+    calculatorType: "house-estimate",
+    inputs: {
+      plotArea: 5,
+      plotUnit: "marla",
+      coveredArea: 1950,
+      numberOfFloors: 2,
+      constructionQuality: "standard",
+      cityId: "lhe"
+    },
+    result: {
+      materialsCost: 5265000,
+      labourCost: 1950000,
+      equipmentCost: 200000,
+      transportCost: 180000,
+      finishingCost: 2100000,
+      contingencyCost: 484750,
+      otherCost: 0,
+      grandTotal: 10179750,
+      totalCoveredAreaSqft: 1950,
+      costPerSqft: 5220,
+      materials: [
+        {
+          materialId: "mat_cement",
+          materialName: "Portland Cement (50kg)",
+          category: "Civil",
+          rawQuantity: 750,
+          wastagePercent: 5,
+          wastageQuantity: 38,
+          finalQuantity: 788,
+          unit: "bags",
+          unitRate: 1420,
+          cost: 1119000
+        },
+        {
+          materialId: "mat_steel_g60",
+          materialName: "Grade 60 Deformed Steel",
+          category: "Structural",
+          rawQuantity: 6.8,
+          wastagePercent: 3,
+          wastageQuantity: 0.2,
+          finalQuantity: 7.0,
+          unit: "tons",
+          unitRate: 260000,
+          cost: 1820000
+        },
+        {
+          materialId: "mat_brick_awwal",
+          materialName: "Awwal Kiln Bricks",
+          category: "Masonry",
+          rawQuantity: 45000,
+          wastagePercent: 5,
+          wastageQuantity: 2250,
+          finalQuantity: 47250,
+          unit: "nos",
+          unitRate: 14,
+          cost: 661500
+        }
+      ],
+      labour: [
+        {
+          role: "Civil Grey Structure Labour Contract",
+          quantity: 1950,
+          unit: "sqft",
+          rate: 550,
+          cost: 1072500
+        },
+        {
+          role: "Finishing, Tile & Paint Labour Contract",
+          quantity: 1950,
+          unit: "sqft",
+          rate: 450,
+          cost: 877500
+        }
+      ],
+      assumptions: [
+        { key: "city", label: "City", value: "Lahore" },
+        { key: "marla", label: "Marla Standard", value: "225 Sq. Ft." },
+        { key: "quality", label: "Quality Grade", value: "Standard Finish" },
+        { key: "steel_density", label: "Steel Density", value: "3.6 kg/sqft" }
+      ]
+    },
+    ratesSnapshot: {
+      mat_cement: { rate: 1420, source: "APCMA Dealer Price Index", verifiedAt: "Today 10:00 AM PKT" },
+      mat_steel_g60: { rate: 260000, source: "PSRMA Mills Ex-Factory", verifiedAt: "Today 09:30 AM PKT" },
+      mat_brick_awwal: { rate: 14, source: "Bhatta Kiln Association", verifiedAt: "Today 09:30 AM PKT" }
+    },
+    createdAt: "2026-08-22T10:30:00Z"
+  }
+];
+
+export const INITIAL_ESTIMATE_VERSIONS: EstimateVersion[] = [
+  {
+    id: "ver_1",
+    projectId: "proj_dha_phase5",
+    versionNumber: 1,
+    versionName: "Initial Baseline Estimate (Aug 2026)",
+    rateSnapshotDate: "2026-08-22T10:30:00Z",
+    summaryData: {
+      totalCoveredAreaSqft: 1950,
+      grandTotal: 10034750,
+      costPerSqft: 5146,
+      materialsCost: 5120000,
+      labourCost: 1950000,
+      finishingCost: 2100000
+    },
+    ratesSnapshot: {
+      mat_cement: { rate: 1390, source: "APCMA", verifiedAt: "2026-08-22" },
+      mat_steel_g60: { rate: 255000, source: "PSRMA", verifiedAt: "2026-08-22" }
+    },
+    deltaAmount: 0,
+    deltaPercentage: 0,
+    createdAt: "2026-08-22T10:30:00Z"
+  },
+  {
+    id: "ver_2",
+    projectId: "proj_dha_phase5",
+    versionNumber: 2,
+    versionName: "Current Market Adjustment (Sep 2026)",
+    rateSnapshotDate: "2026-09-04T12:00:00Z",
+    summaryData: {
+      totalCoveredAreaSqft: 1950,
+      grandTotal: 10179750,
+      costPerSqft: 5220,
+      materialsCost: 5265000,
+      labourCost: 1950000,
+      finishingCost: 2100000
+    },
+    ratesSnapshot: {
+      mat_cement: { rate: 1420, source: "APCMA", verifiedAt: "Today" },
+      mat_steel_g60: { rate: 260000, source: "PSRMA", verifiedAt: "Today" }
+    },
+    deltaAmount: 145000,
+    deltaPercentage: 1.44,
+    createdAt: "2026-09-04T12:00:00Z"
+  }
+];
+
+export const INITIAL_SHARE_LINKS: ShareLink[] = [
+  {
+    id: "sh_sample_1",
+    userId: "usr_demo",
+    projectId: "proj_dha_phase5",
+    documentType: "estimate",
+    documentId: "calc_5_marla_sample",
+    documentData: {
+      projectName: "DHA Phase 5 Duplex (5 Marla)",
+      city: "Lahore",
+      coveredArea: 1950,
+      grandTotal: 10179750,
+      costPerSqft: 5220
+    },
+    token: "sh-9f8e7d6c-5b4a-3210-fedc-ba9876543210",
+    title: "5 Marla Complete House Estimate — DHA Lahore",
+    isActive: true,
+    allowDownload: true,
+    viewOnly: true,
+    expiresAt: null,
+    revokedAt: null,
+    includeClientName: false,
+    includePhone: false,
+    includeCompany: true,
+    includeProjectAddress: false,
+    viewCount: 14,
+    downloadCount: 3,
+    lastViewedAt: "2026-09-04T14:20:00Z",
+    createdAt: "2026-08-25T11:00:00Z",
+    updatedAt: "2026-09-04T14:20:00Z"
   }
 ];

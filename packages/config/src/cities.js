@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PAKISTANI_CITIES = void 0;
+exports.PAK_CITIES = exports.PAKISTANI_CITIES = void 0;
 exports.PAKISTANI_CITIES = [
     { id: "isb", name: "Islamabad", urduName: "اسلام آباد", province: "Federal", defaultMarlaSqft: 225, isActive: true },
     { id: "rwp", name: "Rawalpindi", urduName: "راولپنڈی", province: "Punjab", defaultMarlaSqft: 225, isActive: true },
@@ -16,3 +16,4 @@ exports.PAKISTANI_CITIES = [
     { id: "atd", name: "Abbottabad", urduName: "ایبٹ آباد", province: "KPK", defaultMarlaSqft: 225, isActive: true },
     { id: "mre", name: "Murree", urduName: "مری", province: "Punjab", defaultMarlaSqft: 225, isActive: true }
 ];
+exports.PAK_CITIES = exports.PAKISTANI_CITIES;

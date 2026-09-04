@@ -12,6 +12,10 @@ import {
   ShieldAlert,
   Bot,
   Grid,
+  History,
+  CheckSquare,
+  Bell,
+  FolderArchive,
   ArrowRightLeft
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,10 +30,14 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: "Overview", href: "/dashboard", icon: LayoutGrid },
   { label: "Calculator", href: "/calculator", icon: Calculator },
+  { label: "My History & Records", href: "/history", icon: History },
+  { label: "Site Checklist", href: "/checklist", icon: CheckSquare },
+  { label: "Price Watchlist", href: "/watchlist", icon: Bell },
   { label: "AI Advisor", href: "/advisor", icon: Bot, badge: "AI" },
   { label: "Room Estimator", href: "/rooms", icon: Grid },
   { label: "Unit Converter", href: "/tools/converter", icon: ArrowRightLeft },
   { label: "BOQ & Quotes", href: "/boq", icon: FileSpreadsheet },
+  { label: "Document Center", href: "/documents", icon: FolderArchive },
   { label: "Reports", href: "/reports", icon: BarChart3 },
   { label: "Settings", href: "/settings", icon: Settings },
   { label: "Admin Panel", href: "/admin", icon: ShieldAlert }

@@ -2,13 +2,20 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Home, Calculator, Sparkles, ShieldAlert, CheckCircle, RefreshCw } from "lucide-react";
+import { ArrowLeft, Home, Calculator, Sparkles, ShieldAlert, CheckCircle, RefreshCw, Share2 } from "lucide-react";
 import { PAKISTANI_CITIES, MARLA_STANDARDS, BRAND_CONFIG } from "@buildcost/config";
 import { ConstructionQuality } from "@buildcost/types";
 import { calculateCompleteHouseEstimate } from "@buildcost/calculations";
 import { formatPKR, formatLakhCrore, formatNumber } from "@/lib/formatters";
+import { useAuthStore } from "@/stores/authStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { ShareModal } from "@/components/sharing/ShareModal";
 
 export default function HouseEstimatePage() {
+  const { isAuthenticated, openLoginModal, showToast } = useAuthStore();
+  const { saveCalculation } = useProjectStore();
+  const [shareOpen, setShareOpen] = useState(false);
+
   const [plotAreaMarla, setPlotAreaMarla] = useState<number>(5);
   const [marlaStandardId, setMarlaStandardId] = useState<string>("marla_225");
   const [coveredAreaSqft, setCoveredAreaSqft] = useState<number>(2200);
@@ -36,6 +43,42 @@ export default function HouseEstimatePage() {
     customSteelRate,
     customBrickRate
   });
+
+  const handleSaveEstimate = () => {
+    const payload = {
+      calculatorType: "house-estimate",
+      inputs: {
+        plotAreaMarla,
+        marlaStandardId,
+        coveredAreaSqft,
+        numberOfFloors,
+        quality,
+        cityId,
+        cityName: selectedCity.name,
+        customCementRate,
+        customSteelRate,
+        customBrickRate
+      },
+      result: estimate,
+      ratesSnapshot: {
+        mat_cement: { rate: customCementRate, source: "APCMA Dealer Price Index", verifiedAt: "Today 09:30 AM" },
+        mat_steel_g60: { rate: customSteelRate * 1000, source: "PSRMA Mills Ex-Factory", verifiedAt: "Today 09:30 AM" },
+        mat_brick_awwal: { rate: customBrickRate, source: "Bhatta Kiln Association", verifiedAt: "Today 09:30 AM" }
+      }
+    };
+
+    if (!isAuthenticated) {
+      // LOGIN GATING RULE: State is preserved in pendingAction!
+      openLoginModal({
+        actionName: "save_calculation",
+        payload,
+        message: "Your calculation has been preserved. Sign in to save to your records."
+      });
+    } else {
+      saveCalculation(payload);
+      showToast("Estimate saved to your project records!", "success");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -212,6 +255,26 @@ export default function HouseEstimatePage() {
                 Rs. {formatNumber(estimate.costPerSqft)} / sqft
               </span>
             </div>
+
+            {/* Save & Share CTAs with Login Gating Rule */}
+            <div className="flex items-center gap-2.5 pt-4 mt-2 border-t border-slate-800/80">
+              <button
+                type="button"
+                onClick={handleSaveEstimate}
+                className="flex-1 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-950/40 transition-all flex items-center justify-center gap-2"
+              >
+                <CheckCircle className="w-4 h-4" />
+                Save Estimate
+              </button>
+              <button
+                type="button"
+                onClick={() => setShareOpen(true)}
+                className="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition-colors flex items-center justify-center gap-2"
+              >
+                <Share2 className="w-4 h-4" />
+                Share
+              </button>
+            </div>
           </div>
 
           {/* Allocation Breakdown Cards */}
@@ -276,6 +339,23 @@ export default function HouseEstimatePage() {
           </div>
         </div>
       </div>
+
+      <ShareModal
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        documentType="estimate"
+        documentId={`est_${plotAreaMarla}_marla_${cityId}`}
+        documentTitle={`${plotAreaMarla} Marla House Construction Estimate — ${selectedCity.name}`}
+        documentData={{
+          plotAreaMarla,
+          coveredAreaSqft,
+          numberOfFloors,
+          city: selectedCity.name,
+          quality,
+          grandTotal: estimate.grandTotal,
+          costPerSqft: estimate.costPerSqft
+        }}
+      />
     </div>
   );
 }

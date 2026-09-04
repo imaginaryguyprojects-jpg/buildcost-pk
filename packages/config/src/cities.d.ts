@@ -7,3 +7,4 @@ export interface CityDefinition {
     isActive: boolean;
 }
 export declare const PAKISTANI_CITIES: CityDefinition[];
+export declare const PAK_CITIES: CityDefinition[];

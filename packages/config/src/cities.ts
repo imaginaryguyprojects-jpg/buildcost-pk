@@ -22,3 +22,5 @@ export const PAKISTANI_CITIES: CityDefinition[] = [
   { id: "atd", name: "Abbottabad", urduName: "ایبٹ آباد", province: "KPK", defaultMarlaSqft: 225, isActive: true },
   { id: "mre", name: "Murree", urduName: "مری", province: "Punjab", defaultMarlaSqft: 225, isActive: true }
 ];
+
+export const PAK_CITIES = PAKISTANI_CITIES;
