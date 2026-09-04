@@ -16,14 +16,17 @@ export const metadata: Metadata = {
   ]
 };
 
+import { ThemeSync } from "@/components/layout/ThemeSync";
+
 export default function RootLayout({
   children
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className="bg-slate-950 text-slate-100 min-h-screen">
+    <html lang="en" className="dark" suppressHydrationWarning>
+      <body className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen transition-colors duration-200">
+        <ThemeSync />
         <AppShell>{children}</AppShell>
       </body>
     </html>
