@@ -16,7 +16,13 @@ import {
   CheckSquare,
   Bell,
   FolderArchive,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Compass,
+  Building2,
+  ShoppingCart,
+  Boxes,
+  BookOpen,
+  CalendarClock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +36,12 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: "Overview", href: "/dashboard", icon: LayoutGrid },
   { label: "Calculator", href: "/calculator", icon: Calculator },
+  { label: "House Layouts", href: "/layouts", icon: Compass, badge: "2D CAD" },
+  { label: "Vendors & Khata", href: "/vendors", icon: Building2 },
+  { label: "Purchases & Orders", href: "/purchases", icon: ShoppingCart },
+  { label: "Site Inventory", href: "/inventory", icon: Boxes },
+  { label: "Daily Site Diary", href: "/diary", icon: BookOpen },
+  { label: "Reminders & Alerts", href: "/reminders", icon: CalendarClock },
   { label: "My History & Records", href: "/history", icon: History },
   { label: "Site Checklist", href: "/checklist", icon: CheckSquare },
   { label: "Price Watchlist", href: "/watchlist", icon: Bell },

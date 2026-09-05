@@ -121,3 +121,193 @@ export interface EstimateVersion {
   deltaPercentage: number;
   createdAt: string;
 }
+
+export type PlotCategory = "3_marla" | "5_marla" | "7_marla" | "10_marla" | "1_kanal";
+
+export interface RoomPlanElement {
+  id: string;
+  name: string;
+  urduName?: string;
+  category: "bedroom" | "bathroom" | "kitchen" | "living" | "drawing" | "porch" | "stairs" | "lawn" | "terrace" | "store";
+  widthFt: number;
+  depthFt: number;
+  x: number; // grid x coordinate
+  y: number; // grid y coordinate
+  doors?: { wall: "top" | "bottom" | "left" | "right"; offsetFt: number }[];
+  windows?: { wall: "top" | "bottom" | "left" | "right"; widthFt: number; offsetFt: number }[];
+  hasAttachedBath?: boolean;
+}
+
+export interface HouseLayout {
+  id: string;
+  title: string;
+  plotCategory: PlotCategory;
+  plotAreaSqft: number;
+  plotWidthFt: number;
+  plotDepthFt: number;
+  coveredAreaSqft: number;
+  bedrooms: number;
+  bathrooms: number;
+  floors: number;
+  hasCarPorch: boolean;
+  hasDrawingRoom: boolean;
+  hasTvLounge: boolean;
+  hasServantRoom: boolean;
+  hasDirtyKitchen: boolean;
+  isCornerPlot: boolean;
+  description: string;
+  planData: {
+    groundFloor: RoomPlanElement[];
+    firstFloor?: RoomPlanElement[];
+  };
+  isFavorite?: boolean;
+  isSystemPreset: boolean;
+  createdAt: string;
+}
+
+export type VendorCategory =
+  | "cement"
+  | "steel"
+  | "bricks"
+  | "sand"
+  | "crush"
+  | "blocks"
+  | "tiles"
+  | "paint"
+  | "electrical"
+  | "plumbing"
+  | "sanitary"
+  | "wood"
+  | "aluminium"
+  | "glass"
+  | "hardware"
+  | "contractor"
+  | "other";
+
+export interface Vendor {
+  id: string;
+  userId: string;
+  vendorName: string;
+  businessName: string;
+  mobileNumber: string;
+  whatsappNumber?: string;
+  alternativeNumber?: string;
+  email?: string;
+  address?: string;
+  cityId: string;
+  category: VendorCategory;
+  notes?: string;
+  rating: number;
+  status: "active" | "inactive" | "preferred";
+  totalPurchases?: number;
+  totalPaid?: number;
+  outstandingBalance?: number;
+  createdAt: string;
+}
+
+export type PurchaseStatus = "draft" | "ordered" | "partially_delivered" | "delivered" | "cancelled";
+export type PurchasePaymentStatus = "unpaid" | "partially_paid" | "paid";
+
+export interface PurchaseOrder {
+  id: string;
+  userId: string;
+  projectId: string;
+  vendorId?: string;
+  vendorName?: string;
+  materialId: string;
+  materialName: string;
+  brand?: string;
+  specification?: string;
+  quantity: number;
+  unit: string;
+  rate: number;
+  subtotal: number;
+  discount: number;
+  transportCharges: number;
+  loadingCharges: number;
+  unloadingCharges: number;
+  otherCharges: number;
+  totalAmount: number;
+  status: PurchaseStatus;
+  paymentStatus: PurchasePaymentStatus;
+  purchaseDate: string;
+  expectedDeliveryDate?: string;
+  deliveredAt?: string;
+  billUrl?: string;
+  materialPhotoUrl?: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface VendorPayment {
+  id: string;
+  userId: string;
+  vendorId: string;
+  projectId?: string;
+  purchaseId?: string;
+  amount: number;
+  paymentDate: string;
+  paymentMethod: "cash" | "bank_transfer" | "cheque" | "other";
+  referenceNumber?: string;
+  receiptUrl?: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface InventoryItem {
+  id: string;
+  projectId: string;
+  materialId: string;
+  materialName: string;
+  unit: string;
+  openingQuantity: number;
+  purchasedQuantity: number;
+  usedQuantity: number;
+  remainingQuantity: number;
+  minStockThreshold: number;
+  isLowStock: boolean;
+  updatedAt: string;
+}
+
+export interface MaterialUsage {
+  id: string;
+  projectId: string;
+  materialId: string;
+  quantityUsed: number;
+  usageDate: string;
+  constructionStage: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export type ReminderPriority = "low" | "medium" | "high" | "urgent";
+export type ReminderRepeat = "none" | "daily" | "weekly" | "monthly";
+export type ReminderStatus = "pending" | "completed" | "cancelled";
+
+export interface ProjectReminder {
+  id: string;
+  userId: string;
+  projectId?: string;
+  title: string;
+  reminderDate: string;
+  reminderTime?: string;
+  repeatFrequency: ReminderRepeat;
+  priority: ReminderPriority;
+  status: ReminderStatus;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface SiteDiaryEntry {
+  id: string;
+  projectId: string;
+  logDate: string;
+  weather: "sunny" | "cloudy" | "rainy" | "hot" | "cold";
+  workersPresent: number;
+  workCompleted: string;
+  materialsReceived?: string;
+  issues?: string;
+  photoUrls?: string[];
+  notes?: string;
+  createdAt: string;
+}

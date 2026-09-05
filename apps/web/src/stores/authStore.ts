@@ -28,6 +28,7 @@ interface AuthState {
   closeOnboardingModal: () => void;
   completeOnboarding: (prefs: { role: string; cityId: string; areaUnit: any; quality: string }) => void;
   showToast: (message: string, type?: "success" | "info" | "warning" | "error") => void;
+  notify: (message: string, type?: "success" | "info" | "warning" | "error") => void;
   clearToast: () => void;
 
   // Auth Operations
@@ -118,6 +119,10 @@ export const useAuthStore = create<AuthState>()(
             set({ lastToast: null });
           }
         }, 4000);
+      },
+
+      notify: (message, type = "success") => {
+        get().showToast(message, type);
       },
 
       clearToast: () => set({ lastToast: null }),

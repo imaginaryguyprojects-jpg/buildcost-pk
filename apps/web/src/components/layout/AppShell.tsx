@@ -7,6 +7,8 @@ import { Topbar } from "./Topbar";
 import { MobileNav } from "./MobileNav";
 import { LoginGatingModal } from "@/components/auth/LoginGatingModal";
 import { OnboardingModal } from "@/components/auth/OnboardingModal";
+import { QuickAddModal } from "@/components/modals/QuickAddModal";
+import { SmartSearchModal } from "@/components/modals/SmartSearchModal";
 import { useAuthStore } from "@/stores/authStore";
 import { CheckCircle2, AlertCircle, Info, X } from "lucide-react";
 
@@ -45,9 +47,11 @@ export function AppShell({ children }: AppShellProps) {
         </div>
       )}
 
-      {/* Global Auth Modals */}
+      {/* Global Auth & Quick Modals */}
       <LoginGatingModal />
       <OnboardingModal />
+      <QuickAddModal />
+      <SmartSearchModal />
 
       {isFullPageLayout ? (
         <main className="flex-1 w-full">{children}</main>

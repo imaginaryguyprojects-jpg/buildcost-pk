@@ -7,7 +7,13 @@ import {
   ProjectChecklistItem,
   CalculationSnapshot,
   EstimateVersion,
-  ShareLink
+  ShareLink,
+  HouseLayout,
+  Vendor,
+  PurchaseOrder,
+  InventoryItem,
+  ProjectReminder,
+  SiteDiaryEntry
 } from "@buildcost/types";
 
 export const INITIAL_MATERIAL_RATES: MaterialRate[] = [
@@ -1177,5 +1183,489 @@ export const INITIAL_SHARE_LINKS: ShareLink[] = [
     lastViewedAt: "2026-09-04T14:20:00Z",
     createdAt: "2026-08-25T11:00:00Z",
     updatedAt: "2026-09-04T14:20:00Z"
+  }
+];
+
+export const INITIAL_HOUSE_LAYOUTS: HouseLayout[] = [
+  {
+    id: "layout_5m_std_3bed",
+    title: "5 Marla (25'x45') Standard 3-Bed Double Storey",
+    plotCategory: "5_marla",
+    plotAreaSqft: 1125,
+    plotWidthFt: 25,
+    plotDepthFt: 45,
+    coveredAreaSqft: 1950,
+    bedrooms: 3,
+    bathrooms: 3,
+    floors: 2,
+    hasCarPorch: true,
+    hasDrawingRoom: true,
+    hasTvLounge: true,
+    hasServantRoom: false,
+    hasDirtyKitchen: false,
+    isCornerPlot: false,
+    description: "The most popular Pakistani residential layout pattern. Features 1 bed on ground floor with attached bath, 2 beds on first floor, spacious TV lounge, car porch for sedan, and front terrace.",
+    isFavorite: true,
+    isSystemPreset: true,
+    createdAt: "2026-08-01",
+    planData: {
+      groundFloor: [
+        { id: "porch", name: "Car Porch", category: "porch", widthFt: 11, depthFt: 15, x: 0, y: 30 },
+        { id: "drawing", name: "Drawing Room", category: "drawing", widthFt: 13, depthFt: 14, x: 12, y: 31 },
+        { id: "stairs", name: "Stair Lobby", category: "stairs", widthFt: 7, depthFt: 12, x: 11, y: 19 },
+        { id: "lounge", name: "TV Lounge / Dining", category: "living", widthFt: 14, depthFt: 16, x: 0, y: 14 },
+        { id: "kitchen", name: "Kitchen", category: "kitchen", widthFt: 9, depthFt: 10, x: 15, y: 14 },
+        { id: "master_bed", name: "Master Bedroom", category: "bedroom", widthFt: 13, depthFt: 14, x: 0, y: 0, hasAttachedBath: true },
+        { id: "bath_1", name: "Attached Bath", category: "bathroom", widthFt: 6, depthFt: 8, x: 13, y: 6 },
+        { id: "rear_patio", name: "Rear OTS / Washing", category: "lawn", widthFt: 6, depthFt: 6, x: 19, y: 0 }
+      ],
+      firstFloor: [
+        { id: "terrace", name: "Front Terrace", category: "terrace", widthFt: 11, depthFt: 14, x: 0, y: 31 },
+        { id: "bed_2", name: "Bedroom 2", category: "bedroom", widthFt: 13, depthFt: 14, x: 12, y: 31, hasAttachedBath: true },
+        { id: "upper_lounge", name: "Family Lounge", category: "living", widthFt: 14, depthFt: 16, x: 0, y: 14 },
+        { id: "bed_3", name: "Bedroom 3", category: "bedroom", widthFt: 13, depthFt: 14, x: 0, y: 0, hasAttachedBath: true },
+        { id: "bath_2", name: "Bath 2", category: "bathroom", widthFt: 6, depthFt: 7, x: 13, y: 7 },
+        { id: "bath_3", name: "Bath 3", category: "bathroom", widthFt: 6, depthFt: 7, x: 19, y: 7 }
+      ]
+    }
+  },
+  {
+    id: "layout_5m_4bed_duplex",
+    title: "5 Marla (25'x45') Executive 4-Bed Duplex",
+    plotCategory: "5_marla",
+    plotAreaSqft: 1125,
+    plotWidthFt: 25,
+    plotDepthFt: 45,
+    coveredAreaSqft: 2200,
+    bedrooms: 4,
+    bathrooms: 4,
+    floors: 2,
+    hasCarPorch: true,
+    hasDrawingRoom: true,
+    hasTvLounge: true,
+    hasServantRoom: false,
+    hasDirtyKitchen: false,
+    isCornerPlot: false,
+    description: "Maximized living footprint for larger families. 2 bedrooms on ground floor, 2 on first floor, powder room, and wide open-plan kitchen.",
+    isFavorite: false,
+    isSystemPreset: true,
+    createdAt: "2026-08-05",
+    planData: {
+      groundFloor: [
+        { id: "porch", name: "Car Porch (Sedan)", category: "porch", widthFt: 12, depthFt: 15, x: 0, y: 30 },
+        { id: "drawing", name: "Guest Room / Drawing", category: "drawing", widthFt: 12, depthFt: 13, x: 13, y: 32 },
+        { id: "lounge", name: "Central Lounge", category: "living", widthFt: 15, depthFt: 15, x: 0, y: 15 },
+        { id: "kitchen", name: "Open Kitchen", category: "kitchen", widthFt: 9, depthFt: 10, x: 16, y: 15 },
+        { id: "bed_g1", name: "Ground Bed 1", category: "bedroom", widthFt: 12, depthFt: 14, x: 0, y: 0 },
+        { id: "bed_g2", name: "Ground Bed 2", category: "bedroom", widthFt: 12, depthFt: 14, x: 13, y: 0 }
+      ]
+    }
+  },
+  {
+    id: "layout_3m_compact_2bed",
+    title: "3 Marla (20'x33.75') Compact Smart Home",
+    plotCategory: "3_marla",
+    plotAreaSqft: 675,
+    plotWidthFt: 20,
+    plotDepthFt: 33.75,
+    coveredAreaSqft: 1250,
+    bedrooms: 2,
+    bathrooms: 2,
+    floors: 2,
+    hasCarPorch: true,
+    hasDrawingRoom: false,
+    hasTvLounge: true,
+    hasServantRoom: false,
+    hasDirtyKitchen: false,
+    isCornerPlot: false,
+    description: "Modern compact layout for urban housing schemes. Hatchback car parking, open living lounge, 1 bed on ground and 1 on upper level.",
+    isFavorite: false,
+    isSystemPreset: true,
+    createdAt: "2026-08-10",
+    planData: {
+      groundFloor: [
+        { id: "porch_3m", name: "Small Car Porch", category: "porch", widthFt: 9, depthFt: 13, x: 0, y: 20 },
+        { id: "lounge_3m", name: "Living & Dining", category: "living", widthFt: 11, depthFt: 14, x: 9, y: 19 },
+        { id: "kitchen_3m", name: "Kitchen", category: "kitchen", widthFt: 7, depthFt: 8, x: 13, y: 11 },
+        { id: "bed_3m_g", name: "Master Bed", category: "bedroom", widthFt: 12, depthFt: 11, x: 0, y: 0 },
+        { id: "bath_3m_g", name: "Bath", category: "bathroom", widthFt: 5, depthFt: 7, x: 13, y: 0 }
+      ]
+    }
+  },
+  {
+    id: "layout_10m_luxury_5bed",
+    title: "10 Marla (35'x65') Luxury Residence with Double Height Lobby",
+    plotCategory: "10_marla",
+    plotAreaSqft: 2275,
+    plotWidthFt: 35,
+    plotDepthFt: 65,
+    coveredAreaSqft: 3850,
+    bedrooms: 5,
+    bathrooms: 6,
+    floors: 2,
+    hasCarPorch: true,
+    hasDrawingRoom: true,
+    hasTvLounge: true,
+    hasServantRoom: true,
+    hasDirtyKitchen: true,
+    isCornerPlot: false,
+    description: "Premium DHA/Bahria layout. 2-car porch (SUV+Sedan), separate drawing & dining rooms, wet/dirty kitchen, double height entrance lobby, 2 ground beds, 3 first floor beds, and servant room.",
+    isFavorite: true,
+    isSystemPreset: true,
+    createdAt: "2026-08-15",
+    planData: {
+      groundFloor: [
+        { id: "porch_10m", name: "2-Car Porch (SUV+Sedan)", category: "porch", widthFt: 17, depthFt: 20, x: 0, y: 45 },
+        { id: "lawn_10m", name: "Front Lawn", category: "lawn", widthFt: 16, depthFt: 12, x: 18, y: 53 },
+        { id: "drawing_10m", name: "Drawing Room", category: "drawing", widthFt: 16, depthFt: 18, x: 18, y: 35 },
+        { id: "dining_10m", name: "Formal Dining", category: "living", widthFt: 12, depthFt: 14, x: 18, y: 21 },
+        { id: "lobby_10m", name: "Double Height Lobby", category: "stairs", widthFt: 14, depthFt: 15, x: 0, y: 30 },
+        { id: "tv_lounge_10m", name: "Main Family Lounge", category: "living", widthFt: 18, depthFt: 22, x: 0, y: 8 },
+        { id: "kitchen_10m", name: "Show Kitchen", category: "kitchen", widthFt: 12, depthFt: 14, x: 18, y: 7 },
+        { id: "dirty_kitchen", name: "Dirty Kitchen", category: "kitchen", widthFt: 6, depthFt: 10, x: 29, y: 7 },
+        { id: "bed_10m_g1", name: "Master Bedroom 1", category: "bedroom", widthFt: 15, depthFt: 16, x: 0, y: 0 },
+        { id: "bath_10m_g1", name: "Dressing & Bath", category: "bathroom", widthFt: 8, depthFt: 12, x: 15, y: 0 }
+      ]
+    }
+  },
+  {
+    id: "layout_1k_executive_villa",
+    title: "1 Kanal (50'x90') Executive Estate Villa",
+    plotCategory: "1_kanal",
+    plotAreaSqft: 4500,
+    plotWidthFt: 50,
+    plotDepthFt: 90,
+    coveredAreaSqft: 6200,
+    bedrooms: 5,
+    bathrooms: 7,
+    floors: 2,
+    hasCarPorch: true,
+    hasDrawingRoom: true,
+    hasTvLounge: true,
+    hasServantRoom: true,
+    hasDirtyKitchen: true,
+    isCornerPlot: false,
+    description: "Palatial 1 Kanal estate villa. Features wide front and rear green lawns, 3-car garage, powder room, executive drawing/dining, grand double-height staircase, master suites with walk-in closets, and attached servant quarters.",
+    isFavorite: false,
+    isSystemPreset: true,
+    createdAt: "2026-08-20",
+    planData: {
+      groundFloor: [
+        { id: "porch_1k", name: "3-Car Porch", category: "porch", widthFt: 22, depthFt: 24, x: 0, y: 66 },
+        { id: "lawn_1k", name: "Front Garden / Lawn", category: "lawn", widthFt: 26, depthFt: 22, x: 24, y: 68 },
+        { id: "drawing_1k", name: "Executive Drawing", category: "drawing", widthFt: 20, depthFt: 24, x: 28, y: 44 },
+        { id: "dining_1k", name: "Dining Hall", category: "living", widthFt: 16, depthFt: 18, x: 28, y: 26 },
+        { id: "grand_lobby", name: "Grand Entrance Foyer", category: "stairs", widthFt: 18, depthFt: 22, x: 8, y: 44 },
+        { id: "tv_lounge_1k", name: "Expansive TV Lounge", category: "living", widthFt: 24, depthFt: 26, x: 4, y: 18 },
+        { id: "kitchen_1k", name: "Designer Kitchen", category: "kitchen", widthFt: 16, depthFt: 18, x: 28, y: 8 },
+        { id: "dirty_kit_1k", name: "Wok / Spice Kitchen", category: "kitchen", widthFt: 8, depthFt: 12, x: 42, y: 8 },
+        { id: "bed_1k_g1", name: "Royal Master Suite", category: "bedroom", widthFt: 18, depthFt: 20, x: 4, y: 0 },
+        { id: "bath_1k_g1", name: "Spa Bathroom & Closet", category: "bathroom", widthFt: 12, depthFt: 14, x: 22, y: 0 },
+        { id: "servant_1k", name: "Servant Quarter", category: "store", widthFt: 10, depthFt: 12, x: 40, y: 0 }
+      ]
+    }
+  }
+];
+
+export const INITIAL_VENDORS: Vendor[] = [
+  {
+    id: "vnd_bestway_isb",
+    userId: "usr_demo",
+    vendorName: "Haji Abdul Rehman",
+    businessName: "Rehman Building Materials & Bestway Depot",
+    mobileNumber: "+92 300 5123456",
+    whatsappNumber: "923005123456",
+    alternativeNumber: "+92 51 4433221",
+    email: "rehman.materials@gmail.com",
+    address: "Shop 14, I-9 Industrial Area, Islamabad",
+    cityId: "isb",
+    category: "cement",
+    notes: "Direct authorized stockist for Bestway & Fauji Cement. Next day site delivery guaranteed.",
+    rating: 4.8,
+    status: "preferred",
+    totalPurchases: 1850000,
+    totalPaid: 1550000,
+    outstandingBalance: 300000,
+    createdAt: "2026-08-10"
+  },
+  {
+    id: "vnd_mughal_steel",
+    userId: "usr_demo",
+    vendorName: "Malik Tariq",
+    businessName: "Tariq Iron & Grade 60 Steel Traders",
+    mobileNumber: "+92 321 8899776",
+    whatsappNumber: "923218899776",
+    alternativeNumber: "+92 51 2211445",
+    email: "tariqsteel.pindi@gmail.com",
+    address: "Main I.J.P Road, Near Katarian Bridge, Rawalpindi",
+    cityId: "rwp",
+    category: "steel",
+    notes: "Mughal Steel & Amreli Steels Grade 60 deformed bars. Weighbridge slips provided with every truck.",
+    rating: 4.9,
+    status: "preferred",
+    totalPurchases: 3200000,
+    totalPaid: 3200000,
+    outstandingBalance: 0,
+    createdAt: "2026-08-12"
+  },
+  {
+    id: "vnd_awwal_bhatta",
+    userId: "usr_demo",
+    vendorName: "Chaudhry Nadeem",
+    businessName: "Al-Madina Kiln & Awwal Bricks Supply",
+    mobileNumber: "+92 301 6655443",
+    whatsappNumber: "923016655443",
+    address: "GT Road, Mandra Mor, Rawalpindi / Gujar Khan",
+    cityId: "rwp",
+    category: "bricks",
+    notes: "First-class red kiln-fired bricks (9x4.5x3\"). Zero breakage allowance guarantee.",
+    rating: 4.6,
+    status: "active",
+    totalPurchases: 780000,
+    totalPaid: 600000,
+    outstandingBalance: 180000,
+    createdAt: "2026-08-15"
+  },
+  {
+    id: "vnd_chenab_sand",
+    userId: "usr_demo",
+    vendorName: "Raja Imran",
+    businessName: "Raja Brothers Sand & Margalla Crush Mandi",
+    mobileNumber: "+92 333 4455667",
+    whatsappNumber: "923334455667",
+    address: "Taxila Highway, Near Margalla Toll Plaza, Rawalpindi",
+    cityId: "isb",
+    category: "sand",
+    notes: "Chenab coarse sand (Dhamial / Riverbed) and Sargodha/Margalla washed crush.",
+    rating: 4.5,
+    status: "active",
+    totalPurchases: 540000,
+    totalPaid: 540000,
+    outstandingBalance: 0,
+    createdAt: "2026-08-18"
+  }
+];
+
+export const INITIAL_PURCHASES: PurchaseOrder[] = [
+  {
+    id: "po_101",
+    userId: "usr_demo",
+    projectId: "proj_dha_phase5",
+    vendorId: "vnd_bestway_isb",
+    vendorName: "Rehman Building Materials",
+    materialId: "mat_cement",
+    materialName: "Portland Cement (50kg Bag)",
+    brand: "Bestway OPC",
+    specification: "Type 1 / 50kg Bags",
+    quantity: 300,
+    unit: "bags",
+    rate: 1420,
+    subtotal: 426000,
+    discount: 6000,
+    transportCharges: 6000,
+    loadingCharges: 1500,
+    unloadingCharges: 1500,
+    otherCharges: 0,
+    totalAmount: 429000,
+    status: "delivered",
+    paymentStatus: "paid",
+    purchaseDate: "2026-08-25",
+    expectedDeliveryDate: "2026-08-26",
+    deliveredAt: "2026-08-26T14:30:00Z",
+    billUrl: "https://images.unsplash.com/photo-1554415707-9e49017aed81?w=600",
+    materialPhotoUrl: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600",
+    notes: "First consignment for ground floor slab casting. Received 300 bags in dry condition.",
+    createdAt: "2026-08-25"
+  },
+  {
+    id: "po_102",
+    userId: "usr_demo",
+    projectId: "proj_dha_phase5",
+    vendorId: "vnd_mughal_steel",
+    vendorName: "Tariq Iron & Grade 60 Steel",
+    materialId: "mat_steel_g60",
+    materialName: "Grade 60 Deformed Steel Rebar",
+    brand: "Mughal Steel",
+    specification: "ASTM A615 Grade 60 (1/2\" & 3/4\")",
+    quantity: 3.5,
+    unit: "tons",
+    rate: 258000,
+    subtotal: 903000,
+    discount: 10000,
+    transportCharges: 12000,
+    loadingCharges: 0,
+    unloadingCharges: 3000,
+    otherCharges: 0,
+    totalAmount: 908000,
+    status: "delivered",
+    paymentStatus: "paid",
+    purchaseDate: "2026-08-28",
+    expectedDeliveryDate: "2026-08-29",
+    deliveredAt: "2026-08-29T11:00:00Z",
+    billUrl: "https://images.unsplash.com/photo-1554415707-9e49017aed81?w=600",
+    notes: "Weighbridge certified slip attached. Stored on wooden dunnage to prevent rust.",
+    createdAt: "2026-08-28"
+  },
+  {
+    id: "po_103",
+    userId: "usr_demo",
+    projectId: "proj_dha_phase5",
+    vendorId: "vnd_awwal_bhatta",
+    vendorName: "Al-Madina Kiln & Awwal Bricks",
+    materialId: "mat_brick_awwal",
+    materialName: "Awwal Class Kiln-Fired Bricks",
+    brand: "Chaudhry Bhatta",
+    specification: "First Class 9x4.5x3 inches",
+    quantity: 15000,
+    unit: "nos",
+    rate: 13.8,
+    subtotal: 207000,
+    discount: 2000,
+    transportCharges: 8000,
+    loadingCharges: 0,
+    unloadingCharges: 0,
+    otherCharges: 0,
+    totalAmount: 213000,
+    status: "ordered",
+    paymentStatus: "unpaid",
+    purchaseDate: "2026-09-04",
+    expectedDeliveryDate: "2026-09-07",
+    notes: "Ordered for boundary wall and ground floor masonry. Delivery scheduled for Monday.",
+    createdAt: "2026-09-04"
+  }
+];
+
+export const INITIAL_INVENTORY: InventoryItem[] = [
+  {
+    id: "inv_cement",
+    projectId: "proj_dha_phase5",
+    materialId: "mat_cement",
+    materialName: "Portland Cement (50kg Bags)",
+    unit: "bags",
+    openingQuantity: 0,
+    purchasedQuantity: 300,
+    usedQuantity: 240,
+    remainingQuantity: 60,
+    minStockThreshold: 50,
+    isLowStock: false,
+    updatedAt: "2026-09-04"
+  },
+  {
+    id: "inv_steel",
+    projectId: "proj_dha_phase5",
+    materialId: "mat_steel_g60",
+    materialName: "Grade 60 Deformed Steel",
+    unit: "tons",
+    openingQuantity: 0,
+    purchasedQuantity: 3.5,
+    usedQuantity: 2.8,
+    remainingQuantity: 0.7,
+    minStockThreshold: 1.0,
+    isLowStock: true,
+    updatedAt: "2026-09-04"
+  },
+  {
+    id: "inv_bricks",
+    projectId: "proj_dha_phase5",
+    materialId: "mat_brick_awwal",
+    materialName: "Awwal Kiln Bricks",
+    unit: "nos",
+    openingQuantity: 0,
+    purchasedQuantity: 15000,
+    usedQuantity: 12500,
+    remainingQuantity: 2500,
+    minStockThreshold: 4000,
+    isLowStock: true,
+    updatedAt: "2026-09-04"
+  },
+  {
+    id: "inv_sand",
+    projectId: "proj_dha_phase5",
+    materialId: "mat_sand_chenab",
+    materialName: "Chenab Coarse Sand",
+    unit: "cft",
+    openingQuantity: 0,
+    purchasedQuantity: 1800,
+    usedQuantity: 1200,
+    remainingQuantity: 600,
+    minStockThreshold: 300,
+    isLowStock: false,
+    updatedAt: "2026-09-04"
+  }
+];
+
+export const INITIAL_REMINDERS: ProjectReminder[] = [
+  {
+    id: "rem_1",
+    userId: "usr_demo",
+    projectId: "proj_dha_phase5",
+    title: "Inspect Ground Floor Slab Concrete Curing (Twice Daily)",
+    reminderDate: "2026-09-05",
+    reminderTime: "08:00",
+    repeatFrequency: "daily",
+    priority: "high",
+    status: "pending",
+    notes: "Continuous ponding water curing mandatory for 14 days following 1:2:4 pour.",
+    createdAt: "2026-09-02"
+  },
+  {
+    id: "rem_2",
+    userId: "usr_demo",
+    projectId: "proj_dha_phase5",
+    title: "Check Delivery of 15,000 Awwal Bricks from Al-Madina Kiln",
+    reminderDate: "2026-09-07",
+    reminderTime: "10:30",
+    repeatFrequency: "none",
+    priority: "urgent",
+    status: "pending",
+    notes: "Check ring test, uniform metallic sound, and verify no Jhama / yellow bricks delivered.",
+    createdAt: "2026-09-04"
+  },
+  {
+    id: "rem_3",
+    userId: "usr_demo",
+    projectId: "proj_dha_phase5",
+    title: "Pay Mistry & Mazdoor Weekly Labour Chowk Wages",
+    reminderDate: "2026-09-06",
+    reminderTime: "17:00",
+    repeatFrequency: "weekly",
+    priority: "high",
+    status: "pending",
+    notes: "Weekly Saturday settlement for 8 masons and 12 labourers.",
+    createdAt: "2026-09-01"
+  }
+];
+
+export const INITIAL_SITE_DIARY: SiteDiaryEntry[] = [
+  {
+    id: "log_1",
+    projectId: "proj_dha_phase5",
+    logDate: "2026-09-04",
+    weather: "sunny",
+    workersPresent: 14,
+    workCompleted: "First floor column shuttering and Grade 60 vertical bar binding finished. Water curing continued on ground floor walls.",
+    materialsReceived: "Received 300 bags Bestway Cement and 2 dumpers Chenab sand.",
+    issues: "Temporary municipal water connection pressure was low during morning pour; switched to tube-well boring.",
+    photoUrls: [
+      "https://images.unsplash.com/photo-1541888946425-d0fbb186156f?w=600",
+      "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=600"
+    ],
+    notes: "Site engineer inspected column plumb lines; tolerance within 3mm.",
+    createdAt: "2026-09-04"
+  },
+  {
+    id: "log_2",
+    projectId: "proj_dha_phase5",
+    logDate: "2026-09-03",
+    weather: "sunny",
+    workersPresent: 12,
+    workCompleted: "Ground floor DPC bitumen coating and 9-inch perimeter masonry up to lintel beam level.",
+    materialsReceived: "None",
+    issues: "None",
+    photoUrls: [
+      "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600"
+    ],
+    notes: "Satisfactory progress achieved ahead of schedule.",
+    createdAt: "2026-09-03"
   }
 ];

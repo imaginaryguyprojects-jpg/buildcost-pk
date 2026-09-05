@@ -15,20 +15,40 @@ import {
   Download,
   Percent,
   TrendingUp,
-  Plus
+  Plus,
+  Compass,
+  ShoppingCart,
+  Boxes,
+  CalendarClock,
+  BookOpen,
+  Scale
 } from "lucide-react";
 import { useProjectStore } from "@/stores/projectStore";
+import { FloorPlanViewer2D } from "@/components/layouts/FloorPlanViewer2D";
 import { formatPKR, formatLakhCrore, formatNumber } from "@/lib/formatters";
 import { calculateCompleteHouseEstimate } from "@buildcost/calculations";
 import { cn } from "@/lib/utils";
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
-  const { projects } = useProjectStore();
+  const { projects, purchases, inventory, reminders, siteDiary, layouts } = useProjectStore();
   const project = projects.find((p) => p.id === resolvedParams.id) || projects[0];
 
   const [activeTab, setActiveTab] = useState<
-    "overview" | "calculator" | "materials" | "labour" | "boq" | "expenses" | "quotations" | "reports"
+    | "overview"
+    | "calculator"
+    | "layout"
+    | "materials"
+    | "labour"
+    | "purchases"
+    | "inventory"
+    | "variance"
+    | "diary"
+    | "reminders"
+    | "boq"
+    | "expenses"
+    | "quotations"
+    | "reports"
   >("overview");
 
   // Dynamic estimate calculation for this specific project
@@ -42,11 +62,32 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     cityName: "Islamabad"
   });
 
+  const matchedLayout = layouts.find(
+    (l) => l.plotCategory === (project.plotArea <= 3 ? "3_marla" : project.plotArea <= 5 ? "5_marla" : project.plotArea <= 7 ? "7_marla" : project.plotArea <= 10 ? "10_marla" : "1_kanal")
+  ) || layouts[0];
+
+  const projectPurchases = purchases.filter((p) => p.projectId === project.id);
+  const projectInventory = inventory.filter((i) => i.projectId === project.id);
+  const projectReminders = reminders.filter((r) => r.projectId === project.id);
+  const projectDiary = siteDiary.filter((d) => d.projectId === project.id);
+
+  const totalPurchasesSpend = projectPurchases.reduce((sum, p) => sum + p.totalAmount, 0);
+  const estimatedLabourSpend = Math.round(estimate.labourCost * 0.4);
+  const actualTotalSpend = totalPurchasesSpend + estimatedLabourSpend;
+  const varianceAmount = actualTotalSpend - estimate.grandTotal;
+  const variancePct = Number(((varianceAmount / Math.max(1, estimate.grandTotal)) * 100).toFixed(1));
+
   const tabs = [
     { id: "overview", label: "Overview", icon: Building2 },
+    { id: "layout", label: "2D Layout", icon: Compass },
     { id: "calculator", label: "Cost Estimator", icon: Calculator },
     { id: "materials", label: "Materials", icon: Layers },
     { id: "labour", label: "Labour", icon: Users },
+    { id: "purchases", label: "Purchases", icon: ShoppingCart },
+    { id: "inventory", label: "Stock / Inventory", icon: Boxes },
+    { id: "variance", label: "Budget Variance", icon: Scale },
+    { id: "diary", label: "Site Diary", icon: BookOpen },
+    { id: "reminders", label: "Reminders", icon: CalendarClock },
     { id: "boq", label: "BOQ", icon: FileSpreadsheet },
     { id: "expenses", label: "Expenses", icon: Receipt },
     { id: "quotations", label: "Quotation", icon: FileText },
@@ -366,6 +407,193 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           </div>
           <div className="p-8 text-center bg-slate-950 rounded-xl border border-slate-800 text-slate-400 text-xs">
             Draft quotation ready based on active estimate of {formatPKR(estimate.grandTotal)}.
+          </div>
+        </div>
+      )}
+
+      {/* Tab: 2D Layout */}
+      {activeTab === "layout" && (
+        <div className="space-y-4">
+          <FloorPlanViewer2D layout={matchedLayout} />
+        </div>
+      )}
+
+      {/* Tab: Purchases */}
+      {activeTab === "purchases" && (
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-bold text-slate-100">Project Material Purchases</h2>
+              <p className="text-xs text-slate-400">Total Purchase Spend: {formatPKR(totalPurchasesSpend)}</p>
+            </div>
+            <Link
+              href="/purchases"
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white"
+            >
+              Open Purchases Studio
+            </Link>
+          </div>
+
+          {projectPurchases.length === 0 ? (
+            <div className="p-8 text-center bg-slate-950 rounded-xl border border-slate-800 text-slate-400 text-xs">
+              No purchases recorded for this project yet. Go to Purchases to log cement, steel, or bricks.
+            </div>
+          ) : (
+            <div className="space-y-2 text-xs">
+              {projectPurchases.map((po) => (
+                <div
+                  key={po.id}
+                  className="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between"
+                >
+                  <div>
+                    <div className="font-bold text-slate-200">
+                      {po.quantity} {po.unit} {po.materialName} {po.brand ? `(${po.brand})` : ""}
+                    </div>
+                    <div className="text-slate-500 text-[11px]">
+                      {po.purchaseDate} • Status: {po.status} • {po.vendorName || "Walk-in Supplier"}
+                    </div>
+                  </div>
+                  <div className="font-mono font-bold text-slate-200">
+                    {formatPKR(po.totalAmount)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab: Inventory */}
+      {activeTab === "inventory" && (
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-bold text-slate-100">Site Material Stock Balances</h2>
+              <p className="text-xs text-slate-400">Formula: Opening + Purchases − Daily Usage = Remaining Balance</p>
+            </div>
+            <Link
+              href="/inventory"
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white"
+            >
+              Manage Inventory
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {projectInventory.map((item) => (
+              <div key={item.id} className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-slate-200">{item.materialName}</span>
+                  <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full", item.isLowStock ? "bg-amber-950 text-amber-400" : "bg-emerald-950 text-emerald-400")}>
+                    {item.isLowStock ? "Low" : "OK"}
+                  </span>
+                </div>
+                <div className="text-xl font-black font-mono text-white">
+                  {item.remainingQuantity.toLocaleString()} <span className="text-xs font-normal text-slate-400">{item.unit}</span>
+                </div>
+                <div className="text-[11px] text-slate-500 font-mono">
+                  Opening: {item.openingQuantity} | In: +{item.purchasedQuantity} | Used: -{item.usedQuantity}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Variance (Estimate vs Actual) */}
+      {activeTab === "variance" && (
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-bold text-slate-100">Estimate vs Actual Cost Variance</h2>
+              <p className="text-xs text-slate-400">Track cost overruns against baseline engineering calculations</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
+              <span className="text-xs text-slate-400 block mb-1">Target Engineering Budget</span>
+              <span className="text-xl font-black font-mono text-white">{formatPKR(estimate.grandTotal)}</span>
+            </div>
+            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
+              <span className="text-xs text-slate-400 block mb-1">Actual Cumulative Spent</span>
+              <span className="text-xl font-black font-mono text-blue-400">{formatPKR(actualTotalSpend)}</span>
+              <span className="text-[10px] text-slate-500 block mt-0.5">Purchases + Labour estimate</span>
+            </div>
+            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
+              <span className="text-xs text-slate-400 block mb-1">Variance (Under / Over)</span>
+              <span className={cn("text-xl font-black font-mono", varianceAmount > 0 ? "text-rose-400" : "text-emerald-400")}>
+                {varianceAmount > 0 ? `+${formatPKR(varianceAmount)}` : formatPKR(varianceAmount)}
+              </span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">
+                {variancePct > 0 ? `+${variancePct}% Over Budget` : `${variancePct}% Under Budget`}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Site Diary */}
+      {activeTab === "diary" && (
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-bold text-slate-100">Daily Site Diary Log</h2>
+              <p className="text-xs text-slate-400">Weather, manpower attendance, work executed, and site blockers</p>
+            </div>
+            <Link
+              href="/diary"
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white"
+            >
+              Open Site Diary
+            </Link>
+          </div>
+
+          <div className="space-y-2">
+            {projectDiary.map((d) => (
+              <div key={d.id} className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 text-xs space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-emerald-400">{d.logDate}</span>
+                  <span className="text-slate-400">{d.workersPresent} Workers Present</span>
+                </div>
+                <p className="text-slate-300">{d.workCompleted}</p>
+                {d.materialsReceived && (
+                  <p className="text-emerald-400/80 text-[11px]">Delivered: {d.materialsReceived}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Reminders */}
+      {activeTab === "reminders" && (
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-bold text-slate-100">Site Reminders &amp; Deadlines</h2>
+              <p className="text-xs text-slate-400">Curing timetables, structural inspections, contractor wages</p>
+            </div>
+            <Link
+              href="/reminders"
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white"
+            >
+              All Reminders
+            </Link>
+          </div>
+
+          <div className="space-y-2 text-xs">
+            {projectReminders.map((r) => (
+              <div key={r.id} className="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
+                <div>
+                  <div className="font-bold text-slate-200">{r.title}</div>
+                  <div className="text-slate-500 text-[11px]">{r.reminderDate} • Priority: {r.priority}</div>
+                </div>
+                <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full uppercase", r.status === "completed" ? "bg-emerald-950 text-emerald-400" : "bg-amber-950 text-amber-400")}>
+                  {r.status}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       )}

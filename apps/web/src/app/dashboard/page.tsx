@@ -15,7 +15,13 @@ import {
   Lightbulb,
   History,
   Scale,
-  DollarSign
+  DollarSign,
+  Compass,
+  Boxes,
+  CalendarClock,
+  ShoppingCart,
+  BookOpen,
+  ArrowRight
 } from "lucide-react";
 import { PAKISTANI_CITIES } from "@buildcost/config";
 import { useProjectStore } from "@/stores/projectStore";
@@ -34,6 +40,10 @@ export default function DashboardPage() {
     materialRates,
     savedCalculations,
     estimateVersions,
+    inventory,
+    reminders,
+    purchases,
+    siteDiary,
     getActiveProject
   } = useProjectStore();
   const activeProject = getActiveProject();
@@ -241,6 +251,123 @@ export default function DashboardPage() {
           rates={materialRates.filter((r) => r.cityId === selectedCityId || r.cityId === "isb")}
           cityName={selectedCity.name}
         />
+      </div>
+
+      {/* Site Operations & Daily Watch (Sections 147-225) */}
+      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div>
+            <h3 className="font-extrabold text-slate-900 dark:text-white text-base">
+              Site Operations &amp; Daily Intelligence
+            </h3>
+            <p className="text-xs text-slate-500">
+              Real-time monitoring of site stock, pending tasks, vendor khata, and daily diary logs
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/layouts"
+              className="px-3 py-1.5 rounded-xl bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-800 text-xs font-bold hover:bg-teal-100 transition-colors flex items-center gap-1.5"
+            >
+              <Compass className="w-3.5 h-3.5" />
+              <span>House Layouts</span>
+            </Link>
+            <Link
+              href="/purchases"
+              className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-xs font-bold hover:bg-emerald-100 transition-colors flex items-center gap-1.5"
+            >
+              <ShoppingCart className="w-3.5 h-3.5" />
+              <span>Purchases</span>
+            </Link>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Inventory Watch */}
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between text-xs font-semibold mb-2">
+                <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                  <Boxes className="w-4 h-4 text-teal-500" />
+                  Site Inventory Watch
+                </span>
+                <span className="text-[10px] font-mono text-slate-400">
+                  {inventory.length} Items
+                </span>
+              </div>
+              {inventory.filter((i) => i.isLowStock || i.remainingQuantity <= i.minStockThreshold).length > 0 ? (
+                <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-[11px] text-amber-800 dark:text-amber-300 font-medium">
+                  ⚠️ Low Stock Alert on {inventory.filter((i) => i.isLowStock || i.remainingQuantity <= i.minStockThreshold).length} materials. Cement / Steel near safety margin.
+                </div>
+              ) : (
+                <div className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                  ✓ All materials within safe site stock thresholds.
+                </div>
+              )}
+            </div>
+            <Link
+              href="/inventory"
+              className="mt-3 text-xs font-bold text-teal-600 dark:text-teal-400 hover:underline flex items-center gap-1"
+            >
+              <span>Manage Inventory</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+
+          {/* Site Tasks & Reminders */}
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between text-xs font-semibold mb-2">
+                <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                  <CalendarClock className="w-4 h-4 text-rose-500" />
+                  Pending Site Tasks
+                </span>
+                <span className="text-[10px] font-mono text-slate-400">
+                  {reminders.filter((r) => r.status === "pending").length} Due
+                </span>
+              </div>
+              <div className="space-y-1">
+                {reminders.slice(0, 2).map((r) => (
+                  <div key={r.id} className="text-[11px] text-slate-700 dark:text-slate-300 truncate">
+                    • {r.title}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <Link
+              href="/reminders"
+              className="mt-3 text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1"
+            >
+              <span>View All Tasks</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+
+          {/* Daily Site Diary */}
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between text-xs font-semibold mb-2">
+                <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                  <BookOpen className="w-4 h-4 text-amber-500" />
+                  Latest Site Log
+                </span>
+                <span className="text-[10px] font-mono text-slate-400">
+                  {siteDiary[0]?.logDate || "Today"}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 line-clamp-2">
+                {siteDiary[0]?.workCompleted || "Record today's worker count and concrete execution."}
+              </p>
+            </div>
+            <Link
+              href="/diary"
+              className="mt-3 text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
+            >
+              <span>Open Site Diary</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+        </div>
       </div>
 
       {/* Bottom Dual Donut Charts and Breakdown Card matching UI.jpg */}

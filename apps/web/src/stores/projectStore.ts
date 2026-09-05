@@ -10,7 +10,18 @@ import {
   MaterialWatchlistItem,
   ProjectChecklistItem,
   ShareLink,
-  ChecklistStatus
+  ChecklistStatus,
+  HouseLayout,
+  Vendor,
+  PurchaseOrder,
+  PurchaseStatus,
+  PurchasePaymentStatus,
+  VendorPayment,
+  InventoryItem,
+  MaterialUsage,
+  ProjectReminder,
+  ReminderStatus,
+  SiteDiaryEntry
 } from "@buildcost/types";
 import {
   INITIAL_MATERIAL_RATES,
@@ -21,7 +32,13 @@ import {
   INITIAL_WATCHLIST,
   INITIAL_CALCULATIONS,
   INITIAL_ESTIMATE_VERSIONS,
-  INITIAL_SHARE_LINKS
+  INITIAL_SHARE_LINKS,
+  INITIAL_HOUSE_LAYOUTS,
+  INITIAL_VENDORS,
+  INITIAL_PURCHASES,
+  INITIAL_INVENTORY,
+  INITIAL_REMINDERS,
+  INITIAL_SITE_DIARY
 } from "../lib/mockData";
 
 export type ThemeMode = "dark" | "light";
@@ -40,7 +57,17 @@ interface ProjectStoreState {
   watchlist: MaterialWatchlistItem[];
   checklists: ProjectChecklistItem[];
   shareLinks: ShareLink[];
+  layouts: HouseLayout[];
+  vendors: Vendor[];
+  purchases: PurchaseOrder[];
+  inventory: InventoryItem[];
+  reminders: ProjectReminder[];
+  siteDiary: SiteDiaryEntry[];
   lastSyncTimestamp: string;
+
+  // Global modals
+  quickAddOpen: boolean;
+  smartSearchOpen: boolean;
 
   // Actions
   setTheme: (theme: ThemeMode) => void;
@@ -55,6 +82,10 @@ interface ProjectStoreState {
   updateMaterialRate: (id: string, newRate: number, reason: string) => void;
   syncAuthenticRates: () => void;
   getActiveProject: () => Project | undefined;
+
+  // Modals
+  setQuickAddOpen: (open: boolean) => void;
+  setSmartSearchOpen: (open: boolean) => void;
 
   // Calculation & Versioning actions
   saveCalculation: (calc: Omit<CalculationSnapshot, "id" | "createdAt">) => CalculationSnapshot;
@@ -92,6 +123,31 @@ interface ProjectStoreState {
 
   // Checklist
   updateChecklistItemStatus: (id: string, status: ChecklistStatus) => void;
+
+  // Layouts
+  toggleFavoriteLayout: (id: string) => void;
+  toggleLayoutFavorite: (id: string) => void;
+
+  // Vendors
+  addVendor: (vendor: Omit<Vendor, "id" | "createdAt">) => Vendor;
+  updateVendor: (id: string, updates: Partial<Vendor>) => void;
+  deleteVendor: (id: string) => void;
+
+  // Purchases
+  addPurchase: (purchase: Omit<PurchaseOrder, "id" | "createdAt">) => PurchaseOrder;
+  updatePurchaseStatus: (id: string, status: PurchaseStatus, paymentStatus?: PurchasePaymentStatus) => void;
+  recordVendorPayment: (payment: Omit<VendorPayment, "id" | "createdAt">) => void;
+
+  // Inventory & Usages
+  recordMaterialUsage: (usage: Omit<MaterialUsage, "id" | "createdAt">) => void;
+
+  // Reminders
+  addReminder: (reminder: Omit<ProjectReminder, "id" | "createdAt">) => ProjectReminder;
+  updateReminderStatus: (id: string, status: ReminderStatus) => void;
+  deleteReminder: (id: string) => void;
+
+  // Site Diary
+  addSiteDiaryEntry: (entry: Omit<SiteDiaryEntry, "id" | "createdAt">) => SiteDiaryEntry;
 }
 
 export const useProjectStore = create<ProjectStoreState>()(
@@ -110,7 +166,16 @@ export const useProjectStore = create<ProjectStoreState>()(
       watchlist: INITIAL_WATCHLIST,
       checklists: INITIAL_CHECKLIST,
       shareLinks: INITIAL_SHARE_LINKS,
+      layouts: INITIAL_HOUSE_LAYOUTS,
+      vendors: INITIAL_VENDORS,
+      purchases: INITIAL_PURCHASES,
+      inventory: INITIAL_INVENTORY,
+      reminders: INITIAL_REMINDERS,
+      siteDiary: INITIAL_SITE_DIARY,
       lastSyncTimestamp: "Today 09:30 AM PKT",
+
+      quickAddOpen: false,
+      smartSearchOpen: false,
 
       setTheme: (theme: ThemeMode) => {
         set({ theme });
@@ -196,6 +261,10 @@ export const useProjectStore = create<ProjectStoreState>()(
         return projects.find((p) => p.id === activeProjectId) || projects[0];
       },
 
+      // Modals
+      setQuickAddOpen: (open) => set({ quickAddOpen: open }),
+      setSmartSearchOpen: (open) => set({ smartSearchOpen: open }),
+
       // Calculation history & preservation
       saveCalculation: (calc) => {
         const newCalc: CalculationSnapshot = {
@@ -218,10 +287,9 @@ export const useProjectStore = create<ProjectStoreState>()(
         const original = get().savedCalculations.find((c) => c.id === id);
         if (!original) return undefined;
 
-        // Create updated rate snapshot from current rates
         const currentRates = get().materialRates;
         const newRatesSnapshot: Record<string, { rate: number; source: string; verifiedAt: string }> = {};
-        
+
         let materialsCost = 0;
         const updatedMaterials = original.result.materials.map((m) => {
           const match = currentRates.find((r) => r.materialId === m.materialId);
@@ -240,10 +308,18 @@ export const useProjectStore = create<ProjectStoreState>()(
           };
         });
 
-        const updatedGrandTotal = materialsCost + original.result.labourCost + original.result.equipmentCost + original.result.transportCost + original.result.finishingCost + original.result.contingencyCost;
-        const updatedCostPerSqft = original.result.totalCoveredAreaSqft > 0 ? Math.round(updatedGrandTotal / original.result.totalCoveredAreaSqft) : 0;
+        const updatedGrandTotal =
+          materialsCost +
+          original.result.labourCost +
+          original.result.equipmentCost +
+          original.result.transportCost +
+          original.result.finishingCost +
+          original.result.contingencyCost;
+        const updatedCostPerSqft =
+          original.result.totalCoveredAreaSqft > 0
+            ? Math.round(updatedGrandTotal / original.result.totalCoveredAreaSqft)
+            : 0;
 
-        // Creates a NEW historically accurate calculation record without overwriting original
         const updatedCalc: CalculationSnapshot = {
           id: "calc_" + Math.random().toString(36).substring(2, 9),
           projectId: original.projectId,
@@ -272,9 +348,10 @@ export const useProjectStore = create<ProjectStoreState>()(
         const prevVersion = existing[existing.length - 1];
 
         const deltaAmount = prevVersion ? data.grandTotal - prevVersion.summaryData.grandTotal : 0;
-        const deltaPercentage = prevVersion && prevVersion.summaryData.grandTotal > 0
-          ? Number(((deltaAmount / prevVersion.summaryData.grandTotal) * 100).toFixed(2))
-          : 0;
+        const deltaPercentage =
+          prevVersion && prevVersion.summaryData.grandTotal > 0
+            ? Number(((deltaAmount / prevVersion.summaryData.grandTotal) * 100).toFixed(2))
+            : 0;
 
         const newVersion: EstimateVersion = {
           id: "ver_" + Math.random().toString(36).substring(2, 9),
@@ -436,10 +513,196 @@ export const useProjectStore = create<ProjectStoreState>()(
               : c
           )
         }));
+      },
+
+      // Layouts
+      toggleFavoriteLayout: (id: string) => {
+        set((state) => ({
+          layouts: state.layouts.map((l) =>
+            l.id === id ? { ...l, isFavorite: !l.isFavorite } : l
+          )
+        }));
+      },
+      toggleLayoutFavorite: (id: string) => {
+        get().toggleFavoriteLayout(id);
+      },
+
+      // Vendors
+      addVendor: (vendor) => {
+        const newVendor: Vendor = {
+          ...vendor,
+          id: "vnd_" + Math.random().toString(36).substring(2, 9),
+          totalPurchases: 0,
+          totalPaid: 0,
+          outstandingBalance: 0,
+          createdAt: new Date().toISOString().split("T")[0]
+        };
+        set((state) => ({
+          vendors: [newVendor, ...state.vendors]
+        }));
+        return newVendor;
+      },
+
+      updateVendor: (id, updates) => {
+        set((state) => ({
+          vendors: state.vendors.map((v) => (v.id === id ? { ...v, ...updates } : v))
+        }));
+      },
+
+      deleteVendor: (id) => {
+        set((state) => ({
+          vendors: state.vendors.filter((v) => v.id !== id)
+        }));
+      },
+
+      // Purchases & Inventory linking
+      addPurchase: (purchase) => {
+        const newPO: PurchaseOrder = {
+          ...purchase,
+          id: "po_" + Math.random().toString(36).substring(2, 9),
+          createdAt: new Date().toISOString().split("T")[0]
+        };
+
+        // If marked as delivered, automatically increment inventory
+        let updatedInventory = [...get().inventory];
+        if (newPO.status === "delivered") {
+          const invMatch = updatedInventory.find(
+            (i) => i.projectId === newPO.projectId && i.materialId === newPO.materialId
+          );
+          if (invMatch) {
+            const newPurchased = invMatch.purchasedQuantity + newPO.quantity;
+            const newRemaining = invMatch.openingQuantity + newPurchased - invMatch.usedQuantity;
+            updatedInventory = updatedInventory.map((i) =>
+              i.id === invMatch.id
+                ? {
+                    ...i,
+                    purchasedQuantity: newPurchased,
+                    remainingQuantity: newRemaining,
+                    isLowStock: newRemaining <= i.minStockThreshold
+                  }
+                : i
+            );
+          }
+        }
+
+        // Update vendor financial ledger
+        const updatedVendors = get().vendors.map((v) => {
+          if (v.id === newPO.vendorId) {
+            const newTotal = (v.totalPurchases || 0) + newPO.totalAmount;
+            const newPaid = newPO.paymentStatus === "paid" ? (v.totalPaid || 0) + newPO.totalAmount : (v.totalPaid || 0);
+            return {
+              ...v,
+              totalPurchases: newTotal,
+              totalPaid: newPaid,
+              outstandingBalance: newTotal - newPaid
+            };
+          }
+          return v;
+        });
+
+        set((state) => ({
+          purchases: [newPO, ...state.purchases],
+          inventory: updatedInventory,
+          vendors: updatedVendors
+        }));
+        return newPO;
+      },
+
+      updatePurchaseStatus: (id, status, paymentStatus) => {
+        set((state) => ({
+          purchases: state.purchases.map((p) =>
+            p.id === id
+              ? {
+                  ...p,
+                  status,
+                  paymentStatus: paymentStatus || p.paymentStatus,
+                  deliveredAt: status === "delivered" ? new Date().toISOString() : p.deliveredAt
+                }
+              : p
+          )
+        }));
+      },
+
+      recordVendorPayment: (payment) => {
+        set((state) => ({
+          vendors: state.vendors.map((v) => {
+            if (v.id === payment.vendorId) {
+              const newPaid = (v.totalPaid || 0) + payment.amount;
+              return {
+                ...v,
+                totalPaid: newPaid,
+                outstandingBalance: Math.max(0, (v.totalPurchases || 0) - newPaid)
+              };
+            }
+            return v;
+          })
+        }));
+      },
+
+      recordMaterialUsage: (usage) => {
+        const newUsage: MaterialUsage = {
+          ...usage,
+          id: "usg_" + Math.random().toString(36).substring(2, 9),
+          createdAt: new Date().toISOString()
+        };
+
+        const updatedInventory = get().inventory.map((i) => {
+          if (i.projectId === usage.projectId && i.materialId === usage.materialId) {
+            const newUsed = i.usedQuantity + usage.quantityUsed;
+            const newRemaining = i.openingQuantity + i.purchasedQuantity - newUsed;
+            return {
+              ...i,
+              usedQuantity: newUsed,
+              remainingQuantity: newRemaining,
+              isLowStock: newRemaining <= i.minStockThreshold
+            };
+          }
+          return i;
+        });
+
+        set({ inventory: updatedInventory });
+      },
+
+      // Reminders
+      addReminder: (reminder) => {
+        const newRem: ProjectReminder = {
+          ...reminder,
+          id: "rem_" + Math.random().toString(36).substring(2, 9),
+          createdAt: new Date().toISOString()
+        };
+        set((state) => ({
+          reminders: [newRem, ...state.reminders]
+        }));
+        return newRem;
+      },
+
+      updateReminderStatus: (id, status) => {
+        set((state) => ({
+          reminders: state.reminders.map((r) => (r.id === id ? { ...r, status } : r))
+        }));
+      },
+
+      deleteReminder: (id) => {
+        set((state) => ({
+          reminders: state.reminders.filter((r) => r.id !== id)
+        }));
+      },
+
+      // Site Diary
+      addSiteDiaryEntry: (entry) => {
+        const newLog: SiteDiaryEntry = {
+          ...entry,
+          id: "log_" + Math.random().toString(36).substring(2, 9),
+          createdAt: new Date().toISOString()
+        };
+        set((state) => ({
+          siteDiary: [newLog, ...state.siteDiary]
+        }));
+        return newLog;
       }
     }),
     {
-      name: "buildcost_store_v3"
+      name: "buildcost_store_v4"
     }
   )
 );

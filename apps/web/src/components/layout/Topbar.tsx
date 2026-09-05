@@ -14,7 +14,8 @@ import {
   LogOut,
   Settings,
   History,
-  ShieldCheck
+  ShieldCheck,
+  Search
 } from "lucide-react";
 import { PAKISTANI_CITIES } from "@buildcost/config";
 import { useProjectStore } from "@/stores/projectStore";
@@ -23,7 +24,14 @@ import { cn } from "@/lib/utils";
 
 export function Topbar() {
   const pathname = usePathname();
-  const { selectedCityId, setSelectedCityId, theme, toggleTheme } = useProjectStore();
+  const {
+    selectedCityId,
+    setSelectedCityId,
+    theme,
+    toggleTheme,
+    setQuickAddOpen,
+    setSmartSearchOpen
+  } = useProjectStore();
   const { user, isAuthenticated, logout, openLoginModal } = useAuthStore();
   
   const [cityMenuOpen, setCityMenuOpen] = useState(false);
@@ -114,12 +122,35 @@ export function Topbar() {
           )}
         </div>
 
+        {/* Smart Search Button */}
+        <button
+          type="button"
+          onClick={() => setSmartSearchOpen(true)}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-500 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700 transition-colors"
+          title="Search anything (Ctrl+K)"
+        >
+          <Search className="w-3.5 h-3.5 text-slate-400" />
+          <span className="hidden md:inline">Search...</span>
+          <kbd className="hidden lg:inline text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-400">
+            Ctrl+K
+          </kbd>
+        </button>
+
+        {/* Global Quick Add (+) Action Button */}
+        <button
+          type="button"
+          onClick={() => setQuickAddOpen(true)}
+          className="w-8 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center font-bold shadow-xs transition-colors"
+          title="Quick Add (Purchase, Vendor, Log, Reminder)"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+
         {/* Quick New Project Button */}
         <Link
           href="/projects/new"
-          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shadow-sm transition-all"
+          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold shadow-xs transition-all"
         >
-          <Plus className="w-3.5 h-3.5" />
           <span>New Project</span>
         </Link>
 
