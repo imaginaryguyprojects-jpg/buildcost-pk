@@ -36,43 +36,43 @@ export default function ChecklistPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
               <CheckSquare className="w-4 h-4" />
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
               Site Construction Checklist
             </h1>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Standard 12-stage Pakistani civil milestones from society approval to final key handover.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 p-3 rounded-2xl bg-slate-900 border border-slate-800">
-          <Building className="w-4 h-4 text-emerald-400" />
-          <span className="text-xs font-bold text-slate-200">
+        <div className="flex items-center gap-2 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+          <Building className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
             Project: {activeProject?.projectName || "Residential Villa"}
           </span>
         </div>
       </div>
 
       {/* Progress Card */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
+      <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-4 shadow-xs">
         <div className="flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-slate-300">Overall Construction Progress</span>
-            <div className="text-xs text-slate-400 mt-0.5">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Overall Construction Progress</span>
+            <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               {completed} of {total} Milestones Finished • {inProgress} In Progress
             </div>
           </div>
-          <div className="text-2xl font-black text-emerald-400 font-mono">
+          <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
             {progressPercent}%
           </div>
         </div>
 
-        <div className="w-full h-3 rounded-full bg-slate-950 overflow-hidden border border-slate-800 p-0.5">
+        <div className="w-full h-3 rounded-full bg-slate-100 dark:bg-slate-950 overflow-hidden border border-slate-200 dark:border-slate-800 p-0.5">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500 shadow-sm shadow-emerald-500/50"
+            className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500 shadow-xs"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -87,27 +87,27 @@ export default function ChecklistPage() {
           return (
             <div
               key={item.id}
-              className={`p-4 sm:p-5 rounded-3xl border transition-all space-y-3 ${
+              className={`p-4 sm:p-5 rounded-2xl border transition-all space-y-3 ${
                 isDone
-                  ? "bg-slate-900/40 border-slate-800/60 opacity-80"
+                  ? "bg-emerald-50/40 dark:bg-slate-900/40 border-emerald-200/60 dark:border-slate-800/60"
                   : isInProgress
-                  ? "bg-slate-900 border-emerald-500/40 shadow-md"
-                  : "bg-slate-900 border-slate-800"
+                  ? "bg-white dark:bg-slate-900 border-amber-300 dark:border-emerald-500/40 shadow-xs"
+                  : "bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-xs"
               }`}
             >
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
-                  <span className="w-7 h-7 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="w-7 h-7 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
                     {idx + 1}
                   </span>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
                         {item.stage.replace("_", " ")}
                       </span>
                     </div>
-                    <h3 className="text-sm font-bold text-white mt-0.5">{item.title}</h3>
-                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">{item.description}</p>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">{item.title}</h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">{item.description}</p>
                   </div>
                 </div>
 
@@ -118,8 +118,8 @@ export default function ChecklistPage() {
                     onClick={() => handleStatusChange(item.id, "not_started")}
                     className={`px-2.5 py-1.5 rounded-xl text-[11px] font-semibold transition-all ${
                       item.status === "not_started"
-                        ? "bg-slate-800 text-slate-200 border border-slate-700"
-                        : "text-slate-500 hover:text-slate-300"
+                        ? "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700"
+                        : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                     }`}
                   >
                     Not Started
@@ -130,8 +130,8 @@ export default function ChecklistPage() {
                     onClick={() => handleStatusChange(item.id, "in_progress")}
                     className={`px-2.5 py-1.5 rounded-xl text-[11px] font-semibold transition-all flex items-center gap-1 ${
                       isInProgress
-                        ? "bg-amber-950/60 text-amber-300 border border-amber-800/50"
-                        : "text-slate-500 hover:text-amber-400"
+                        ? "bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50"
+                        : "text-slate-500 hover:text-amber-600 dark:hover:text-amber-400"
                     }`}
                   >
                     <Clock className="w-3 h-3" />
@@ -143,8 +143,8 @@ export default function ChecklistPage() {
                     onClick={() => handleStatusChange(item.id, "completed")}
                     className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all flex items-center gap-1 ${
                       isDone
-                        ? "bg-emerald-600 text-white shadow-md shadow-emerald-950"
-                        : "text-slate-500 hover:text-emerald-400"
+                        ? "bg-emerald-600 text-white shadow-xs"
+                        : "text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400"
                     }`}
                   >
                     <CheckCircle2 className="w-3 h-3" />

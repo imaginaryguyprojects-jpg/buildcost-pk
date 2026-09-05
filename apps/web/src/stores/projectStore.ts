@@ -153,7 +153,7 @@ interface ProjectStoreState {
 export const useProjectStore = create<ProjectStoreState>()(
   persist(
     (set, get) => ({
-      theme: "dark",
+      theme: "light",
       projects: INITIAL_PROJECTS,
       activeProjectId: INITIAL_PROJECTS[0]?.id || "",
       selectedCityId: "isb",
@@ -702,7 +702,7 @@ export const useProjectStore = create<ProjectStoreState>()(
       }
     }),
     {
-      name: "buildcost_store_v4"
+      name: "buildcost_store_v5"
     }
   )
 );
