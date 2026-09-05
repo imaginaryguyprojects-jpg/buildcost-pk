@@ -50,6 +50,7 @@ type CalcMode = "grey" | "finishing" | "labour" | "full" | "scenario" | "rates";
 export default function CalculatorHubPage() {
   const { selectedCityId, setSelectedCityId, materialRates } = useProjectStore();
   const [activeMode, setActiveMode] = useState<CalcMode>("grey");
+  const [showAssumptions, setShowAssumptions] = useState(false);
 
   // Global Project Dimension Inputs
   const [coveredAreaSqft, setCoveredAreaSqft] = useState(2000);
@@ -202,7 +203,71 @@ export default function CalculatorHubPage() {
             </select>
           </div>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setShowAssumptions(!showAssumptions)}
+          className="px-3.5 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-xs transition-all flex items-center gap-1.5 shrink-0"
+        >
+          <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-600" />
+          <span>{showAssumptions ? "Hide Assumptions" : "Assumptions Panel"}</span>
+        </button>
       </div>
+
+      {/* SECTION 92: CALCULATION ASSUMPTIONS PANEL */}
+      {showAssumptions && (
+        <div className="bg-white dark:bg-slate-900 border border-emerald-500/30 dark:border-emerald-500/20 rounded-3xl p-6 shadow-md space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal className="w-4 h-4 text-emerald-600" />
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                Calculation Assumptions Panel (Section 92)
+              </h3>
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+              Pakistan Building Code (PBC) Standards
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60">
+              <span className="text-[10px] text-slate-400 font-bold uppercase block">Brick Size</span>
+              <span className="font-bold text-slate-900 dark:text-white mt-1 block">9" × 4.5" × 3"</span>
+              <span className="text-[10px] text-slate-500">13.5 bricks / cuft</span>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60">
+              <span className="text-[10px] text-slate-400 font-bold uppercase block">Concrete Ratio</span>
+              <span className="font-bold text-slate-900 dark:text-white mt-1 block">1:2:4 (M15 Mix)</span>
+              <span className="text-[10px] text-slate-500">Dry Factor: 1.54</span>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60">
+              <span className="text-[10px] text-slate-400 font-bold uppercase block">Mortar Ratio</span>
+              <span className="font-bold text-slate-900 dark:text-white mt-1 block">1:4 Load / 1:6 Part.</span>
+              <span className="text-[10px] text-slate-500">Dry Factor: 1.33</span>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60">
+              <span className="text-[10px] text-slate-400 font-bold uppercase block">Plaster Depth</span>
+              <span className="font-bold text-slate-900 dark:text-white mt-1 block">0.5" In / 0.75" Out</span>
+              <span className="text-[10px] text-slate-500">Ratio 1:4 Cement:Sand</span>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60">
+              <span className="text-[10px] text-slate-400 font-bold uppercase block">Wastage Rules</span>
+              <span className="font-bold text-slate-900 dark:text-white mt-1 block">Cement 3% • Sand 5%</span>
+              <span className="text-[10px] text-slate-500">Crush 5% • Steel 4%</span>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60">
+              <span className="text-[10px] text-slate-400 font-bold uppercase block">Labour Output</span>
+              <span className="font-bold text-slate-900 dark:text-white mt-1 block">100 sqft/day</span>
+              <span className="text-[10px] text-slate-500">Mason + 2 Helpers</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 6 PRIMARY ESTIMATION MODES (Sections 1, 34, 68) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">

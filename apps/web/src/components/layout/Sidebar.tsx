@@ -23,7 +23,12 @@ import {
   Boxes,
   BookOpen,
   CalendarClock,
-  CreditCard
+  CreditCard,
+  Wallet,
+  TrendingUp,
+  User,
+  Hammer,
+  Activity
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -39,43 +44,44 @@ interface NavGroup {
 
 const navGroups: NavGroup[] = [
   {
-    title: "Estimation & Design",
+    title: "Planning & Design",
     items: [
-      { label: "Overview", href: "/dashboard", icon: LayoutGrid },
-      { label: "Cost Calculator", href: "/calculator", icon: Calculator },
+      { label: "Dashboard", href: "/dashboard", icon: LayoutGrid },
+      { label: "Projects", href: "/projects", icon: FolderArchive },
+      { label: "Calculator", href: "/calculator", icon: Calculator },
+      { label: "Materials", href: "/materials", icon: Boxes, badge: "Catalog" },
+      { label: "Labour", href: "/labour", icon: Hammer },
       { label: "House Layouts", href: "/layouts", icon: Compass, badge: "2D CAD" }
     ]
   },
   {
-    title: "Site Operations",
+    title: "Site & Financials",
     items: [
-      { label: "Purchases & Orders", href: "/purchases", icon: ShoppingCart },
-      { label: "Stock Inventory", href: "/inventory", icon: Boxes },
+      { label: "Budget", href: "/budget", icon: Wallet, badge: "Variance" },
+      { label: "Progress", href: "/progress", icon: Activity },
       { label: "Vendors & Khata", href: "/vendors", icon: Building2 },
-      { label: "Daily Site Diary", href: "/diary", icon: BookOpen },
-      { label: "Reminders & Tasks", href: "/reminders", icon: CalendarClock }
+      { label: "Purchases & Orders", href: "/purchases", icon: ShoppingCart },
+      { label: "Reminders", href: "/reminders", icon: CalendarClock }
     ]
   },
   {
-    title: "Tools & Quantity",
+    title: "Intelligence & Rates",
     items: [
-      { label: "Room Estimator", href: "/rooms", icon: Grid },
+      { label: "Rates & Trends", href: "/rates/materials", icon: TrendingUp },
+      { label: "Reports & PDF", href: "/reports", icon: BarChart3 },
       { label: "BOQ & Quotes", href: "/boq", icon: FileSpreadsheet },
-      { label: "Unit Converter", href: "/tools/converter", icon: ArrowRightLeft },
-      { label: "Price Watchlist", href: "/watchlist", icon: Bell },
+      { label: "Daily Site Diary", href: "/diary", icon: BookOpen },
+      { label: "Stock Inventory", href: "/inventory", icon: Boxes },
       { label: "AI Advisor", href: "/advisor", icon: Bot, badge: "AI" }
     ]
   },
   {
-    title: "Records & Settings",
+    title: "Account & Administration",
     items: [
-      { label: "My History", href: "/history", icon: History },
-      { label: "Site Checklist", href: "/checklist", icon: CheckSquare },
-      { label: "Documents", href: "/documents", icon: FolderArchive },
-      { label: "Reports & PDF", href: "/reports", icon: BarChart3 },
+      { label: "Profile", href: "/profile", icon: User },
       { label: "Plans & Pricing", href: "/pricing", icon: CreditCard, badge: "PRO" },
       { label: "Settings", href: "/settings", icon: Settings },
-      { label: "Admin Panel", href: "/admin", icon: ShieldAlert }
+      { label: "Admin Panel", href: "/admin", icon: ShieldAlert, badge: "ADMIN" }
     ]
   }
 ];

@@ -43,9 +43,11 @@ export function Topbar() {
     { label: "Dashboard", href: "/dashboard" },
     { label: "Projects", href: "/projects" },
     { label: "Calculator", href: "/calculator" },
-    { label: "Pricing", href: "/pricing" },
+    { label: "Materials", href: "/materials" },
+    { label: "Budget", href: "/budget" },
+    { label: "Progress", href: "/progress" },
     { label: "Rates", href: "/rates/materials" },
-    { label: "Profile", href: "/profile" }
+    { label: "Pricing", href: "/pricing" }
   ];
 
   return (

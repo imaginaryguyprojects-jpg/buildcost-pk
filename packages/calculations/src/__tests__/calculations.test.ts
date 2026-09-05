@@ -20,7 +20,9 @@ import {
   calculateCompleteFinishing,
   estimateConstructionDuration,
   compareWorkforceScenarios,
-  calculateFullHouseEstimate
+  calculateFullHouseEstimate,
+  calculateProjectHealthScore,
+  calculateWhatIfScenario
 } from "../index.ts";
 
 describe("BuildCost Connect Calculation Engine Test Suite", () => {
@@ -329,6 +331,47 @@ describe("BuildCost Connect Calculation Engine Test Suite", () => {
       expect(full.percentages.greyStructurePercent + full.percentages.finishingPercent + full.percentages.labourPercent).toBeLessThanOrEqual(100);
       expect(full.progressiveLifecycle.length).toBe(6);
     });
+
+    it("evaluates Project Health Score with realistic parameters", () => {
+      const healthy = calculateProjectHealthScore({
+        totalBudget: 10000000,
+        actualCost: 3500000,
+        estimatedCost: 10000000,
+        physicalProgressPercent: 38,
+        procurementProgressPercent: 40
+      });
+      expect(healthy.score).toBeGreaterThanOrEqual(80);
+      expect(healthy.status).toBe("ON TRACK");
+
+      const atRisk = calculateProjectHealthScore({
+        totalBudget: 5000000,
+        actualCost: 6200000, // Over budget
+        estimatedCost: 5000000,
+        physicalProgressPercent: 45,
+        daysDelayed: 45,
+        vendorOverdueAmount: 800000
+      });
+      expect(atRisk.score).toBeLessThan(60);
+      expect(atRisk.status).toBe("AT RISK");
+      expect(atRisk.recommendations.length).toBeGreaterThan(0);
+    });
+
+    it("simulates What-If price swings accurately", () => {
+      const result = calculateWhatIfScenario({
+        baseTotalCost: 10000000,
+        components: [
+          { name: "Steel", originalCost: 2500000, percentageChange: 10 },
+          { name: "Cement", originalCost: 1500000, percentageChange: 5 }
+        ]
+      });
+
+      // Steel +10% = +250k, Cement +5% = +75k, total delta = +325k
+      expect(result.totalCostDifference).toBe(325000);
+      expect(result.newTotalCost).toBe(10325000);
+      expect(result.percentageDifference).toBe(3.25);
+      expect(result.components[0].newCost).toBe(2750000);
+    });
   });
 });
+
 

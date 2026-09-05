@@ -12,3 +12,5 @@ export * from "./grey_structure";
 export * from "./finishing_estimator";
 export * from "./labour_engine";
 export * from "./full_estimate";
+export * from "./project_health";
+export * from "./what_if_simulator";

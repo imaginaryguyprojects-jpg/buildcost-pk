@@ -118,3 +118,28 @@ export function isWithinPlanLimit(
   const limits = PLAN_LIMITS[normalizedTier] || PLAN_LIMITS.free;
   return currentCount < limits[limitKey];
 }
+
+/**
+ * System Feature Flags (Section 78)
+ * Configurable toggles for platform feature rollout across Web, Android, and Extension.
+ */
+export type SystemFeatureFlag =
+  | "grey_structure_v2"
+  | "advanced_labour"
+  | "vendor_management"
+  | "house_layouts"
+  | "ai_advisor"
+  | "pro_reports"
+  | "whatsapp_sharing"
+  | "price_simulator";
+
+export const DEFAULT_FEATURE_FLAGS: Record<SystemFeatureFlag, boolean> = {
+  grey_structure_v2: true,
+  advanced_labour: true,
+  vendor_management: true,
+  house_layouts: true,
+  ai_advisor: true,
+  pro_reports: true,
+  whatsapp_sharing: true,
+  price_simulator: true
+};
