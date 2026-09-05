@@ -43,6 +43,7 @@ export function Topbar() {
     { label: "Dashboard", href: "/dashboard" },
     { label: "Projects", href: "/projects" },
     { label: "Calculator", href: "/calculator" },
+    { label: "Pricing", href: "/pricing" },
     { label: "Rates", href: "/rates/materials" },
     { label: "Profile", href: "/profile" }
   ];
@@ -152,6 +153,14 @@ export function Topbar() {
           className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold shadow-xs transition-all"
         >
           <span>New Project</span>
+        </Link>
+
+        {/* Upgrade to Pro Link */}
+        <Link
+          href="/pricing"
+          className="hidden md:flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 rounded-lg text-xs font-bold hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-all"
+        >
+          <span>Upgrade to Pro</span>
         </Link>
 
         {/* Light / Dark Mode Toggle Button */}

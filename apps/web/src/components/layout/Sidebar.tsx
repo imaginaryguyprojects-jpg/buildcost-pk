@@ -22,7 +22,8 @@ import {
   ShoppingCart,
   Boxes,
   BookOpen,
-  CalendarClock
+  CalendarClock,
+  CreditCard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -72,6 +73,7 @@ const navGroups: NavGroup[] = [
       { label: "Site Checklist", href: "/checklist", icon: CheckSquare },
       { label: "Documents", href: "/documents", icon: FolderArchive },
       { label: "Reports & PDF", href: "/reports", icon: BarChart3 },
+      { label: "Plans & Pricing", href: "/pricing", icon: CreditCard, badge: "PRO" },
       { label: "Settings", href: "/settings", icon: Settings },
       { label: "Admin Panel", href: "/admin", icon: ShieldAlert }
     ]

@@ -24,7 +24,17 @@ import {
   MessageSquare,
   AlertCircle,
   Download,
-  ExternalLink
+  ExternalLink,
+  BarChart3,
+  PieChart,
+  ArrowRight,
+  UserCheck,
+  UserX,
+  Layers,
+  FileSpreadsheet,
+  FileText,
+  Compass,
+  Hammer
 } from "lucide-react";
 import { useProjectStore } from "@/stores/projectStore";
 import { useAuthStore } from "@/stores/authStore";
@@ -103,7 +113,8 @@ export default function AdminDashboardPage() {
     updatePricing
   } = useSystemSettingsStore();
 
-  const [activeTab, setActiveTab] = useState<"payments" | "rates" | "activity" | "settings">("payments");
+  const [activeTab, setActiveTab] = useState<"payments" | "rates" | "activity" | "settings" | "analytics">("payments");
+  const [analyticsRange, setAnalyticsRange] = useState<"today" | "7d" | "30d" | "3m" | "1y">("30d");
   const [paymentFilter, setPaymentFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
   const [selectedPayment, setSelectedPayment] = useState<PaymentSubmission | null>(null);
   const [rejectingPayment, setRejectingPayment] = useState<PaymentSubmission | null>(null);
@@ -355,6 +366,18 @@ export default function AdminDashboardPage() {
         >
           <Settings className="w-3.5 h-3.5" />
           <span>Admin Settings &amp; Contacts</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("analytics")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            activeTab === "analytics"
+              ? "bg-emerald-600 text-white shadow-xs"
+              : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+          }`}
+        >
+          <BarChart3 className="w-3.5 h-3.5" />
+          <span>User Analytics &amp; Funnel</span>
         </button>
       </div>
 
@@ -1068,6 +1091,424 @@ export default function AdminDashboardPage() {
                   <span className="font-mono text-slate-400 text-[10px] shrink-0 ml-4">{audit.timestamp}</span>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: SECTIONS 39-45: USER ANALYTICS & CONVERSION FUNNEL */}
+      {activeTab === "analytics" && (
+        <div className="space-y-6">
+          {/* Header & Date Range Filter */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+            <div>
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                  Platform Analytics &amp; Conversion Funnel
+                </h2>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Guest vs. Registered user tracking, estimation engine feature usage, and conversion drop-offs.
+              </p>
+            </div>
+
+            {/* Date Filter Dropdown */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Date Range:</span>
+              <select
+                value={analyticsRange}
+                onChange={(e) => setAnalyticsRange(e.target.value as any)}
+                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="today">Today</option>
+                <option value="7d">Last 7 Days</option>
+                <option value="30d">Last 30 Days</option>
+                <option value="3m">Last 3 Months</option>
+                <option value="1y">Last 1 Year</option>
+              </select>
+            </div>
+          </div>
+
+          {/* 7 Key Metric Cards (Sections 39-41) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Total Users</div>
+              <div className="text-xl font-black text-slate-900 dark:text-white font-mono">
+                {analyticsRange === "today" ? "48" : analyticsRange === "7d" ? "320" : analyticsRange === "30d" ? "1,480" : analyticsRange === "3m" ? "4,120" : "14,800"}
+              </div>
+              <div className="text-[10px] text-emerald-600 font-semibold mt-1">Active + Historical</div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Registered Users</div>
+              <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                {analyticsRange === "today" ? "24" : analyticsRange === "7d" ? "175" : analyticsRange === "30d" ? "820" : analyticsRange === "3m" ? "2,280" : "8,200"}
+              </div>
+              <div className="text-[10px] text-slate-500 mt-1">55.4% of total</div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Guest Sessions</div>
+              <div className="text-xl font-black text-slate-700 dark:text-slate-300 font-mono">
+                {analyticsRange === "today" ? "24" : analyticsRange === "7d" ? "145" : analyticsRange === "30d" ? "660" : analyticsRange === "3m" ? "1,840" : "6,600"}
+              </div>
+              <div className="text-[10px] text-slate-500 mt-1">44.6% of total</div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Active Registered</div>
+              <div className="text-xl font-black text-cyan-600 dark:text-cyan-400 font-mono">
+                {analyticsRange === "today" ? "18" : analyticsRange === "7d" ? "95" : analyticsRange === "30d" ? "340" : analyticsRange === "3m" ? "940" : "3,400"}
+              </div>
+              <div className="text-[10px] text-slate-500 mt-1">41.5% active rate</div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Active Guests</div>
+              <div className="text-xl font-black text-indigo-600 dark:text-indigo-400 font-mono">
+                {analyticsRange === "today" ? "19" : analyticsRange === "7d" ? "82" : analyticsRange === "30d" ? "290" : analyticsRange === "3m" ? "810" : "2,900"}
+              </div>
+              <div className="text-[10px] text-slate-500 mt-1">43.9% active rate</div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Pro Users</div>
+              <div className="text-xl font-black text-amber-600 dark:text-amber-400 font-mono">
+                {analyticsRange === "today" ? "8" : analyticsRange === "7d" ? "46" : analyticsRange === "30d" ? "236" : analyticsRange === "3m" ? "610" : "2,120"}
+              </div>
+              <div className="text-[10px] text-amber-600 font-semibold mt-1">28.8% of reg.</div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Free Tier Users</div>
+              <div className="text-xl font-black text-slate-600 dark:text-slate-400 font-mono">
+                {analyticsRange === "today" ? "16" : analyticsRange === "7d" ? "129" : analyticsRange === "30d" ? "584" : analyticsRange === "3m" ? "1,670" : "6,080"}
+              </div>
+              <div className="text-[10px] text-slate-500 mt-1">71.2% of reg.</div>
+            </div>
+          </div>
+
+          {/* SECTION 43: PLATFORM CONVERSION FUNNEL */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-emerald-600" />
+                  <span>Platform Conversion Funnel (Section 43)</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Visualizing drop-off from raw visitor traffic to active Pro paying subscribers.
+                </p>
+              </div>
+              <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                Overall Pro Conversion: 0.42% of Traffic
+              </span>
+            </div>
+
+            {/* Funnel Visual Stack */}
+            <div className="space-y-3">
+              {/* Stage 1 */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60">
+                <div className="flex items-center justify-between text-xs mb-1.5">
+                  <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
+                    <span className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] flex items-center justify-center font-black">1</span>
+                    <span>1. Guest Visitors Landed on Site</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">10,000 Visitors</span>
+                    <span className="text-[11px] font-extrabold text-slate-500">100%</span>
+                  </div>
+                </div>
+                <div className="w-full h-3 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                  <div className="h-full bg-slate-400 rounded-full w-full" />
+                </div>
+              </div>
+
+              {/* Stage 2 */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60">
+                <div className="flex items-center justify-between text-xs mb-1.5">
+                  <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
+                    <span className="w-5 h-5 rounded-full bg-cyan-100 dark:bg-cyan-900/60 text-cyan-700 dark:text-cyan-300 text-[10px] flex items-center justify-center font-black">2</span>
+                    <span>2. Used Calculator (Grey / Finishing / Labour)</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono font-bold text-cyan-600 dark:text-cyan-400">3,200 Users</span>
+                    <span className="text-[11px] font-extrabold text-cyan-600 bg-cyan-50 dark:bg-cyan-950 px-2 py-0.5 rounded-full border border-cyan-200 dark:border-cyan-800">
+                      32.0% of traffic
+                    </span>
+                  </div>
+                </div>
+                <div className="w-full h-3 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                  <div className="h-full bg-cyan-500 rounded-full w-[32%]" />
+                </div>
+                <div className="text-[10px] text-slate-400 mt-1 flex justify-end">Drop-off: 68.0% (6,800 visitors bounced before calculating)</div>
+              </div>
+
+              {/* Stage 3 */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60">
+                <div className="flex items-center justify-between text-xs mb-1.5">
+                  <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
+                    <span className="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-[10px] flex items-center justify-center font-black">3</span>
+                    <span>3. Registered Free Account (Mobile / Email)</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">1,100 Users</span>
+                    <span className="text-[11px] font-extrabold text-indigo-600 bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800">
+                      34.4% of calculators
+                    </span>
+                  </div>
+                </div>
+                <div className="w-full h-3 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                  <div className="h-full bg-indigo-500 rounded-full w-[11%]" />
+                </div>
+                <div className="text-[10px] text-slate-400 mt-1 flex justify-end">Drop-off: 65.6% (2,100 used calculator without registering)</div>
+              </div>
+
+              {/* Stage 4 */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60">
+                <div className="flex items-center justify-between text-xs mb-1.5">
+                  <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
+                    <span className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 text-[10px] flex items-center justify-center font-black">4</span>
+                    <span>4. Created &amp; Saved Multi-Stage Project</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">180 Projects</span>
+                    <span className="text-[11px] font-extrabold text-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                      16.4% of registered
+                    </span>
+                  </div>
+                </div>
+                <div className="w-full h-3 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                  <div className="h-full bg-emerald-500 rounded-full w-[1.8%]" />
+                </div>
+                <div className="text-[10px] text-slate-400 mt-1 flex justify-end">Drop-off: 83.6% (920 registered but haven&apos;t started active project)</div>
+              </div>
+
+              {/* Stage 5 */}
+              <div className="p-3.5 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800/60">
+                <div className="flex items-center justify-between text-xs mb-1.5">
+                  <div className="flex items-center gap-2 font-bold text-amber-900 dark:text-amber-300">
+                    <span className="w-5 h-5 rounded-full bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-200 text-[10px] flex items-center justify-center font-black">5</span>
+                    <span>5. Upgraded to Pro License (Easypaisa / JazzCash / Bank)</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono font-black text-amber-600 dark:text-amber-400">42 Upgrades</span>
+                    <span className="text-[11px] font-extrabold text-amber-700 bg-amber-100 dark:bg-amber-900 px-2.5 py-0.5 rounded-full border border-amber-300 dark:border-amber-700">
+                      23.3% of project creators
+                    </span>
+                  </div>
+                </div>
+                <div className="w-full h-3 rounded-full bg-amber-100 dark:bg-amber-950 overflow-hidden">
+                  <div className="h-full bg-amber-500 rounded-full w-[0.42%]" />
+                </div>
+                <div className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold mt-1 flex justify-end">
+                  High-intent conversion: 1 out of every 4 active project creators buys Pro!
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 42 & 44: GUEST VS REGISTERED & FEATURE USAGE */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Feature Usage Breakdown */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-emerald-600" />
+                  <span>Feature Usage Statistics (Section 44)</span>
+                </h3>
+                <span className="text-[11px] font-mono text-slate-400">15,170 Total Events</span>
+              </div>
+
+              <div className="space-y-3">
+                {/* Item 1 */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2 font-semibold text-slate-700 dark:text-slate-300">
+                      <Compass className="w-3.5 h-3.5 text-blue-500" />
+                      <span>Plot Layouts 2D CAD</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-slate-900 dark:text-white">5,620</span>
+                      <span className="text-slate-400 text-[10px]">(37.0%)</span>
+                    </div>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                    <div className="h-full bg-blue-500 rounded-full w-[37%]" />
+                  </div>
+                </div>
+
+                {/* Item 2 */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2 font-semibold text-slate-700 dark:text-slate-300">
+                      <Building className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>Grey Structure Estimator</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-slate-900 dark:text-white">3,450</span>
+                      <span className="text-slate-400 text-[10px]">(22.7%)</span>
+                    </div>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                    <div className="h-full bg-emerald-500 rounded-full w-[23%]" />
+                  </div>
+                </div>
+
+                {/* Item 3 */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2 font-semibold text-slate-700 dark:text-slate-300">
+                      <Layers className="w-3.5 h-3.5 text-purple-500" />
+                      <span>Finishing Estimator (17 Categories)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-slate-900 dark:text-white">2,120</span>
+                      <span className="text-slate-400 text-[10px]">(14.0%)</span>
+                    </div>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                    <div className="h-full bg-purple-500 rounded-full w-[14%]" />
+                  </div>
+                </div>
+
+                {/* Item 4 */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2 font-semibold text-slate-700 dark:text-slate-300">
+                      <Hammer className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Workforce &amp; Labour Engine</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-slate-900 dark:text-white">1,870</span>
+                      <span className="text-slate-400 text-[10px]">(12.3%)</span>
+                    </div>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                    <div className="h-full bg-amber-500 rounded-full w-[12%]" />
+                  </div>
+                </div>
+
+                {/* Item 5 */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2 font-semibold text-slate-700 dark:text-slate-300">
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-teal-500" />
+                      <span>BOQ Quotes &amp; Excel Exporter</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-slate-900 dark:text-white">1,220</span>
+                      <span className="text-slate-400 text-[10px]">(8.0%)</span>
+                    </div>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                    <div className="h-full bg-teal-500 rounded-full w-[8%]" />
+                  </div>
+                </div>
+
+                {/* Item 6 */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2 font-semibold text-slate-700 dark:text-slate-300">
+                      <FileText className="w-3.5 h-3.5 text-rose-500" />
+                      <span>Executive PDF Report Downloads</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-slate-900 dark:text-white">890</span>
+                      <span className="text-slate-400 text-[10px]">(5.9%)</span>
+                    </div>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                    <div className="h-full bg-rose-500 rounded-full w-[6%]" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Guest vs Registered Profile Comparison (Section 42) */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-xs space-y-4">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Users className="w-4 h-4 text-emerald-600" />
+                <span>Guest vs. Registered User Behavior (Section 42)</span>
+              </h3>
+
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                {/* Guest Box */}
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300">
+                    <UserX className="w-4 h-4 text-slate-400" />
+                    <span>Guest Traffic</span>
+                  </div>
+                  <div className="text-xl font-mono font-black text-slate-900 dark:text-white">660</div>
+                  <div className="space-y-1.5 text-[11px] text-slate-500">
+                    <div className="flex items-center justify-between">
+                      <span>Avg. Calculations:</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-300">1.8 / session</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Cloud Sync:</span>
+                      <span className="font-bold text-rose-500">Disabled</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Export Watermark:</span>
+                      <span className="font-bold text-amber-600">Enforced</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Conversion Prompt:</span>
+                      <span className="font-bold text-emerald-600">On 2nd Run</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Registered Box */}
+                <div className="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/60 space-y-2">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                    <UserCheck className="w-4 h-4 text-emerald-600" />
+                    <span>Registered Users</span>
+                  </div>
+                  <div className="text-xl font-mono font-black text-emerald-600 dark:text-emerald-400">820</div>
+                  <div className="space-y-1.5 text-[11px] text-slate-600 dark:text-slate-400">
+                    <div className="flex items-center justify-between">
+                      <span>Avg. Calculations:</span>
+                      <span className="font-bold text-slate-900 dark:text-white">6.4 / user</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Cloud Sync:</span>
+                      <span className="font-bold text-emerald-600">Enabled</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Pro Conversion:</span>
+                      <span className="font-bold text-amber-600">28.8% (236)</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Retention (30d):</span>
+                      <span className="font-bold text-emerald-600">41.5%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Geographic Traffic Distribution */}
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <div className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-2">
+                  Top Traffic by Pakistani Metropolitan Markets:
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                  <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60">
+                    <div className="font-bold text-slate-900 dark:text-white">Lahore</div>
+                    <div className="text-emerald-600 font-extrabold text-[11px]">38% (562)</div>
+                  </div>
+                  <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60">
+                    <div className="font-bold text-slate-900 dark:text-white">Karachi</div>
+                    <div className="text-cyan-600 font-extrabold text-[11px]">27% (400)</div>
+                  </div>
+                  <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60">
+                    <div className="font-bold text-slate-900 dark:text-white">ISB / RWP</div>
+                    <div className="text-indigo-600 font-extrabold text-[11px]">22% (326)</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

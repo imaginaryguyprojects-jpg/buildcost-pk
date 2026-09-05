@@ -11,7 +11,16 @@ import {
   calculateFlooring,
   calculatePaint,
   calculateCompleteHouseEstimate,
-  simulatePriceScenario
+  simulatePriceScenario,
+  calculateColumns,
+  calculateRoofSlab,
+  calculateBrickMasonry,
+  calculateFoundation,
+  calculateGreyStructureEstimate,
+  calculateCompleteFinishing,
+  estimateConstructionDuration,
+  compareWorkforceScenarios,
+  calculateFullHouseEstimate
 } from "../index.ts";
 
 describe("BuildCost Connect Calculation Engine Test Suite", () => {
@@ -226,4 +235,100 @@ describe("BuildCost Connect Calculation Engine Test Suite", () => {
       expect(groundAssumption?.value).toContain("11 ft");
     });
   });
+
+  describe("Phase 1.1: Advanced Construction Estimation Suite", () => {
+    it("calculates batch columns with multiple column types (Type A & Type B)", () => {
+      const res = calculateColumns([
+        { name: "Type A (12x12)", lengthInches: 12, widthInches: 12, heightFt: 10, quantity: 12 },
+        { name: "Type B (9x12)", lengthInches: 9, widthInches: 12, heightFt: 10, quantity: 8 }
+      ]);
+      expect(res.totalVolumeCft).toBeGreaterThan(0);
+      expect(res.totalCementBags).toBeGreaterThan(0);
+      expect(res.totalSteelKg).toBeGreaterThan(0);
+      expect(res.disclaimer).toContain("Construction Estimation");
+    });
+
+    it("calculates roof slab concrete and rebar correctly", () => {
+      const res = calculateRoofSlab([
+        { lengthFt: 50, widthFt: 30, thicknessInches: 5.5 }
+      ]);
+      expect(res.totalAreaSqft).toBe(1500);
+      expect(res.breakdown.cementBags).toBeGreaterThan(50);
+      expect(res.breakdown.steelKg).toBeGreaterThan(1000);
+    });
+
+    it("calculates brick masonry with door and window opening deductions", () => {
+      const withOpenings = calculateBrickMasonry({
+        wallLengthFt: 60,
+        wallHeightFt: 10,
+        wallThicknessInches: 9,
+        openings: [
+          { name: "Main Door", widthFt: 4, heightFt: 7, quantity: 1 },
+          { name: "Window", widthFt: 5, heightFt: 4, quantity: 2 }
+        ]
+      });
+
+      const withoutOpenings = calculateBrickMasonry({
+        wallLengthFt: 60,
+        wallHeightFt: 10,
+        wallThicknessInches: 9
+      });
+
+      expect(withOpenings.netMasonryVolumeCft).toBeLessThan(withoutOpenings.netMasonryVolumeCft);
+      expect(withOpenings.finalBricks).toBeLessThan(withoutOpenings.finalBricks);
+      expect(withOpenings.openingDeductionAreaSqft).toBe(68); // 28 + 40
+    });
+
+    it("calculates complete Grey Structure with itemized quantities and wastage", () => {
+      const grey = calculateGreyStructureEstimate({
+        coveredAreaSqft: 2000,
+        numberOfFloors: 2
+      });
+
+      expect(grey.materials.cement.finalQuantity).toBeGreaterThan(grey.materials.cement.requiredQuantity);
+      expect(grey.materials.cement.wastagePercent).toBe(3);
+      expect(grey.materials.steel.wastagePercent).toBe(4);
+      expect(grey.costs.grandTotal).toBeGreaterThan(2000000);
+      expect(grey.costs.costPerSqft).toBeGreaterThan(1200);
+    });
+
+    it("calculates 17-category Finishing Estimator", () => {
+      const fin = calculateCompleteFinishing({
+        coveredAreaSqft: 2000,
+        numberOfFloors: 2,
+        quality: "standard"
+      });
+
+      expect(fin.categories.plaster.totalCost).toBeGreaterThan(0);
+      expect(fin.categories.tiles.totalCost).toBeGreaterThan(0);
+      expect(fin.categories.electrical.totalCost).toBeGreaterThan(0);
+      expect(fin.grandTotal).toBeGreaterThan(1500000);
+    });
+
+    it("estimates construction duration and compares workforce scenarios", () => {
+      const dur = estimateConstructionDuration(2000, { mistriCount: 2, labourCount: 3 });
+      expect(dur.estimatedWorkingDays).toBeGreaterThan(30);
+      expect(dur.disclaimer).toContain("Estimated duration only");
+
+      const scenarios = compareWorkforceScenarios(2000);
+      expect(scenarios.scenarios.length).toBe(3);
+      // Accelerated team should finish faster than Economy team
+      expect(scenarios.scenarios[2].estimatedDays).toBeLessThan(scenarios.scenarios[0].estimatedDays);
+    });
+
+    it("calculates Full Project Estimate combining Grey, Finishing, and Contingency", () => {
+      const full = calculateFullHouseEstimate({
+        plotAreaMarla: 5,
+        coveredAreaSqft: 2000,
+        numberOfFloors: 2,
+        quality: "standard"
+      });
+
+      expect(full.summary.totalProjectEstimate).toBeGreaterThan(full.summary.greyStructureCost);
+      expect(full.floorBreakdown.length).toBe(2);
+      expect(full.percentages.greyStructurePercent + full.percentages.finishingPercent + full.percentages.labourPercent).toBeLessThanOrEqual(100);
+      expect(full.progressiveLifecycle.length).toBe(6);
+    });
+  });
 });
+
