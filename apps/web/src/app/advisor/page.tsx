@@ -6,6 +6,7 @@ import { formatPKR, formatLakhCrore, formatNumber } from "@/lib/formatters";
 import { calculateCompleteHouseEstimate, calculateConcrete, calculateBrickwork, simulatePriceScenario } from "@buildcost/calculations";
 import { canUseFeature } from "@buildcost/config";
 import { useAuthStore } from "@/stores/authStore";
+import { ProBadge } from "@/components/pro/ProBadge";
 import { Sliders, TrendingUp, RefreshCw, Crown } from "lucide-react";
 
 interface Message {
@@ -68,6 +69,12 @@ export default function AIAdvisorPage() {
   const handleSend = (textToSend?: string) => {
     const query = textToSend || inputQuery;
     if (!query.trim()) return;
+
+    const userQueryCount = messages.filter((m) => m.sender === "user").length;
+    if (!isPro && userQueryCount >= 3) {
+      openUpgradeModal("AI Construction Advisor (Trial Limit Reached)");
+      return;
+    }
 
     const userMsg: Message = {
       id: `user_${Date.now()}`,
@@ -176,11 +183,9 @@ export default function AIAdvisorPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              AI Construction Cost Advisor & Inflation Simulator
+              AI Construction Cost Advisor
             </h1>
-            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">
-              GPT Civil Intelligence
-            </span>
+            <ProBadge size="sm" variant="amber" showIcon />
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Civil engineering heuristics, material sensitivity modeling, and cost estimation across Pakistani housing authorities
@@ -188,7 +193,13 @@ export default function AIAdvisorPage() {
         </div>
 
         <button
-          onClick={() => setShowSimulator(!showSimulator)}
+          onClick={() => {
+            if (!isPro) {
+              openUpgradeModal("What-If Price Simulator");
+              return;
+            }
+            setShowSimulator(!showSimulator);
+          }}
           className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border ${
             showSimulator
               ? "bg-emerald-600 text-white border-emerald-600"
@@ -197,6 +208,7 @@ export default function AIAdvisorPage() {
         >
           <Sliders className="w-4 h-4 text-emerald-500" />
           <span>{showSimulator ? "Hide Price Simulator" : "Open Price Simulator"}</span>
+          {!isPro && <ProBadge size="xs" variant="amber" />}
         </button>
       </div>
 

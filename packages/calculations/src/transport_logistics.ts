@@ -292,3 +292,6 @@ export function calculateTransportLogistics(input: MaterialTransportInput): Tran
     summaryUrdu,
   };
 }
+
+export const calculateTransportCost = calculateTransportLogistics;
+

@@ -47,32 +47,33 @@ const navGroups: NavGroup[] = [
     title: "Planning & Design",
     items: [
       { label: "Dashboard", href: "/dashboard", icon: LayoutGrid },
-      { label: "Projects", href: "/projects", icon: FolderArchive },
+      { label: "Projects", href: "/projects", icon: FolderArchive, badge: "PRO" },
       { label: "Calculator", href: "/calculator", icon: Calculator },
-      { label: "Materials", href: "/materials", icon: Boxes, badge: "Catalog" },
+      { label: "Materials", href: "/materials", icon: Boxes },
       { label: "Labour", href: "/labour", icon: Hammer },
-      { label: "House Layouts", href: "/layouts", icon: Compass, badge: "2D CAD" }
+      { label: "Floor Plan Analysis", href: "/layouts", icon: Compass, badge: "PRO" }
     ]
   },
   {
     title: "Site & Financials",
     items: [
-      { label: "Budget", href: "/budget", icon: Wallet, badge: "Variance" },
+      { label: "Cash Flow & Budget", href: "/budget", icon: Wallet, badge: "PRO" },
       { label: "Progress", href: "/progress", icon: Activity },
-      { label: "Vendors & Khata", href: "/vendors", icon: Building2 },
-      { label: "Purchases & Orders", href: "/purchases", icon: ShoppingCart },
+      { label: "Vendors & Khata", href: "/vendors", icon: Building2, badge: "PRO" },
+      { label: "Purchases & Orders", href: "/purchases", icon: ShoppingCart, badge: "PRO" },
+      { label: "Transport & Logistics", href: "/transport", icon: ShoppingCart, badge: "PRO" },
       { label: "Reminders", href: "/reminders", icon: CalendarClock }
     ]
   },
   {
     title: "Intelligence & Rates",
     items: [
-      { label: "Rates & Trends", href: "/rates/materials", icon: TrendingUp },
+      { label: "Rates & Price Alerts", href: "/rates/materials", icon: TrendingUp, badge: "PRO" },
       { label: "Reports & PDF", href: "/reports", icon: BarChart3 },
-      { label: "BOQ & Quotes", href: "/boq", icon: FileSpreadsheet },
+      { label: "Advanced BOQ", href: "/boq", icon: FileSpreadsheet, badge: "PRO" },
       { label: "Daily Site Diary", href: "/diary", icon: BookOpen },
       { label: "Stock Inventory", href: "/inventory", icon: Boxes },
-      { label: "AI Advisor", href: "/advisor", icon: Bot, badge: "AI" }
+      { label: "AI Advisor", href: "/advisor", icon: Bot, badge: "PRO" }
     ]
   },
   {
@@ -144,7 +145,13 @@ export function Sidebar() {
                       <span
                         className={cn(
                           "text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider",
-                          isActive
+                          item.badge === "PRO"
+                            ? isActive
+                              ? "bg-white/20 text-white font-black"
+                              : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                            : item.badge === "ADMIN"
+                            ? "bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                            : isActive
                             ? "bg-white/20 text-white"
                             : "bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
                         )}

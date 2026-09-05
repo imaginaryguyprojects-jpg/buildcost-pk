@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useProjectStore } from "@/stores/projectStore";
 import { formatPKR, formatNumber } from "@/lib/formatters";
+import { ProBadge } from "@/components/pro/ProBadge";
 
 interface BudgetCategoryRow {
   id: string;
@@ -101,11 +102,9 @@ export default function BudgetManagementPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-              Project Budget &amp; Variance Management
+              Cash Flow &amp; Budget Variance
             </h1>
-            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-              Section 34 &amp; 35
-            </span>
+            <ProBadge size="sm" variant="amber" showIcon />
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Track total allocated budget vs. progressive estimates and actual material expenditures.

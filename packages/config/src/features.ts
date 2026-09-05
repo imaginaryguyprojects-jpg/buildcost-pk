@@ -13,7 +13,15 @@ export type FeatureKey =
   | "price_scenario_simulator"
   | "unlimited_projects"
   | "professional_pdf"
-  | "priority_support";
+  | "priority_support"
+  | "material_price_alerts"
+  | "transport_calculator"
+  | "cash_flow_planner"
+  | "ai_construction_advisor"
+  | "floor_plan_analysis"
+  | "estimate_vs_actual"
+  | "workforce_simulator"
+  | "society_rules";
 
 export interface PlanLimits {
   maxProjects: number;
@@ -24,7 +32,7 @@ export interface PlanLimits {
 
 export const PLAN_LIMITS: Record<"free" | "pro" | "business", PlanLimits> = {
   free: {
-    maxProjects: 0,
+    maxProjects: 2,
     maxSavedEstimates: 5,
     maxVendors: 5,
     maxStorageMb: 25
@@ -59,7 +67,15 @@ export const PLAN_FEATURE_MATRIX: Record<"free" | "pro" | "business", Record<Fea
     price_scenario_simulator: false,
     unlimited_projects: false,
     professional_pdf: false,
-    priority_support: false
+    priority_support: false,
+    material_price_alerts: false,
+    transport_calculator: false,
+    cash_flow_planner: false,
+    ai_construction_advisor: false,
+    floor_plan_analysis: false,
+    estimate_vs_actual: false,
+    workforce_simulator: false,
+    society_rules: false
   },
   pro: {
     project_management: true,
@@ -76,7 +92,15 @@ export const PLAN_FEATURE_MATRIX: Record<"free" | "pro" | "business", Record<Fea
     price_scenario_simulator: true,
     unlimited_projects: true,
     professional_pdf: true,
-    priority_support: true
+    priority_support: true,
+    material_price_alerts: true,
+    transport_calculator: true,
+    cash_flow_planner: true,
+    ai_construction_advisor: true,
+    floor_plan_analysis: true,
+    estimate_vs_actual: true,
+    workforce_simulator: true,
+    society_rules: true
   },
   business: {
     project_management: true,
@@ -93,7 +117,15 @@ export const PLAN_FEATURE_MATRIX: Record<"free" | "pro" | "business", Record<Fea
     price_scenario_simulator: true,
     unlimited_projects: true,
     professional_pdf: true,
-    priority_support: true
+    priority_support: true,
+    material_price_alerts: true,
+    transport_calculator: true,
+    cash_flow_planner: true,
+    ai_construction_advisor: true,
+    floor_plan_analysis: true,
+    estimate_vs_actual: true,
+    workforce_simulator: true,
+    society_rules: true
   }
 };
 

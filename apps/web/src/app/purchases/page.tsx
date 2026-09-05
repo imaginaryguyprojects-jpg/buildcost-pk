@@ -5,6 +5,8 @@ import { useProjectStore } from "@/stores/projectStore";
 import { useAuthStore } from "@/stores/authStore";
 import { PurchaseOrder, PurchaseStatus, PurchasePaymentStatus } from "@buildcost/types";
 import { AddPurchaseModal } from "@/components/purchases/AddPurchaseModal";
+import { ProFeatureLock } from "@/components/pro/ProFeatureLock";
+import { ProBadge } from "@/components/pro/ProBadge";
 import {
   ShoppingCart,
   Plus,
@@ -24,7 +26,7 @@ import { cn } from "@/lib/utils";
 
 export default function PurchasesPage() {
   const { purchases, projects, vendors, updatePurchaseStatus } = useProjectStore();
-  const { notify } = useAuthStore();
+  const { user, notify, openUpgradeModal } = useAuthStore();
 
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string>("all");
@@ -66,6 +68,11 @@ export default function PurchasesPage() {
     window.open(url, "_blank");
   };
 
+  const isPro =
+    user?.plan === "pro" ||
+    user?.plan === "business" ||
+    user?.subscriptionStatus === "PRO_ACTIVE";
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -75,8 +82,9 @@ export default function PurchasesPage() {
             <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
               <ShoppingCart className="w-4 h-4" />
             </div>
-            <h1 className="text-xl md:text-2xl font-extrabold text-slate-900 dark:text-white">
-              Material Purchases &amp; Orders
+            <h1 className="text-xl md:text-2xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+              <span>Material Purchases &amp; Orders</span>
+              <ProBadge size="sm" variant="amber" showIcon />
             </h1>
           </div>
           <p className="text-xs md:text-sm text-slate-500">
@@ -86,13 +94,39 @@ export default function PurchasesPage() {
 
         <button
           type="button"
-          onClick={() => setAddModalOpen(true)}
+          onClick={() => {
+            if (!isPro) {
+              openUpgradeModal("Material Purchases & Orders");
+              return;
+            }
+            setAddModalOpen(true);
+          }}
           className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-md shadow-emerald-950/20 transition-all flex items-center gap-2 self-start md:self-auto"
         >
           <Plus className="w-4 h-4" />
           <span>Record New Purchase</span>
+          {!isPro && <ProBadge size="xs" variant="amber" />}
         </button>
       </div>
+
+      {!isPro ? (
+        <div className="space-y-6">
+          <ProFeatureLock
+            title="Purchases, Bill Uploads & Weighbridge Slips"
+            subtitle="Available with PRO"
+            capabilities={[
+              "Log daily material purchases directly from site gate (Cement, Saria, Bricks)",
+              "Upload photos of vendor bills, receipts & weighbridge (Kanda) slips",
+              "Auto-reconcile delivered quantities against estimated BOQ limits",
+              "Filter purchases by project, supplier, and payment status",
+              "Track delivery dates, drivers, and truck numbers"
+            ]}
+            backUrl="/calculator"
+            backLabel="Continue with Free Calculators"
+          />
+        </div>
+      ) : (
+        <>
 
       {/* Overview Metric Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
@@ -334,6 +368,8 @@ export default function PurchasesPage() {
         isOpen={addModalOpen}
         onClose={() => setAddModalOpen(false)}
       />
+        </>
+      )}
     </div>
   );
 }

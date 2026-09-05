@@ -106,11 +106,17 @@ export default function AdminDashboardPage() {
     bankTransfer,
     proMonthlyRate,
     proAnnualRate,
+    freeProjectLimit,
+    freePdfLimit,
+    upgradeBannerVisible,
+    promotionalHeadline,
+    promotionalDiscountPct,
     updateBusinessSettings,
     updateEasypaisaSettings,
     updateJazzCashSettings,
     updateBankSettings,
-    updatePricing
+    updatePricing,
+    updateSubscriptionLimits
   } = useSystemSettingsStore();
 
   const [activeTab, setActiveTab] = useState<"payments" | "rates" | "activity" | "settings" | "analytics">("payments");
@@ -138,6 +144,11 @@ export default function AdminDashboardPage() {
   const [formBankIban, setFormBankIban] = useState(bankTransfer.iban || "");
   const [formMonthlyPrice, setFormMonthlyPrice] = useState(proMonthlyRate);
   const [formAnnualPrice, setFormAnnualPrice] = useState(proAnnualRate);
+  const [formFreeProjectLimit, setFormFreeProjectLimit] = useState(freeProjectLimit);
+  const [formFreePdfLimit, setFormFreePdfLimit] = useState(freePdfLimit);
+  const [formUpgradeBannerVisible, setFormUpgradeBannerVisible] = useState(upgradeBannerVisible);
+  const [formPromotionalHeadline, setFormPromotionalHeadline] = useState(promotionalHeadline);
+  const [formPromotionalDiscountPct, setFormPromotionalDiscountPct] = useState(promotionalDiscountPct);
 
   const handleStartEdit = (rateId: string, currentRate: number) => {
     setEditingId(rateId);
@@ -215,8 +226,17 @@ export default function AdminDashboardPage() {
       iban: formBankIban
     });
     updatePricing(formMonthlyPrice, formAnnualPrice);
+    updateSubscriptionLimits({
+      proMonthlyRate: formMonthlyPrice,
+      proAnnualRate: formAnnualPrice,
+      freeProjectLimit: formFreeProjectLimit,
+      freePdfLimit: formFreePdfLimit,
+      upgradeBannerVisible: formUpgradeBannerVisible,
+      promotionalHeadline: formPromotionalHeadline,
+      promotionalDiscountPct: formPromotionalDiscountPct
+    });
 
-    showToast("Admin settings saved successfully. Updated contacts are live across platform.", "success");
+    showToast("Admin settings saved successfully. Updated contacts and subscription limits are live across platform.", "success");
   };
 
   const filteredPayments = payments.filter((p) => {
@@ -1067,6 +1087,85 @@ export default function AdminDashboardPage() {
                     value={formAnnualPrice}
                     onChange={(e) => setFormAnnualPrice(Number(e.target.value))}
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 font-mono text-slate-900 dark:text-white font-bold"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <div>
+                    <label className="text-slate-700 dark:text-slate-300 font-semibold block mb-1">
+                      Free Saved Project Limit
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={10}
+                      value={formFreeProjectLimit}
+                      onChange={(e) => setFormFreeProjectLimit(Math.max(1, Number(e.target.value)))}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 font-mono text-slate-900 dark:text-white font-bold"
+                    />
+                    <span className="text-[10px] text-slate-400 block mt-0.5">Default 2 projects</span>
+                  </div>
+
+                  <div>
+                    <label className="text-slate-700 dark:text-slate-300 font-semibold block mb-1">
+                      Free PDF Limit / Month
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={50}
+                      value={formFreePdfLimit}
+                      onChange={(e) => setFormFreePdfLimit(Math.max(1, Number(e.target.value)))}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 font-mono text-slate-900 dark:text-white font-bold"
+                    />
+                    <span className="text-[10px] text-slate-400 block mt-0.5">Default 3 exports</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-slate-700 dark:text-slate-300 font-semibold block mb-1">
+                      Annual Discount (%)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={70}
+                      value={formPromotionalDiscountPct}
+                      onChange={(e) => setFormPromotionalDiscountPct(Math.max(0, Number(e.target.value)))}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 font-mono text-slate-900 dark:text-white font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-slate-700 dark:text-slate-300 font-semibold block mb-1">
+                      Upgrade Promo Banner
+                    </label>
+                    <div className="flex items-center gap-2 pt-2">
+                      <input
+                        type="checkbox"
+                        id="upgradeBannerToggle"
+                        checked={formUpgradeBannerVisible}
+                        onChange={(e) => setFormUpgradeBannerVisible(e.target.checked)}
+                        className="w-4 h-4 text-emerald-600 rounded"
+                      />
+                      <label htmlFor="upgradeBannerToggle" className="text-xs text-slate-700 dark:text-slate-300 font-bold cursor-pointer">
+                        {formUpgradeBannerVisible ? "Visible on Dashboard" : "Hidden"}
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-slate-700 dark:text-slate-300 font-semibold block mb-1">
+                    Promotional Tagline
+                  </label>
+                  <input
+                    type="text"
+                    value={formPromotionalHeadline}
+                    onChange={(e) => setFormPromotionalHeadline(e.target.value)}
+                    placeholder="e.g. Build smarter. Estimate better."
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-slate-900 dark:text-white font-semibold"
                   />
                 </div>
               </div>

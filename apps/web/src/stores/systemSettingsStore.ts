@@ -37,6 +37,11 @@ interface SystemSettingsState {
   bankTransfer: PaymentMethodConfig;
   proMonthlyRate: number;
   proAnnualRate: number;
+  freeProjectLimit: number;
+  freePdfLimit: number;
+  upgradeBannerVisible: boolean;
+  promotionalHeadline: string;
+  promotionalDiscountPct: number;
 
   // Live Payment Verification Queue
   payments: PaymentSubmission[];
@@ -52,6 +57,15 @@ interface SystemSettingsState {
   updateJazzCashSettings: (settings: Partial<PaymentMethodConfig>) => void;
   updateBankSettings: (settings: Partial<PaymentMethodConfig>) => void;
   updatePricing: (monthly: number, annual: number) => void;
+  updateSubscriptionLimits: (params: {
+    proMonthlyRate?: number;
+    proAnnualRate?: number;
+    freeProjectLimit?: number;
+    freePdfLimit?: number;
+    upgradeBannerVisible?: boolean;
+    promotionalHeadline?: string;
+    promotionalDiscountPct?: number;
+  }) => void;
 
   // Verification operations
   submitPaymentVerification: (submission: Omit<PaymentSubmission, "id" | "submittedAt" | "status">) => PaymentSubmission;
@@ -145,6 +159,11 @@ export const useSystemSettingsStore = create<SystemSettingsState>()(
 
       proMonthlyRate: 1999,
       proAnnualRate: 19990,
+      freeProjectLimit: 2,
+      freePdfLimit: 3,
+      upgradeBannerVisible: true,
+      promotionalHeadline: "Build smarter. Estimate better.",
+      promotionalDiscountPct: 20,
 
       payments: INITIAL_PAYMENTS,
       auditEntries: INITIAL_AUDITS,
@@ -206,6 +225,33 @@ export const useSystemSettingsStore = create<SystemSettingsState>()(
 
       updatePricing: (monthly, annual) => {
         set({ proMonthlyRate: monthly, proAnnualRate: annual });
+      },
+
+      updateSubscriptionLimits: (params) => {
+        set((state) => {
+          const updatedState = {
+            proMonthlyRate: params.proMonthlyRate !== undefined ? params.proMonthlyRate : state.proMonthlyRate,
+            proAnnualRate: params.proAnnualRate !== undefined ? params.proAnnualRate : state.proAnnualRate,
+            freeProjectLimit: params.freeProjectLimit !== undefined ? params.freeProjectLimit : state.freeProjectLimit,
+            freePdfLimit: params.freePdfLimit !== undefined ? params.freePdfLimit : state.freePdfLimit,
+            upgradeBannerVisible: params.upgradeBannerVisible !== undefined ? params.upgradeBannerVisible : state.upgradeBannerVisible,
+            promotionalHeadline: params.promotionalHeadline !== undefined ? params.promotionalHeadline : state.promotionalHeadline,
+            promotionalDiscountPct: params.promotionalDiscountPct !== undefined ? params.promotionalDiscountPct : state.promotionalDiscountPct
+          };
+
+          const newAudit: SystemAuditEntry = {
+            id: `audit_${Date.now()}`,
+            adminName: "Admin User",
+            action: "Updated Subscription Configuration",
+            details: `Monthly: Rs. ${updatedState.proMonthlyRate}, Free Project Limit: ${updatedState.freeProjectLimit}, Free PDF: ${updatedState.freePdfLimit}`,
+            timestamp: new Date().toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" }) + " PKT"
+          };
+
+          return {
+            ...updatedState,
+            auditEntries: [newAudit, ...state.auditEntries]
+          };
+        });
       },
 
       submitPaymentVerification: (submission) => {

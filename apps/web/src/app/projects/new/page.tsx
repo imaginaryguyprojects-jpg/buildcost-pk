@@ -22,13 +22,19 @@ import { Project, ConstructionQuality, ProjectType } from "@buildcost/types";
 import { ProjectCreateSchema } from "@buildcost/validation";
 import { useProjectStore } from "@/stores/projectStore";
 import { useAuthStore } from "@/stores/authStore";
+import { useSystemSettingsStore } from "@/stores/systemSettingsStore";
 
 export default function NewProjectPage() {
   const router = useRouter();
-  const { addProject } = useProjectStore();
+  const { projects, addProject } = useProjectStore();
   const { user, openProjectUpgradeModal, showToast } = useAuthStore();
+  const { freeProjectLimit } = useSystemSettingsStore();
 
-  const isPro = user?.plan === "pro" || user?.plan === "business";
+  const isPro =
+    user?.plan === "pro" ||
+    user?.plan === "business" ||
+    user?.subscriptionStatus === "PRO_ACTIVE";
+  const activeProjectsCount = projects.filter((p) => !p.archivedAt).length;
 
   // Form State
   const [projectName, setProjectName] = useState("");
@@ -68,7 +74,7 @@ export default function NewProjectPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!isPro) {
+    if (!isPro && activeProjectsCount >= freeProjectLimit) {
       openProjectUpgradeModal();
       return;
     }

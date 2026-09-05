@@ -5,6 +5,8 @@ import { useProjectStore } from "@/stores/projectStore";
 import { useAuthStore } from "@/stores/authStore";
 import { Vendor, VendorCategory } from "@buildcost/types";
 import { AddVendorModal } from "@/components/vendors/AddVendorModal";
+import { ProFeatureLock } from "@/components/pro/ProFeatureLock";
+import { ProBadge } from "@/components/pro/ProBadge";
 import {
   Building2,
   Plus,
@@ -25,7 +27,7 @@ import { cn } from "@/lib/utils";
 
 export default function VendorsPage() {
   const { vendors, purchases, recordVendorPayment, deleteVendor, materialRates } = useProjectStore();
-  const { notify } = useAuthStore();
+  const { user, notify, openUpgradeModal } = useAuthStore();
 
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -71,6 +73,11 @@ export default function VendorsPage() {
     setPaymentAmount(0);
   };
 
+  const isPro =
+    user?.plan === "pro" ||
+    user?.plan === "business" ||
+    user?.subscriptionStatus === "PRO_ACTIVE";
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
@@ -80,8 +87,9 @@ export default function VendorsPage() {
             <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
               <Building2 className="w-4 h-4" />
             </div>
-            <h1 className="text-xl md:text-2xl font-extrabold text-slate-900 dark:text-white">
-              Vendor Directory &amp; Khata Ledger
+            <h1 className="text-xl md:text-2xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+              <span>Vendor Directory &amp; Khata Ledger</span>
+              <ProBadge size="sm" variant="amber" showIcon />
             </h1>
           </div>
           <p className="text-xs md:text-sm text-slate-500">
@@ -91,13 +99,39 @@ export default function VendorsPage() {
 
         <button
           type="button"
-          onClick={() => setAddModalOpen(true)}
+          onClick={() => {
+            if (!isPro) {
+              openUpgradeModal("Vendor Management & Khata Ledger");
+              return;
+            }
+            setAddModalOpen(true);
+          }}
           className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-md shadow-emerald-950/20 transition-all flex items-center gap-2 self-start md:self-auto"
         >
           <Plus className="w-4 h-4" />
           <span>Add New Vendor</span>
+          {!isPro && <ProBadge size="xs" variant="amber" />}
         </button>
       </div>
+
+      {!isPro ? (
+        <div className="space-y-6">
+          <ProFeatureLock
+            title="Vendor Management & WhatsApp Khata Ledger"
+            subtitle="Available with PRO"
+            capabilities={[
+              "Directory of material suppliers (Cement dealers, Steel mills, Bhatta bricks)",
+              "Digital Khata ledger & Udhaar credit balance tracking (واجب الادا)",
+              "Automated 1-click WhatsApp payment reminders with balance summary",
+              "Supplier payment history, cheque numbers & cleared transaction receipts",
+              "Direct reconciliation with site purchase orders and material delivery slips"
+            ]}
+            backUrl="/calculator"
+            backLabel="Continue with Free Calculators"
+          />
+        </div>
+      ) : (
+        <>
 
       {/* Financial Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -508,6 +542,8 @@ export default function VendorsPage() {
         isOpen={addModalOpen}
         onClose={() => setAddModalOpen(false)}
       />
+        </>
+      )}
     </div>
   );
 }

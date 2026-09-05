@@ -24,6 +24,7 @@ import { useProjectStore } from "@/stores/projectStore";
 import { useAuthStore } from "@/stores/authStore";
 import { formatPKR, formatNumber } from "@/lib/formatters";
 import { calculateFullHouseEstimate } from "@buildcost/calculations";
+import { DashboardProCard } from "@/components/pro/DashboardProCard";
 
 export default function DashboardPage() {
   const {
@@ -131,6 +132,9 @@ export default function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      {/* PRO PROMOTION CARD (Section 3) */}
+      <DashboardProCard />
 
       {/* THREE HIGH-FIDELITY MODULAR CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">

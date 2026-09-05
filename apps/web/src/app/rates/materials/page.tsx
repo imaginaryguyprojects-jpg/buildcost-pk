@@ -18,10 +18,17 @@ import {
 } from "lucide-react";
 import { PAKISTANI_CITIES } from "@buildcost/config";
 import { useProjectStore } from "@/stores/projectStore";
+import { useAuthStore } from "@/stores/authStore";
+import { ProPreviewCard } from "@/components/pro/ProPreviewCard";
 import { formatPKR, formatNumber } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 
 export default function MaterialRatesPage() {
+  const { user } = useAuthStore();
+  const isPro =
+    user?.plan === "pro" ||
+    user?.plan === "business" ||
+    user?.subscriptionStatus === "PRO_ACTIVE";
   const { materialRates, selectedCityId, setSelectedCityId, syncAuthenticRates, lastSyncTimestamp } = useProjectStore();
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -194,6 +201,20 @@ export default function MaterialRatesPage() {
           ))}
         </div>
       </div>
+
+      {/* PRO FEATURE PREVIEW (Section 6) */}
+      {!isPro && (
+        <ProPreviewCard
+          title="Compare Multi-City Supplier Quotes & Trends"
+          previewPoints={[
+            "Compare rates from multiple cities (Lahore, Islamabad, Karachi, Peshawar)",
+            "View 30d, 90d, and 1-year historical wholesale price trends",
+            "Set automated price rise alerts on Cement, Steel & Bricks",
+            "Delivered freight and Palledari unloading breakdown"
+          ]}
+          featureKey="Live Market Rate Intelligence"
+        />
+      )}
 
       {/* Material Rates Table */}
       <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">

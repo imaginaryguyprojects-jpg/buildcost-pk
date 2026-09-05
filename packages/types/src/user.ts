@@ -4,6 +4,13 @@ export type UserRole = "user" | "admin" | "superadmin";
 
 export type SubscriptionTier = "free" | "pro" | "business";
 
+export type SubscriptionStatus =
+  | "FREE"
+  | "PRO_ACTIVE"
+  | "PRO_PENDING_PAYMENT"
+  | "PRO_EXPIRED"
+  | "PRO_CANCELLED";
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -14,6 +21,7 @@ export interface UserProfile {
   role: UserRole;
   plan?: SubscriptionTier;
   subscriptionTier?: SubscriptionTier;
+  subscriptionStatus?: SubscriptionStatus;
   avatarUrl?: string;
   createdAt: string;
   updatedAt: string;

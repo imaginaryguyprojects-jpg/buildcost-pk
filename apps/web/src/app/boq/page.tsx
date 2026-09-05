@@ -26,6 +26,7 @@ const DEFAULT_BOQ_ROWS: BOQRow[] = [
 
 import { canUseFeature } from "@buildcost/config";
 import { useAuthStore } from "@/stores/authStore";
+import { ProBadge } from "@/components/pro/ProBadge";
 
 export default function BOQStudioPage() {
   const { getActiveProject } = useProjectStore();
@@ -94,7 +95,12 @@ export default function BOQStudioPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Bill of Quantities (BOQ) Studio</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+              Bill of Quantities (BOQ) Studio
+            </h1>
+            <ProBadge size="sm" variant="amber" showIcon />
+          </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Structured contractor BOQ schedule for {project?.projectName || "Active Project"}
           </p>
