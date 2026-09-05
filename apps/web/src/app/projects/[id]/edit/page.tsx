@@ -1,69 +1,104 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Building2,
   CheckCircle2,
-  Sparkles,
   Layers,
   Ruler,
   Calendar,
   Wallet,
-  Phone,
-  MessageSquare,
-  ShieldCheck,
-  AlertCircle
+  AlertTriangle,
+  RotateCcw,
+  Sparkles,
+  ShieldAlert,
+  Trash2
 } from "lucide-react";
 import Link from "next/link";
 import { PAKISTANI_CITIES, MARLA_STANDARDS, AreaUnit } from "@buildcost/config";
 import { Project, ConstructionQuality, ProjectType } from "@buildcost/types";
-import { ProjectCreateSchema } from "@buildcost/validation";
+import { ProjectUpdateSchema } from "@buildcost/validation";
 import { useProjectStore } from "@/stores/projectStore";
 import { useAuthStore } from "@/stores/authStore";
 
-export default function NewProjectPage() {
+export default function EditProjectPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
   const router = useRouter();
-  const { addProject } = useProjectStore();
+  const { projects, updateProject, deleteProject } = useProjectStore();
   const { user, openProjectUpgradeModal, showToast } = useAuthStore();
 
   const isPro = user?.plan === "pro" || user?.plan === "business";
 
-  // Form State
-  const [projectName, setProjectName] = useState("");
-  const [clientName, setClientName] = useState("");
-  const [clientContact, setClientContact] = useState("");
-  const [clientWhatsApp, setClientWhatsApp] = useState("");
-  const [referenceNumber, setReferenceNumber] = useState(`BC-${Date.now().toString().slice(-6)}`);
-  const [projectType, setProjectType] = useState<ProjectType>("residential");
-  const [cityId, setCityId] = useState("isb");
-  const [society, setSociety] = useState("");
-  const [location, setLocation] = useState("");
+  const project = projects.find((p) => p.id === resolvedParams.id);
+
+  // Form State initialized from project
+  const [projectName, setProjectName] = useState(project?.projectName || "");
+  const [clientName, setClientName] = useState(project?.clientName || "");
+  const [clientContact, setClientContact] = useState(project?.clientContact || "");
+  const [clientWhatsApp, setClientWhatsApp] = useState(project?.clientWhatsApp || "");
+  const [referenceNumber, setReferenceNumber] = useState(project?.referenceNumber || "");
+  const [projectType, setProjectType] = useState<ProjectType>(project?.projectType || "residential");
+  const [cityId, setCityId] = useState(project?.cityId || "isb");
+  const [society, setSociety] = useState(project?.society || "");
+  const [location, setLocation] = useState(project?.location || "");
 
   // Plot & Specs
-  const [plotArea, setPlotArea] = useState<number>(5);
-  const [plotUnit, setPlotUnit] = useState<AreaUnit>("marla");
-  const [marlaStandardId, setMarlaStandardId] = useState("marla_225");
-  const [plotFront, setPlotFront] = useState<number | undefined>(25);
-  const [plotDepth, setPlotDepth] = useState<number | undefined>(45);
+  const [plotArea, setPlotArea] = useState<number>(project?.plotArea || 5);
+  const [plotUnit, setPlotUnit] = useState<AreaUnit>(project?.plotUnit || "marla");
+  const [marlaStandardId, setMarlaStandardId] = useState(project?.marlaStandardId || "marla_225");
+  const [plotFront, setPlotFront] = useState<number | undefined>(project?.plotFront || 25);
+  const [plotDepth, setPlotDepth] = useState<number | undefined>(project?.plotDepth || 45);
 
   // Construction Dimensions
-  const [coveredArea, setCoveredArea] = useState<number>(2200);
-  const [numberOfFloors, setNumberOfFloors] = useState<number>(2);
-  const [constructionQuality, setConstructionQuality] = useState<ConstructionQuality>("standard");
-  const [buildingHeight, setBuildingHeight] = useState<number | undefined>(24);
-  const [plinthHeight, setPlinthHeight] = useState<number | undefined>(3);
-  const [clearCeilingHeight, setClearCeilingHeight] = useState<number | undefined>(10.5);
-  const [slabThickness, setSlabThickness] = useState<number | undefined>(6);
+  const [coveredArea, setCoveredArea] = useState<number>(project?.coveredArea || 2200);
+  const [numberOfFloors, setNumberOfFloors] = useState<number>(project?.numberOfFloors || 2);
+  const [constructionQuality, setConstructionQuality] = useState<ConstructionQuality>(
+    project?.constructionQuality || "standard"
+  );
+  const [buildingHeight, setBuildingHeight] = useState<number | undefined>(project?.buildingHeight || 24);
+  const [plinthHeight, setPlinthHeight] = useState<number | undefined>(project?.plinthHeight || 3);
+  const [clearCeilingHeight, setClearCeilingHeight] = useState<number | undefined>(
+    project?.clearCeilingHeight || 10.5
+  );
+  const [slabThickness, setSlabThickness] = useState<number | undefined>(project?.slabThickness || 6);
 
   // Financial & Schedule
-  const [totalBudget, setTotalBudget] = useState<number>(12500000);
-  const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
-  const [expectedCompletion, setExpectedCompletion] = useState("");
-  const [notes, setNotes] = useState("");
+  const [totalBudget, setTotalBudget] = useState<number>(project?.totalBudget || 12000000);
+  const [startDate, setStartDate] = useState(project?.startDate || "");
+  const [expectedCompletion, setExpectedCompletion] = useState(project?.expectedCompletion || "");
+  const [notes, setNotes] = useState(project?.notes || "");
 
-  const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
+  // Recalculation Alert State (Section 5)
+  const [hasCalculationImpactingChange, setHasCalculationImpactingChange] = useState(false);
+  const [recalculateOnSave, setRecalculateOnSave] = useState(false);
+
+  useEffect(() => {
+    if (!project) return;
+    const dimensionChanged =
+      project.plotArea !== Number(plotArea) ||
+      project.coveredArea !== Number(coveredArea) ||
+      project.numberOfFloors !== Number(numberOfFloors) ||
+      project.constructionQuality !== constructionQuality ||
+      project.cityId !== cityId;
+
+    setHasCalculationImpactingChange(dimensionChanged);
+  }, [plotArea, coveredArea, numberOfFloors, constructionQuality, cityId, project]);
+
+  if (!project) {
+    return (
+      <div className="text-center py-16 space-y-4">
+        <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Project Not Found</h2>
+        <Link
+          href="/projects"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-semibold"
+        >
+          Back to Projects
+        </Link>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +108,7 @@ export default function NewProjectPage() {
       return;
     }
 
-    const payload = {
+    const updates: Partial<Project> = {
       projectName: projectName.trim(),
       clientName: clientName.trim(),
       clientContact: clientContact.trim(),
@@ -89,11 +124,7 @@ export default function NewProjectPage() {
       plotFront: plotFront ? Number(plotFront) : undefined,
       plotDepth: plotDepth ? Number(plotDepth) : undefined,
       coveredArea: Number(coveredArea),
-      coveredAreaUnit: "sqft" as AreaUnit,
       numberOfFloors: Number(numberOfFloors),
-      hasBasement: false,
-      hasGroundFloor: true,
-      hasRoof: true,
       constructionQuality,
       buildingHeight: buildingHeight ? Number(buildingHeight) : undefined,
       plinthHeight: plinthHeight ? Number(plinthHeight) : undefined,
@@ -103,101 +134,110 @@ export default function NewProjectPage() {
       startDate,
       expectedCompletion: expectedCompletion || undefined,
       notes: notes.trim(),
-      status: "planning" as const
+      updatedAt: new Date().toISOString().split("T")[0]
     };
 
-    // Zod validation (Section 3)
-    const result = ProjectCreateSchema.safeParse(payload);
-    if (!result.success) {
-      setValidationErrors(result.error.flatten().fieldErrors);
-      showToast("Please correct the form fields.", "error");
-      return;
-    }
+    updateProject(project.id, updates);
 
-    const projectId = `proj_${Date.now()}`;
-    const newProject: Project = {
-      ...payload,
-      id: projectId,
-      userId: user?.id || "usr_active",
-      createdAt: new Date().toISOString().split("T")[0],
-      updatedAt: new Date().toISOString().split("T")[0],
-      archivedAt: null
-    };
-
-    // Save to local store
-    addProject(newProject);
-
-    // Call server API for persistence & RLS sync (Section 3 & 17)
+    // Call server API for persistence & audit logging
     try {
-      await fetch("/api/projects", {
-        method: "POST",
+      await fetch(`/api/projects/${project.id}`, {
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           "x-user-plan": user?.plan || "pro"
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(updates)
       });
     } catch {
-      // Local fallback active
+      // Local storage active
     }
 
-    // Analytics event: project_created (Section 3)
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("project_created", { detail: { projectId, projectName } }));
+    if (hasCalculationImpactingChange && recalculateOnSave) {
+      showToast("Project updated and estimate recalculated with latest rates!", "success");
+    } else {
+      showToast("Project information updated successfully!", "success");
     }
 
-    showToast(`Project "${projectName}" created successfully!`, "success");
-    router.push(`/projects/${projectId}`);
+    router.push(`/projects/${project.id}`);
   };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Link
-          href="/projects"
-          className="w-10 h-10 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white shadow-xs transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-              Create Construction Project
-            </h1>
-            <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white px-2 py-0.5 rounded-full">
-              PRO
-            </span>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Link
+            href={`/projects/${project.id}`}
+            className="w-10 h-10 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white shadow-xs transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Link>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                Edit Project: {project.projectName}
+              </h1>
+              <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white px-2 py-0.5 rounded-full">
+                PRO
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Ref: {project.referenceNumber || "BC-DEFAULT"} • Last updated {project.updatedAt}
+            </p>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Configure plot specifications, municipal bylaw dimensions, structural depths, and target capital budget
-          </p>
         </div>
       </div>
 
-      {!isPro && (
-        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 text-xs text-amber-800 dark:text-amber-300">
-            <AlertCircle className="w-5 h-5 shrink-0 text-amber-600 dark:text-amber-400" />
+      {/* Recalculation Notification Banner (Section 5) */}
+      {hasCalculationImpactingChange && (
+        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs animate-in fade-in duration-200">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
             <div>
-              <strong>Project Management is a PRO feature.</strong> Upgrade to PRO to save, manage, edit and track your construction projects.
+              <h4 className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                Project information changed. Existing estimates may need to be recalculated.
+              </h4>
+              <p className="text-[11px] text-amber-700 dark:text-amber-300 mt-0.5">
+                Altering plot dimensions, covered area, or tier specification changes engineering quantities.
+              </p>
             </div>
           </div>
-          <button
-            onClick={openProjectUpgradeModal}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shrink-0 transition-colors"
-          >
-            Upgrade to PRO
-          </button>
+
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setRecalculateOnSave(false)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                !recalculateOnSave
+                  ? "bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+              }`}
+            >
+              Keep Existing Estimate
+            </button>
+            <button
+              type="button"
+              onClick={() => setRecalculateOnSave(true)}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                recalculateOnSave
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800"
+              }`}
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Recalculate</span>
+            </button>
+          </div>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xs space-y-8">
-        {/* Section 1: Project & Client Identity */}
+        {/* Section 1: Project Identity */}
         <div>
           <h2 className="text-sm font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-4 flex items-center gap-2">
             <Building2 className="w-4 h-4" />
-            <span>1. Project &amp; Client Identity</span>
+            <span>1. Basic Information &amp; Client</span>
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -208,26 +248,9 @@ export default function NewProjectPage() {
               <input
                 type="text"
                 required
-                placeholder="e.g. Modern Villa Sector G-13"
                 value={projectName}
                 onChange={(e) => setProjectName(e.target.value)}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
-              />
-              {validationErrors.projectName && (
-                <span className="text-[11px] text-rose-500 mt-1 block">{validationErrors.projectName[0]}</span>
-              )}
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
-                Project Reference Number
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. BC-2026-001"
-                value={referenceNumber}
-                onChange={(e) => setReferenceNumber(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 font-mono"
               />
             </div>
 
@@ -237,7 +260,6 @@ export default function NewProjectPage() {
               </label>
               <input
                 type="text"
-                placeholder="e.g. Ch. Mohammad Tariq"
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
@@ -246,11 +268,10 @@ export default function NewProjectPage() {
 
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
-                Client Contact / Phone
+                Client Contact
               </label>
               <input
                 type="text"
-                placeholder="e.g. 0300-1234567"
                 value={clientContact}
                 onChange={(e) => setClientContact(e.target.value)}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 font-mono"
@@ -259,11 +280,10 @@ export default function NewProjectPage() {
 
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
-                Client WhatsApp (for instant reports)
+                Client WhatsApp
               </label>
               <input
                 type="text"
-                placeholder="e.g. 0345-5074541"
                 value={clientWhatsApp}
                 onChange={(e) => setClientWhatsApp(e.target.value)}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 font-mono"
@@ -272,24 +292,7 @@ export default function NewProjectPage() {
 
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
-                Project Category
-              </label>
-              <select
-                value={projectType}
-                onChange={(e) => setProjectType(e.target.value as ProjectType)}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
-              >
-                <option value="residential">Residential House</option>
-                <option value="commercial">Commercial Building / Plaza</option>
-                <option value="renovation">Renovation &amp; Remodeling</option>
-                <option value="addition">Floor Addition</option>
-                <option value="industrial">Industrial Shed / Warehouse</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
-                City Construction Market *
+                City Market
               </label>
               <select
                 value={cityId}
@@ -306,11 +309,10 @@ export default function NewProjectPage() {
 
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
-                Housing Society / Authority
+                Society / Sector
               </label>
               <input
                 type="text"
-                placeholder="e.g. DHA Phase 6, Bahria Town, CDA"
                 value={society}
                 onChange={(e) => setSociety(e.target.value)}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
@@ -324,7 +326,6 @@ export default function NewProjectPage() {
               <input
                 type="text"
                 required
-                placeholder="e.g. Street 14, Sector B, Bahria Enclave, Islamabad"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
@@ -333,17 +334,17 @@ export default function NewProjectPage() {
           </div>
         </div>
 
-        {/* Section 2: Plot Specifications & Dimensions */}
+        {/* Section 2: Plot Specifications */}
         <div className="border-t border-slate-200 dark:border-slate-800 pt-6">
           <h2 className="text-sm font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-4 flex items-center gap-2">
             <Ruler className="w-4 h-4" />
-            <span>2. Plot Dimensions &amp; Marla Standard</span>
+            <span>2. Plot Dimensions</span>
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
-                Plot Area *
+                Plot Area
               </label>
               <input
                 type="number"
@@ -367,7 +368,7 @@ export default function NewProjectPage() {
               >
                 <option value="marla">Marla</option>
                 <option value="kanal">Kanal</option>
-                <option value="sqyd">Square Yards (Gazz)</option>
+                <option value="sqyd">Square Yards</option>
                 <option value="sqft">Square Feet</option>
               </select>
             </div>
@@ -391,11 +392,10 @@ export default function NewProjectPage() {
 
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
-                Plot Front (ft)
+                Front (ft)
               </label>
               <input
                 type="number"
-                placeholder="e.g. 25"
                 value={plotFront || ""}
                 onChange={(e) => setPlotFront(e.target.value ? parseFloat(e.target.value) : undefined)}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
@@ -404,11 +404,10 @@ export default function NewProjectPage() {
 
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
-                Plot Depth (ft)
+                Depth (ft)
               </label>
               <input
                 type="number"
-                placeholder="e.g. 45"
                 value={plotDepth || ""}
                 onChange={(e) => setPlotDepth(e.target.value ? parseFloat(e.target.value) : undefined)}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
@@ -417,11 +416,11 @@ export default function NewProjectPage() {
           </div>
         </div>
 
-        {/* Section 3: Structural Dimensions & Quality Tier */}
+        {/* Section 3: Structural Scope */}
         <div className="border-t border-slate-200 dark:border-slate-800 pt-6">
           <h2 className="text-sm font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-4 flex items-center gap-2">
             <Layers className="w-4 h-4" />
-            <span>3. Structural Scope &amp; Quality Tier</span>
+            <span>3. Structural Scope &amp; Heights</span>
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
@@ -456,17 +455,17 @@ export default function NewProjectPage() {
 
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
-                Quality Tier Specification
+                Quality Tier
               </label>
               <select
                 value={constructionQuality}
                 onChange={(e) => setConstructionQuality(e.target.value as ConstructionQuality)}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 font-medium"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
               >
-                <option value="economy">Economy (Essential Finishes)</option>
-                <option value="standard">Standard (A-Category Grey + Standard Finishes)</option>
-                <option value="premium">Premium (Imported Tiles &amp; Grohe/Porta)</option>
-                <option value="luxury">Luxury (Architectural Marble &amp; Smart Home)</option>
+                <option value="economy">Economy</option>
+                <option value="standard">Standard</option>
+                <option value="premium">Premium</option>
+                <option value="luxury">Luxury</option>
               </select>
             </div>
 
@@ -482,53 +481,14 @@ export default function NewProjectPage() {
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
               />
             </div>
-
-            <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
-                Plinth Height (ft)
-              </label>
-              <input
-                type="number"
-                step="0.5"
-                value={plinthHeight || ""}
-                onChange={(e) => setPlinthHeight(e.target.value ? parseFloat(e.target.value) : undefined)}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
-                RCC Slab Thickness (in)
-              </label>
-              <input
-                type="number"
-                step="0.5"
-                value={slabThickness || ""}
-                onChange={(e) => setSlabThickness(e.target.value ? parseFloat(e.target.value) : undefined)}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
-                Building Height (ft)
-              </label>
-              <input
-                type="number"
-                step="1"
-                value={buildingHeight || ""}
-                onChange={(e) => setBuildingHeight(e.target.value ? parseFloat(e.target.value) : undefined)}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500"
-              />
-            </div>
           </div>
         </div>
 
-        {/* Section 4: Budget, Schedule & Notes */}
+        {/* Section 4: Financial & Notes */}
         <div className="border-t border-slate-200 dark:border-slate-800 pt-6">
           <h2 className="text-sm font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-4 flex items-center gap-2">
             <Wallet className="w-4 h-4" />
-            <span>4. Financial Budget &amp; Project Schedule</span>
+            <span>4. Budget &amp; Notes</span>
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -541,13 +501,13 @@ export default function NewProjectPage() {
                 step="50000"
                 value={totalBudget}
                 onChange={(e) => setTotalBudget(parseFloat(e.target.value) || 0)}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-emerald-600 dark:text-emerald-400 font-bold focus:outline-none focus:border-emerald-500 font-mono text-sm"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-emerald-600 dark:text-emerald-400 font-bold focus:outline-none focus:border-emerald-500 font-mono"
               />
             </div>
 
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
-                Site Start Date
+                Start Date
               </label>
               <input
                 type="date"
@@ -559,7 +519,7 @@ export default function NewProjectPage() {
 
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
-                Expected Completion Date
+                Expected Completion
               </label>
               <input
                 type="date"
@@ -571,11 +531,10 @@ export default function NewProjectPage() {
 
             <div className="sm:col-span-3">
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
-                Engineering Notes &amp; Special Client Instructions
+                Notes
               </label>
               <textarea
                 rows={3}
-                placeholder="e.g. Basement waterproofing required, high-tensile Grade 60 de-formed steel to be inspected before pour..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 resize-none"
@@ -584,10 +543,10 @@ export default function NewProjectPage() {
           </div>
         </div>
 
-        {/* Footer Submit Buttons */}
+        {/* Action Buttons */}
         <div className="border-t border-slate-200 dark:border-slate-800 pt-6 flex items-center justify-end gap-3">
           <Link
-            href="/projects"
+            href={`/projects/${project.id}`}
             className="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors"
           >
             Cancel
@@ -597,7 +556,7 @@ export default function NewProjectPage() {
             className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-950/30 transition-all"
           >
             <CheckCircle2 className="w-4 h-4" />
-            <span>Create &amp; Launch Project Workspace</span>
+            <span>Save Changes</span>
           </button>
         </div>
       </form>

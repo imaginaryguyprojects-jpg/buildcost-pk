@@ -34,9 +34,12 @@ interface AuthState {
   // Subscription & Payment Modals (Sections 48–57)
   upgradeModalOpen: boolean;
   checkoutModalOpen: boolean;
+  projectUpgradeModalOpen: boolean;
   activeFeaturePrompt: string | null;
   openUpgradeModal: (featureName?: string) => void;
   closeUpgradeModal: () => void;
+  openProjectUpgradeModal: () => void;
+  closeProjectUpgradeModal: () => void;
   openCheckoutModal: () => void;
   closeCheckoutModal: () => void;
   upgradeToPro: () => void;
@@ -81,6 +84,7 @@ export const useAuthStore = create<AuthState>()(
       lastToast: null,
       upgradeModalOpen: false,
       checkoutModalOpen: false,
+      projectUpgradeModalOpen: false,
       activeFeaturePrompt: null,
 
       openUpgradeModal: (featureName) => {
@@ -94,8 +98,16 @@ export const useAuthStore = create<AuthState>()(
         set({ upgradeModalOpen: false, activeFeaturePrompt: null });
       },
 
+      openProjectUpgradeModal: () => {
+        set({ projectUpgradeModalOpen: true });
+      },
+
+      closeProjectUpgradeModal: () => {
+        set({ projectUpgradeModalOpen: false });
+      },
+
       openCheckoutModal: () => {
-        set({ upgradeModalOpen: false, checkoutModalOpen: true });
+        set({ upgradeModalOpen: false, projectUpgradeModalOpen: false, checkoutModalOpen: true });
       },
 
       closeCheckoutModal: () => {

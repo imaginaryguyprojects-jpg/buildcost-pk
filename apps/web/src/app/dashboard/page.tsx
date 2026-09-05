@@ -16,9 +16,12 @@ import {
   DollarSign,
   ShoppingCart,
   FileSpreadsheet,
-  Check
+  Check,
+  User,
+  PieChart as PieChartIcon
 } from "lucide-react";
 import { useProjectStore } from "@/stores/projectStore";
+import { useAuthStore } from "@/stores/authStore";
 import { formatPKR, formatNumber } from "@/lib/formatters";
 import { calculateFullHouseEstimate } from "@buildcost/calculations";
 
@@ -86,40 +89,31 @@ export default function DashboardPage() {
         { id: "2", date: "Yesterday", weather: "Sunny", workDone: "Received 350 bags of Fauji Portland Cement at site gate." },
         { id: "3", date: "2 days ago", weather: "Mild", workDone: "Compacted ground floor sand filling and checked levels." }
       ];
+  const { user } = useAuthStore();
+  const customerName = activeProject?.clientName || user?.fullName || "Muhammad Usman (Client)";
+  const isComplete = constructionProgress >= 100;
+  const projectStatus = isComplete ? "Complete" : "In Progress";
+  const completedPhasesCount = progressStages.filter(s => s.status === "completed").length;
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
-      {/* 1. TOP: PROJECT SELECTOR & CORE HIGHLIGHTS */}
+      {/* TOP HEADER: GREETING & ADD PROJECT */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-              Executive Project Overview
-            </span>
-            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
-              budgetHealth === "ON TRACK"
-                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                : budgetHealth === "WARNING"
-                ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                : "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
-            }`}>
-              {budgetHealth}
-            </span>
-          </div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mt-0.5">
-            {activeProject?.projectName || "5 Marla Executive Villa"}
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+            Welcome, {user?.fullName || "John Anderson"}
           </h1>
-          <p className="text-xs text-slate-500">
-            {activeProject?.location || "Islamabad"} • {activeProject?.coveredArea || 2000} sqft Covered • {activeProject?.numberOfFloors || 2} Storeys
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Real-time construction progress and cost analytics for your property portfolio.
           </p>
         </div>
 
-        {/* Project Selector Dropdown */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {/* Project Selector */}
           <select
             value={activeProjectId || ""}
             onChange={(e) => setActiveProjectId(e.target.value)}
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 shadow-xs focus:outline-none"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 shadow-xs focus:outline-none"
           >
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
@@ -130,11 +124,180 @@ export default function DashboardPage() {
 
           <Link
             href="/projects/new"
-            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
-            title="Create New Project"
+            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-950/20 transition-all active:scale-95"
           >
             <Plus className="w-4 h-4" />
+            <span>Add New Project</span>
           </Link>
+        </div>
+      </div>
+
+      {/* THREE HIGH-FIDELITY MODULAR CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        {/* Card 1: Current Project Details & State */}
+        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between relative overflow-hidden group">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                Current Project
+              </span>
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            </div>
+
+            <div>
+              <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                {activeProject?.projectName || "Residential Complex Alpha"}
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {activeProject?.location || "Islamabad, PK"} • {activeProject?.coveredArea || 2000} sqft
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-5 p-4 rounded-2xl bg-gradient-to-br from-emerald-50/70 via-teal-50/40 to-slate-50 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-slate-900 border border-emerald-100/80 dark:border-emerald-900/40">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400 block">
+              Current State / Budget
+            </span>
+            <div className="text-2xl font-black font-mono text-slate-900 dark:text-white mt-1">
+              Rs. {formatNumber(totalBudget)}
+            </div>
+            <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold mt-0.5 block">
+              {budgetHealth === "ON TRACK" ? "● Within Planned Budget" : `● ${budgetHealth}`}
+            </span>
+          </div>
+        </div>
+
+        {/* Card 2: Dynamic Donut Chart — Project Progress Breakdown */}
+        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+              Project Progress Breakdown
+            </h3>
+            <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/40">
+              Live Site
+            </span>
+          </div>
+
+          {/* SVG Donut Chart */}
+          <div className="flex items-center justify-center my-2 relative">
+            <svg className="w-36 h-36 transform -rotate-90" viewBox="0 0 120 120">
+              {/* Background circle track */}
+              <circle
+                cx="60"
+                cy="60"
+                r="46"
+                stroke="#f1f5f9"
+                strokeWidth="15"
+                className="dark:stroke-slate-800"
+                fill="none"
+              />
+              {/* In-Progress slice (pastel sky blue) */}
+              <circle
+                cx="60"
+                cy="60"
+                r="46"
+                stroke="#93c5fd"
+                strokeWidth="15"
+                strokeDasharray={`${2 * Math.PI * 46}`}
+                strokeDashoffset={`${2 * Math.PI * 46 * (1 - 0.95)}`}
+                strokeLinecap="round"
+                fill="none"
+              />
+              {/* Completed slice (rich emerald green) */}
+              <circle
+                cx="60"
+                cy="60"
+                r="46"
+                stroke="#059669"
+                strokeWidth="15"
+                strokeDasharray={`${2 * Math.PI * 46}`}
+                strokeDashoffset={`${2 * Math.PI * 46 * (1 - (constructionProgress / 100))}`}
+                strokeLinecap="round"
+                fill="none"
+              />
+            </svg>
+
+            {/* Donut Center Label */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none px-2">
+              <span className="text-xs font-black text-slate-900 dark:text-white leading-tight line-clamp-1 max-w-[80px]">
+                {activeProject?.projectName?.split(" ")[0] || "Alpha"}
+              </span>
+              <span className="text-sm font-black font-mono text-emerald-600 dark:text-emerald-400">
+                {constructionProgress}%
+              </span>
+              <span className="text-[8px] text-slate-400 uppercase font-semibold">Done</span>
+            </div>
+          </div>
+
+          {/* Donut Legend */}
+          <div className="flex items-center justify-center gap-4 text-[11px] pt-2 border-t border-slate-100 dark:border-slate-800/80">
+            <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-600" />
+              <span>{constructionProgress}% Complete</span>
+            </div>
+            <div className="flex items-center gap-1.5 font-semibold text-slate-500 dark:text-slate-400">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-300" />
+              <span>In-Progress</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 3: Project Overview Card with Customer Name & Status Badge */}
+        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+              Project Overview
+            </h3>
+            <span className="text-slate-400 hover:text-slate-600 cursor-pointer">•••</span>
+          </div>
+
+          {/* Details list */}
+          <div className="space-y-3 text-xs">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800/60">
+              <span className="text-slate-500 font-medium">Customer:</span>
+              <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-emerald-600" />
+                <span>{customerName}</span>
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800/60">
+              <span className="text-slate-500 font-medium">Project:</span>
+              <span className="font-bold text-slate-900 dark:text-white">
+                {activeProject?.projectName || "Residential Alpha"}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800/60">
+              <span className="text-slate-500 font-medium">Location:</span>
+              <span className="font-semibold text-slate-700 dark:text-slate-300">
+                {activeProject?.location || "Islamabad, PK"}
+              </span>
+            </div>
+          </div>
+
+          {/* Status Indicators with Clean Badges */}
+          <div className="p-3 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/40 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                Status:
+              </span>
+              <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider ${
+                projectStatus === "Complete"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "bg-emerald-200/80 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-200 border border-emerald-300/80 dark:border-emerald-700"
+              }`}>
+                {projectStatus}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-slate-500">Phases:</span>
+              <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                {completedPhasesCount} / {progressStages.length} Complete
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 

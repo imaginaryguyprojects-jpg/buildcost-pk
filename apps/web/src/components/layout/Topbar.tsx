@@ -165,6 +165,16 @@ export function Topbar() {
           <span>Upgrade to Pro</span>
         </Link>
 
+        {/* Admin Mode Shortcut Button */}
+        <Link
+          href="/admin"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-lg text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-all shadow-xs"
+          title="Switch to Admin Mode & View Visitors/Payments"
+        >
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+          <span>Admin Mode</span>
+        </Link>
+
         {/* Light / Dark Mode Toggle Button */}
         <button
           onClick={toggleTheme}

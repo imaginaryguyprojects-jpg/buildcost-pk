@@ -26,7 +26,8 @@ import {
   calculateMarble,
   calculateVolume,
   calculateBudgetVariance,
-  calculateProgress
+  calculateProgress,
+  calculateTransportLogistics
 } from "../index.ts";
 
 describe("BuildCost Connect Calculation Engine Test Suite", () => {
@@ -429,6 +430,22 @@ describe("BuildCost Connect Calculation Engine Test Suite", () => {
       expect(progress.completedStagesCount).toBe(2);
       expect(progress.inProgressStagesCount).toBe(1);
       expect(progress.pendingStagesCount).toBe(1);
+    });
+
+    it("calculates Transport Logistics and Palledari unloading charges (Section 24 & 25)", () => {
+      const logistics = calculateTransportLogistics({
+        bricksCount: 9000, // 3 trolley trips (3000 each)
+        sandCft: 500,      // 2 trolley trips (250 each)
+        cementBags: 240,   // 2 trolley trips (120 each)
+        distanceKm: 15,
+      });
+
+      expect(logistics.totalTripsCount).toBe(3 + 2 + 2); // 7 trips
+      expect(logistics.breakdown.length).toBe(3);
+      expect(logistics.totalFreightCost).toBeGreaterThan(0);
+      expect(logistics.totalPalledariCost).toBeGreaterThan(0);
+      expect(logistics.totalLogisticsCost).toBe(logistics.totalFreightCost + logistics.totalPalledariCost);
+      expect(logistics.summaryUrdu).toContain("چکر");
     });
   });
 });

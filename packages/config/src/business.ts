@@ -37,9 +37,9 @@ export const BUSINESS_CONFIG: BusinessConfig = {
 
   // Configurable JazzCash Account
   jazzcash: {
-    accountName: "BuildCost Connect (Pvt) Ltd",
-    accountNumber: "0301-9876543",
-    accountNumberRaw: "03019876543"
+    accountName: "Umer Shahzad",
+    accountNumber: "0300-5155604",
+    accountNumberRaw: "03005155604"
   },
 
   // Configurable Corporate Bank Account

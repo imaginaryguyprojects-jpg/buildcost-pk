@@ -11,6 +11,7 @@ import { QuickAddModal } from "@/components/modals/QuickAddModal";
 import { SmartSearchModal } from "@/components/modals/SmartSearchModal";
 import { ProUpgradeModal } from "@/components/subscription/ProUpgradeModal";
 import { PaymentCheckoutModal } from "@/components/subscription/PaymentCheckoutModal";
+import { ProjectUpgradeModal } from "@/components/projects/ProjectUpgradeModal";
 import { useAuthStore } from "@/stores/authStore";
 import { CheckCircle2, AlertCircle, Info, X } from "lucide-react";
 
@@ -56,6 +57,7 @@ export function AppShell({ children }: AppShellProps) {
       <SmartSearchModal />
       <ProUpgradeModal />
       <PaymentCheckoutModal />
+      <ProjectUpgradeModal />
 
       {isFullPageLayout ? (
         <main className="flex-1 w-full">{children}</main>

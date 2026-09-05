@@ -25,7 +25,7 @@ import { ShareModal } from "@/components/sharing/ShareModal";
 import { cn } from "@/lib/utils";
 
 export default function HouseEstimatePage() {
-  const { isAuthenticated, openLoginModal, showToast } = useAuthStore();
+  const { user, isAuthenticated, openLoginModal, openProjectUpgradeModal, showToast } = useAuthStore();
   const { saveCalculation } = useProjectStore();
   const [shareOpen, setShareOpen] = useState(false);
 
@@ -110,6 +110,12 @@ export default function HouseEstimatePage() {
         mat_crush: { rate: customCrushRate, source: "Margalla/Sargodha Crusher Plant", verifiedAt: "Today 09:30 AM" }
       }
     };
+
+    const isPro = user?.plan === "pro" || user?.plan === "business";
+    if (!isPro) {
+      openProjectUpgradeModal();
+      return;
+    }
 
     if (!isAuthenticated) {
       openLoginModal({

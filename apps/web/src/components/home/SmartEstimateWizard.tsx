@@ -23,7 +23,7 @@ import {
 import { ShareModal } from "../sharing/ShareModal";
 
 export function SmartEstimateWizard() {
-  const { isAuthenticated, openLoginModal, showToast } = useAuthStore();
+  const { user, isAuthenticated, openLoginModal, openProjectUpgradeModal, showToast } = useAuthStore();
   const { selectedCityId, setSelectedCityId, saveCalculation } = useProjectStore();
 
   const [step, setStep] = useState<number>(1);
@@ -89,6 +89,12 @@ export function SmartEstimateWizard() {
         mat_brick_awwal: { rate: 14, source: "Bhatta Kiln Association", verifiedAt: "Today 09:30 AM" }
       }
     };
+
+    const isPro = user?.plan === "pro" || user?.plan === "business";
+    if (!isPro) {
+      openProjectUpgradeModal();
+      return;
+    }
 
     if (!isAuthenticated) {
       // LOGIN GATING RULE: Preserve estimate state without data loss!

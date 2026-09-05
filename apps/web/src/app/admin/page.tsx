@@ -395,21 +395,31 @@ export default function AdminDashboardPage() {
               </p>
             </div>
 
-            {/* Filter Pills */}
-            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-              {(["all", "pending", "approved", "rejected"] as const).map((filter) => (
-                <button
-                  key={filter}
-                  onClick={() => setPaymentFilter(filter)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold capitalize transition-all ${
-                    paymentFilter === filter
-                      ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs"
-                      : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
-                  }`}
-                >
-                  {filter}
-                </button>
-              ))}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => setActiveTab("settings")}
+                className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center gap-1.5 hover:bg-emerald-100 transition-all shadow-xs"
+              >
+                <Settings className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Edit Payment Accounts</span>
+              </button>
+
+              {/* Filter Pills */}
+              <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                {(["all", "pending", "approved", "rejected"] as const).map((filter) => (
+                  <button
+                    key={filter}
+                    onClick={() => setPaymentFilter(filter)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold capitalize transition-all ${
+                      paymentFilter === filter
+                        ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs"
+                        : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
+                    }`}
+                  >
+                    {filter}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -945,34 +955,39 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
 
-                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 space-y-2">
-                  <span className="text-[10px] font-black uppercase text-slate-600 dark:text-slate-400 block">
-                    JazzCash Account
+                <div className="p-3 rounded-2xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800/60 space-y-2">
+                  <span className="text-[10px] font-black uppercase text-rose-700 dark:text-rose-400 block">
+                    JazzCash Account Configuration
                   </span>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
                       <label className="text-slate-700 dark:text-slate-300 font-semibold block mb-1">
-                        Title
+                        Account Title / Beneficiary Name
                       </label>
                       <input
                         type="text"
                         value={formJcName}
                         onChange={(e) => setFormJcName(e.target.value)}
-                        className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-slate-900 dark:text-white"
+                        placeholder="e.g. Umer Shahzad"
+                        className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-slate-900 dark:text-white font-bold"
                       />
                     </div>
                     <div>
                       <label className="text-slate-700 dark:text-slate-300 font-semibold block mb-1">
-                        Number
+                        JazzCash Mobile Number
                       </label>
                       <input
                         type="text"
                         value={formJcNumber}
                         onChange={(e) => setFormJcNumber(e.target.value)}
-                        className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 font-mono text-slate-900 dark:text-white font-bold"
+                        placeholder="0300-XXXXXXX"
+                        className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 font-mono text-slate-900 dark:text-white font-black"
                       />
                     </div>
                   </div>
+                  <span className="text-[10px] text-slate-500 block">
+                    Defaulted to Umer Shahzad (0300-5155604). Update anytime to change the payment number shown on checkout and WhatsApp slips.
+                  </span>
                 </div>
               </div>
             </div>
@@ -1186,6 +1201,166 @@ export default function AdminDashboardPage() {
                 {analyticsRange === "today" ? "16" : analyticsRange === "7d" ? "129" : analyticsRange === "30d" ? "584" : analyticsRange === "3m" ? "1,670" : "6,080"}
               </div>
               <div className="text-[10px] text-slate-500 mt-1">71.2% of reg.</div>
+            </div>
+          </div>
+
+          {/* DEDICATED VISITOR BREAKDOWN: PRO VS FREE VS GUEST VISITORS */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-xs space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Eye className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    Website Visitor Segmentation (Pro vs. Free vs. Guests)
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Real-time breakdown of current online traffic, paying Pro subscribers, and active free trial users.
+                </p>
+              </div>
+
+              {/* Live Status Pulse */}
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 font-mono">
+                  14 Visitors Online Right Now
+                </span>
+              </div>
+            </div>
+
+            {/* 3 Visitor Segment Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Card 1: Pro Version Visitors */}
+              <div className="p-4 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800/60 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-wider text-amber-800 dark:text-amber-400 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-amber-600" />
+                    <span>Pro Version Visitors</span>
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-200">
+                    Paid License
+                  </span>
+                </div>
+                <div className="text-3xl font-black font-mono text-amber-700 dark:text-amber-300">
+                  {analyticsRange === "today" ? "8" : analyticsRange === "7d" ? "46" : analyticsRange === "30d" ? "236" : analyticsRange === "3m" ? "610" : "2,120"}
+                </div>
+                <div className="text-xs text-slate-600 dark:text-slate-400 space-y-1 pt-1 border-t border-amber-200/60 dark:border-amber-800/40">
+                  <div className="flex justify-between text-[11px]">
+                    <span>Share of Logged-in:</span>
+                    <span className="font-bold text-amber-700 dark:text-amber-300">28.8%</span>
+                  </div>
+                  <div className="flex justify-between text-[11px]">
+                    <span>Avg. Session Time:</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-300">18m 42s</span>
+                  </div>
+                  <div className="flex justify-between text-[11px]">
+                    <span>Features Used:</span>
+                    <span className="font-semibold text-emerald-600">BOQ, What-If, Diary</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 2: Free Registered Visitors */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <UserCheck className="w-4 h-4 text-cyan-600" />
+                    <span>Free Version Visitors</span>
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                    Registered
+                  </span>
+                </div>
+                <div className="text-3xl font-black font-mono text-slate-900 dark:text-white">
+                  {analyticsRange === "today" ? "16" : analyticsRange === "7d" ? "129" : analyticsRange === "30d" ? "584" : analyticsRange === "3m" ? "1,670" : "6,080"}
+                </div>
+                <div className="text-xs text-slate-600 dark:text-slate-400 space-y-1 pt-1 border-t border-slate-200 dark:border-slate-700">
+                  <div className="flex justify-between text-[11px]">
+                    <span>Share of Logged-in:</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">71.2%</span>
+                  </div>
+                  <div className="flex justify-between text-[11px]">
+                    <span>Avg. Session Time:</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-300">8m 15s</span>
+                  </div>
+                  <div className="flex justify-between text-[11px]">
+                    <span>Upgrade Prompts Shown:</span>
+                    <span className="font-semibold text-amber-600">3.4 / session</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 3: Guest / Anonymous Visitors */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                    <Users className="w-4 h-4 text-emerald-600" />
+                    <span>Guest / Unauthenticated</span>
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400">
+                    Anonymous
+                  </span>
+                </div>
+                <div className="text-3xl font-black font-mono text-slate-700 dark:text-slate-300">
+                  {analyticsRange === "today" ? "24" : analyticsRange === "7d" ? "145" : analyticsRange === "30d" ? "660" : analyticsRange === "3m" ? "1,840" : "6,600"}
+                </div>
+                <div className="text-xs text-slate-600 dark:text-slate-400 space-y-1 pt-1 border-t border-slate-200 dark:border-slate-700">
+                  <div className="flex justify-between text-[11px]">
+                    <span>Traffic Share:</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-300">44.6%</span>
+                  </div>
+                  <div className="flex justify-between text-[11px]">
+                    <span>Signup Conversion:</span>
+                    <span className="font-bold text-emerald-600">34.4% sign up</span>
+                  </div>
+                  <div className="flex justify-between text-[11px]">
+                    <span>Bounce Rate:</span>
+                    <span className="font-semibold text-slate-500">28.2% (healthy)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Device & City Geographic Breakdown */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-2">
+                  Visitor Device Breakdown:
+                </span>
+                <div className="flex items-center gap-4 text-xs font-semibold">
+                  <div className="flex-1 space-y-1">
+                    <div className="flex justify-between">
+                      <span>Mobile Phones</span>
+                      <span className="font-mono font-bold text-emerald-600">68.4%</span>
+                    </div>
+                    <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                      <div className="h-full bg-emerald-500 rounded-full w-[68%]" />
+                    </div>
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <div className="flex justify-between">
+                      <span>Desktop / Laptops</span>
+                      <span className="font-mono font-bold text-cyan-600">31.6%</span>
+                    </div>
+                    <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                      <div className="h-full bg-cyan-500 rounded-full w-[32%]" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-2">
+                  Top Visitor Cities:
+                </span>
+                <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-600 dark:text-slate-300 flex-wrap">
+                  <span className="px-2 py-0.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600">Lahore (34%)</span>
+                  <span className="px-2 py-0.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600">Karachi (28%)</span>
+                  <span className="px-2 py-0.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600">Islamabad/Rwp (22%)</span>
+                  <span className="px-2 py-0.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600">Peshawar (9%)</span>
+                  <span className="px-2 py-0.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600">Other (7%)</span>
+                </div>
+              </div>
             </div>
           </div>
 

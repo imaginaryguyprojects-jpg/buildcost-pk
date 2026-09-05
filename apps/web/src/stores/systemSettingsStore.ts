@@ -136,7 +136,11 @@ export const useSystemSettingsStore = create<SystemSettingsState>()(
         accountNumberRaw: BUSINESS_CONFIG.easypaisa.accountNumberRaw
       },
 
-      jazzcash: { ...BUSINESS_CONFIG.jazzcash },
+      jazzcash: {
+        accountName: process.env.NEXT_PUBLIC_JAZZCASH_ACCOUNT_NAME || BUSINESS_CONFIG.jazzcash.accountName,
+        accountNumber: process.env.NEXT_PUBLIC_JAZZCASH_NUMBER || BUSINESS_CONFIG.jazzcash.accountNumber,
+        accountNumberRaw: BUSINESS_CONFIG.jazzcash.accountNumberRaw
+      },
       bankTransfer: { ...BUSINESS_CONFIG.bankTransfer },
 
       proMonthlyRate: 1999,

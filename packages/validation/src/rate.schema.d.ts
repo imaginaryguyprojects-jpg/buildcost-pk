@@ -1,0 +1,48 @@
+import { z } from "zod";
+export declare const MaterialRateInputSchema: z.ZodObject<{
+    materialId: z.ZodString;
+    cityId: z.ZodString;
+    brand: z.ZodOptional<z.ZodString>;
+    grade: z.ZodOptional<z.ZodString>;
+    unit: z.ZodEnum<["bag", "kg", "ton", "brick", "1000_bricks", "cft", "cum", "sqft", "box", "litre", "piece"]>;
+    baseRate: z.ZodNumber;
+    transportRate: z.ZodDefault<z.ZodNumber>;
+    loadingRate: z.ZodDefault<z.ZodNumber>;
+    unloadingRate: z.ZodDefault<z.ZodNumber>;
+    deliveredRate: z.ZodNumber;
+    sourceName: z.ZodString;
+    sourceType: z.ZodEnum<["official", "supplier", "market_survey", "public_source", "admin_verified", "demo_sample"]>;
+    confidenceScore: z.ZodDefault<z.ZodEnum<["HIGH", "MEDIUM", "LOW", "ESTIMATED"]>>;
+    reasonForUpdate: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    cityId: string;
+    materialId: string;
+    unit: "sqft" | "bag" | "kg" | "ton" | "brick" | "1000_bricks" | "cft" | "cum" | "box" | "litre" | "piece";
+    baseRate: number;
+    transportRate: number;
+    loadingRate: number;
+    unloadingRate: number;
+    deliveredRate: number;
+    sourceName: string;
+    sourceType: "official" | "supplier" | "market_survey" | "public_source" | "admin_verified" | "demo_sample";
+    confidenceScore: "HIGH" | "MEDIUM" | "LOW" | "ESTIMATED";
+    reasonForUpdate: string;
+    brand?: string | undefined;
+    grade?: string | undefined;
+}, {
+    cityId: string;
+    materialId: string;
+    unit: "sqft" | "bag" | "kg" | "ton" | "brick" | "1000_bricks" | "cft" | "cum" | "box" | "litre" | "piece";
+    baseRate: number;
+    deliveredRate: number;
+    sourceName: string;
+    sourceType: "official" | "supplier" | "market_survey" | "public_source" | "admin_verified" | "demo_sample";
+    reasonForUpdate: string;
+    brand?: string | undefined;
+    grade?: string | undefined;
+    transportRate?: number | undefined;
+    loadingRate?: number | undefined;
+    unloadingRate?: number | undefined;
+    confidenceScore?: "HIGH" | "MEDIUM" | "LOW" | "ESTIMATED" | undefined;
+}>;
+export type MaterialRateInput = z.infer<typeof MaterialRateInputSchema>;

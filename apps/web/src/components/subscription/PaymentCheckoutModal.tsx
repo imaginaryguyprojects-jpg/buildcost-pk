@@ -363,36 +363,69 @@ export function PaymentCheckoutModal() {
                       <div className="text-sm font-mono font-black text-slate-900 dark:text-white">
                         {jazzcash.accountNumber}
                       </div>
-                      <div className="text-[11px] text-slate-600 dark:text-slate-400 font-medium">
-                        Title: {jazzcash.accountName}
+                      <div className="text-[11px] text-slate-700 dark:text-slate-300 font-semibold">
+                        Account Name: <span className="text-rose-700 dark:text-rose-400 font-bold">{jazzcash.accountName}</span>
                       </div>
                     </div>
                     <button
                       type="button"
                       onClick={() => handleCopy(jazzcash.accountNumber, "jazzcash")}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100"
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 shadow-xs"
                     >
                       {copiedKey === "jazzcash" ? <Check className="w-3.5 h-3.5 text-rose-500" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{copiedKey === "jazzcash" ? "Copied" : "Copy Number"}</span>
+                      <span>{copiedKey === "jazzcash" ? "Copied" : "Copy JazzCash Number"}</span>
                     </button>
                   </div>
-                  <p className="text-[11px] text-slate-500 leading-relaxed">
-                    Open JazzCash app → Money Transfer → Mobile Account → Enter <strong>{jazzcash.accountNumber}</strong> → Amount <strong>Rs. {amount.toLocaleString()}</strong>.
-                  </p>
+
+                  {/* Action Buttons for JazzCash */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                    <a
+                      href={`tel:${jazzcash.accountNumber.replace(/-/g, "")}`}
+                      className="py-2 px-3 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-slate-50"
+                    >
+                      <Phone className="w-3.5 h-3.5 text-rose-600" />
+                      <span>Pay via JazzCash</span>
+                    </a>
+
+                    <button
+                      type="button"
+                      onClick={() => handleOpenWhatsAppSlip()}
+                      className="py-2 px-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-700 text-rose-800 dark:text-rose-300 font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-rose-100"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5 text-rose-600" />
+                      <span>Send Payment Slip on WhatsApp</span>
+                    </button>
+                  </div>
+
+                  {/* Instructions */}
+                  <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1.5">
+                      JazzCash Instructions:
+                    </span>
+                    <ol className="text-[11px] text-slate-600 dark:text-slate-400 space-y-1 list-decimal list-inside leading-relaxed">
+                      <li>Open JazzCash app → <strong>Money Transfer</strong> → <strong>Mobile Account</strong>.</li>
+                      <li>Send <strong>Rs. {amount.toLocaleString()}</strong> to <strong>{jazzcash.accountNumber}</strong> ({jazzcash.accountName}).</li>
+                      <li>Take a screenshot or note the 10-12 digit TID / Transaction Reference.</li>
+                      <li>Attach receipt or share slip directly to WhatsApp (<strong>{adminWhatsApp}</strong>).</li>
+                    </ol>
+                  </div>
                 </div>
               )}
 
-              {/* BANK TRANSFER METHOD */}
+              {/* BANK TRANSFER & RAAST METHOD */}
               {provider === "bank_transfer" && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] text-slate-500 uppercase font-bold">Bank &amp; Account Title</span>
+                      <span className="text-[10px] text-slate-500 uppercase font-bold">Corporate Bank / Raast</span>
                       <div className="text-sm font-bold text-slate-900 dark:text-white">{bankTransfer.bankName}</div>
-                      <div className="text-[11px] text-slate-600 dark:text-slate-400">Title: {bankTransfer.accountName}</div>
+                      <div className="text-[11px] text-slate-700 dark:text-slate-300 font-semibold">
+                        Account Title: <span className="text-cyan-700 dark:text-cyan-400 font-bold">{bankTransfer.accountName}</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
+
+                  <div className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-700">
                     <div>
                       <span className="text-[10px] text-slate-500 uppercase font-bold">IBAN / Raast ID</span>
                       <div className="text-xs font-mono font-bold text-slate-900 dark:text-white">{bankTransfer.iban}</div>
@@ -400,11 +433,36 @@ export function PaymentCheckoutModal() {
                     <button
                       type="button"
                       onClick={() => handleCopy(bankTransfer.iban || "", "iban")}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100"
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100"
                     >
                       {copiedKey === "iban" ? <Check className="w-3.5 h-3.5 text-cyan-500" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{copiedKey === "iban" ? "Copied" : "Copy"}</span>
+                      <span>{copiedKey === "iban" ? "Copied" : "Copy IBAN"}</span>
                     </button>
+                  </div>
+
+                  {/* WhatsApp Slip Button for Bank Transfer */}
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenWhatsAppSlip()}
+                      className="w-full py-2 px-3 rounded-xl bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-300 dark:border-cyan-700 text-cyan-800 dark:text-cyan-300 font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-cyan-100"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5 text-cyan-600" />
+                      <span>Send Bank / Raast Slip on WhatsApp</span>
+                    </button>
+                  </div>
+
+                  {/* Instructions */}
+                  <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1.5">
+                      Bank Transfer Instructions:
+                    </span>
+                    <ol className="text-[11px] text-slate-600 dark:text-slate-400 space-y-1 list-decimal list-inside leading-relaxed">
+                      <li>Use any banking app (HBL, Meezan, Allied, MCB, UBL) or Raast Instant Transfer.</li>
+                      <li>Transfer <strong>Rs. {amount.toLocaleString()}</strong> to IBAN <strong>{bankTransfer.iban}</strong>.</li>
+                      <li>Enter your Bank Reference / Transaction ID below.</li>
+                      <li>Share receipt image via WhatsApp (<strong>{adminWhatsApp}</strong>).</li>
+                    </ol>
                   </div>
                 </div>
               )}

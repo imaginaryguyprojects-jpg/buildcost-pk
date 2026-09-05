@@ -1,4 +1,5 @@
 export type FeatureKey =
+  | "project_management"
   | "vendor_management"
   | "purchase_orders"
   | "bill_upload"
@@ -23,7 +24,7 @@ export interface PlanLimits {
 
 export const PLAN_LIMITS: Record<"free" | "pro" | "business", PlanLimits> = {
   free: {
-    maxProjects: 3,
+    maxProjects: 0,
     maxSavedEstimates: 5,
     maxVendors: 5,
     maxStorageMb: 25
@@ -44,6 +45,7 @@ export const PLAN_LIMITS: Record<"free" | "pro" | "business", PlanLimits> = {
 
 export const PLAN_FEATURE_MATRIX: Record<"free" | "pro" | "business", Record<FeatureKey, boolean>> = {
   free: {
+    project_management: false,
     vendor_management: false,
     purchase_orders: false,
     bill_upload: false,
@@ -60,6 +62,7 @@ export const PLAN_FEATURE_MATRIX: Record<"free" | "pro" | "business", Record<Fea
     priority_support: false
   },
   pro: {
+    project_management: true,
     vendor_management: true,
     purchase_orders: true,
     bill_upload: true,
@@ -76,6 +79,7 @@ export const PLAN_FEATURE_MATRIX: Record<"free" | "pro" | "business", Record<Fea
     priority_support: true
   },
   business: {
+    project_management: true,
     vendor_management: true,
     purchase_orders: true,
     bill_upload: true,

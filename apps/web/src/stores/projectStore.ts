@@ -21,7 +21,9 @@ import {
   MaterialUsage,
   ProjectReminder,
   ReminderStatus,
-  SiteDiaryEntry
+  SiteDiaryEntry,
+  ProjectAuditLog,
+  ProjectAuditAction
 } from "@buildcost/types";
 import {
   INITIAL_MATERIAL_RATES,
@@ -63,6 +65,7 @@ interface ProjectStoreState {
   inventory: InventoryItem[];
   reminders: ProjectReminder[];
   siteDiary: SiteDiaryEntry[];
+  auditLogs: ProjectAuditLog[];
   lastSyncTimestamp: string;
 
   // Global modals
@@ -78,7 +81,10 @@ interface ProjectStoreState {
   addProject: (project: Project) => void;
   updateProject: (id: string, updates: Partial<Project>) => void;
   deleteProject: (id: string) => void;
+  archiveProject: (id: string) => void;
+  restoreProject: (id: string) => void;
   duplicateProject: (id: string, newName?: string, newCityId?: string) => Project | undefined;
+  logProjectAudit: (projectId: string, action: ProjectAuditAction, metadata?: any) => void;
   updateMaterialRate: (id: string, newRate: number, reason: string) => void;
   syncAuthenticRates: () => void;
   getActiveProject: () => Project | undefined;
@@ -172,6 +178,7 @@ export const useProjectStore = create<ProjectStoreState>()(
       inventory: INITIAL_INVENTORY,
       reminders: INITIAL_REMINDERS,
       siteDiary: INITIAL_SITE_DIARY,
+      auditLogs: [],
       lastSyncTimestamp: "Today 09:30 AM PKT",
 
       quickAddOpen: false,
@@ -196,24 +203,56 @@ export const useProjectStore = create<ProjectStoreState>()(
       setSelectedCityId: (cityId: string) => set({ selectedCityId: cityId }),
       setMarlaStandardId: (standardId: string) => set({ marlaStandardId: standardId }),
 
-      addProject: (project: Project) =>
+      addProject: (project: Project) => {
         set((state) => ({
           projects: [project, ...state.projects],
           activeProjectId: project.id
-        })),
+        }));
+        get().logProjectAudit(project.id, "project_created", { projectName: project.projectName });
+      },
 
-      updateProject: (id: string, updates: Partial<Project>) =>
+      updateProject: (id: string, updates: Partial<Project>) => {
+        const original = get().projects.find((p) => p.id === id);
         set((state) => ({
           projects: state.projects.map((p) =>
             p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p
           )
-        })),
+        }));
+        const action: ProjectAuditAction = updates.totalBudget !== undefined && original?.totalBudget !== updates.totalBudget
+          ? "budget_changed"
+          : "project_edited";
+        get().logProjectAudit(id, action, { fields: Object.keys(updates) });
+      },
 
-      deleteProject: (id: string) =>
+      deleteProject: (id: string) => {
+        get().logProjectAudit(id, "project_deleted");
         set((state) => ({
           projects: state.projects.filter((p) => p.id !== id),
           activeProjectId: state.activeProjectId === id ? state.projects[0]?.id || "" : state.activeProjectId
-        })),
+        }));
+      },
+
+      archiveProject: (id: string) => {
+        set((state) => ({
+          projects: state.projects.map((p) =>
+            p.id === id
+              ? { ...p, status: "archived", archivedAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+              : p
+          )
+        }));
+        get().logProjectAudit(id, "project_archived");
+      },
+
+      restoreProject: (id: string) => {
+        set((state) => ({
+          projects: state.projects.map((p) =>
+            p.id === id
+              ? { ...p, status: "active", archivedAt: null, updatedAt: new Date().toISOString() }
+              : p
+          )
+        }));
+        get().logProjectAudit(id, "project_restored");
+      },
 
       duplicateProject: (id: string, newName?: string, newCityId?: string) => {
         const original = get().projects.find((p) => p.id === id);
@@ -222,8 +261,10 @@ export const useProjectStore = create<ProjectStoreState>()(
         const cloned: Project = {
           ...original,
           id: newProjId,
-          projectName: newName || `${original.projectName} (Copy)`,
+          projectName: newName || `${original.projectName} - Copy`,
           cityId: newCityId || original.cityId,
+          status: "planning",
+          archivedAt: null,
           createdAt: new Date().toISOString().split("T")[0],
           updatedAt: new Date().toISOString().split("T")[0]
         };
@@ -231,7 +272,22 @@ export const useProjectStore = create<ProjectStoreState>()(
           projects: [cloned, ...state.projects],
           activeProjectId: cloned.id
         }));
+        get().logProjectAudit(newProjId, "project_duplicated", { sourceProjectId: id, newName: cloned.projectName });
         return cloned;
+      },
+
+      logProjectAudit: (projectId: string, action: ProjectAuditAction, metadata?: any) => {
+        const entry: ProjectAuditLog = {
+          id: "aud_" + Math.random().toString(36).substring(2, 9),
+          projectId,
+          userId: "usr_active",
+          action,
+          metadata: metadata || {},
+          createdAt: new Date().toISOString()
+        };
+        set((state) => ({
+          auditLogs: [entry, ...state.auditLogs]
+        }));
       },
 
       updateMaterialRate: (id: string, newRate: number, reason: string) =>
