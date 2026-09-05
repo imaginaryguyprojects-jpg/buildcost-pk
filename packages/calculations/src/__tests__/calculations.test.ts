@@ -12,7 +12,7 @@ import {
   calculatePaint,
   calculateCompleteHouseEstimate,
   simulatePriceScenario
-} from "../index.js";
+} from "../index.ts";
 
 describe("BuildCost Connect Calculation Engine Test Suite", () => {
   describe("Area and Plot Calculations", () => {
@@ -175,6 +175,55 @@ describe("BuildCost Connect Calculation Engine Test Suite", () => {
       expect(scenario.scenarioTotal).toBeGreaterThan(scenario.originalTotal);
       expect(scenario.deltaAmount).toBe(scenario.scenarioTotal - scenario.originalTotal);
       expect(scenario.deltaPercentage).toBeGreaterThan(0);
+    });
+
+    it("correctly increases brickwork and cement quantities when wall height is increased", () => {
+      const standardHeight = calculateCompleteHouseEstimate({
+        plotAreaMarla: 5,
+        marlaSqft: 225,
+        coveredAreaSqft: 2000,
+        numberOfFloors: 2,
+        quality: "standard",
+        cityId: "isb",
+        cityName: "Islamabad",
+        buildingHeights: {
+          foundationDepthFt: 4.5,
+          plinthHeightFt: 3.0,
+          parapetWallHeightFt: 3.5,
+          floors: [
+            { floorNumber: 0, floorName: "Ground Floor", coveredAreaSqft: 1000, floorToFloorHeightFt: 10.5, clearCeilingHeightFt: 9.5, wallHeightFt: 9.5 },
+            { floorNumber: 1, floorName: "First Floor", coveredAreaSqft: 1000, floorToFloorHeightFt: 10.0, clearCeilingHeightFt: 9.5, wallHeightFt: 9.5 }
+          ]
+        }
+      });
+
+      const highCeiling = calculateCompleteHouseEstimate({
+        plotAreaMarla: 5,
+        marlaSqft: 225,
+        coveredAreaSqft: 2000,
+        numberOfFloors: 2,
+        quality: "standard",
+        cityId: "isb",
+        cityName: "Islamabad",
+        buildingHeights: {
+          foundationDepthFt: 4.5,
+          plinthHeightFt: 3.0,
+          parapetWallHeightFt: 3.5,
+          floors: [
+            { floorNumber: 0, floorName: "Ground Floor", coveredAreaSqft: 1000, floorToFloorHeightFt: 12.0, clearCeilingHeightFt: 11.0, wallHeightFt: 11.0 },
+            { floorNumber: 1, floorName: "First Floor", coveredAreaSqft: 1000, floorToFloorHeightFt: 11.5, clearCeilingHeightFt: 10.5, wallHeightFt: 10.5 }
+          ]
+        }
+      });
+
+      const stdBricks = standardHeight.materials.find((m) => m.materialId === "bricks")!.finalQuantity;
+      const highBricks = highCeiling.materials.find((m) => m.materialId === "bricks")!.finalQuantity;
+      expect(highBricks).toBeGreaterThan(stdBricks);
+
+      // Verify that assumptions record the configured heights
+      const groundAssumption = highCeiling.assumptions.find((a) => a.key === "floorHeight_0");
+      expect(groundAssumption).toBeDefined();
+      expect(groundAssumption?.value).toContain("11 ft");
     });
   });
 });

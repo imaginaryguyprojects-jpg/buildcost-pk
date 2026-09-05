@@ -9,6 +9,8 @@ import { LoginGatingModal } from "@/components/auth/LoginGatingModal";
 import { OnboardingModal } from "@/components/auth/OnboardingModal";
 import { QuickAddModal } from "@/components/modals/QuickAddModal";
 import { SmartSearchModal } from "@/components/modals/SmartSearchModal";
+import { ProUpgradeModal } from "@/components/subscription/ProUpgradeModal";
+import { PaymentCheckoutModal } from "@/components/subscription/PaymentCheckoutModal";
 import { useAuthStore } from "@/stores/authStore";
 import { CheckCircle2, AlertCircle, Info, X } from "lucide-react";
 
@@ -47,11 +49,13 @@ export function AppShell({ children }: AppShellProps) {
         </div>
       )}
 
-      {/* Global Auth & Quick Modals */}
+      {/* Global Auth, Quick & Subscription Modals */}
       <LoginGatingModal />
       <OnboardingModal />
       <QuickAddModal />
       <SmartSearchModal />
+      <ProUpgradeModal />
+      <PaymentCheckoutModal />
 
       {isFullPageLayout ? (
         <main className="flex-1 w-full">{children}</main>

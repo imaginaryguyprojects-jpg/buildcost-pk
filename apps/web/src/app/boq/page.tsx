@@ -24,9 +24,14 @@ const DEFAULT_BOQ_ROWS: BOQRow[] = [
   { id: "7", category: "Flooring", description: "Porcelain floor tiles 60x60cm with cement-bond adhesive", unit: "sqft", quantity: 2400, rate: 260 }
 ];
 
+import { canUseFeature } from "@buildcost/config";
+import { useAuthStore } from "@/stores/authStore";
+
 export default function BOQStudioPage() {
   const { getActiveProject } = useProjectStore();
   const project = getActiveProject();
+  const { user, openUpgradeModal, showToast } = useAuthStore();
+  const isPro = canUseFeature(user?.plan, "professional_pdf");
 
   const [items, setItems] = useState<BOQRow[]>(DEFAULT_BOQ_ROWS);
   const [discountPercent, setDiscountPercent] = useState<number>(0);
@@ -53,6 +58,38 @@ export default function BOQStudioPage() {
     setItems(items.filter((item) => item.id !== id));
   };
 
+  const handleExportPDF = () => {
+    if (!isPro) {
+      openUpgradeModal("Professional PDF & Branded BOQ Export");
+      return;
+    }
+    window.print();
+  };
+
+  const handleExportExcel = () => {
+    if (!isPro) {
+      openUpgradeModal("Excel Spreadsheet & BOQ CSV Export");
+      return;
+    }
+    // Generate CSV
+    const headers = "Category,Description,Unit,Quantity,Rate (PKR),Total Amount (PKR)\n";
+    const rows = items
+      .map(
+        (i) =>
+          `"${i.category}","${i.description}","${i.unit}",${i.quantity},${i.rate},${i.quantity * i.rate}`
+      )
+      .join("\n");
+    const blob = new Blob([headers + rows], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `${project?.projectName || "BuildCost"}_BOQ.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("BOQ exported to CSV successfully!", "success");
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -63,7 +100,23 @@ export default function BOQStudioPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={handleExportExcel}
+            className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold shadow-xs transition-all"
+          >
+            <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>Export CSV</span>
+          </button>
+
+          <button
+            onClick={handleExportPDF}
+            className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold shadow-xs transition-all"
+          >
+            <Printer className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>Print / PDF</span>
+          </button>
+
           <button
             onClick={handleAddItem}
             className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-sm hover:shadow transition-all"

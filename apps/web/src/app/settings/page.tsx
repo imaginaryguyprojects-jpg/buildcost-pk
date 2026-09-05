@@ -17,7 +17,9 @@ import {
   AlertTriangle,
   CheckCircle2,
   Lock,
-  Sparkles
+  Sparkles,
+  Mail,
+  Phone
 } from "lucide-react";
 import { PAK_CITIES, MARLA_STANDARDS } from "@buildcost/config";
 
@@ -218,7 +220,51 @@ export default function SettingsPage() {
         </button>
       </form>
 
-      {/* 4. Danger Zone: Account Deletion (Section 99) */}
+      {/* 4. Official Customer Support & Payment Help (Sections 106–108) */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 space-y-4 shadow-xs">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+          Official Support &amp; Assistance
+        </h3>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Have inquiries regarding your construction estimates, BOQ exports, or Pro subscription payment verification?
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <a
+            href="mailto:imaginary.guy.project@gmail.com"
+            className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 hover:border-emerald-500/50 flex items-center gap-3 transition-colors group"
+          >
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 flex items-center justify-center shrink-0">
+              <Mail className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Support Email</span>
+              <span className="text-xs font-mono font-semibold text-slate-800 dark:text-slate-200 group-hover:text-emerald-600">
+                imaginary.guy.project@gmail.com
+              </span>
+            </div>
+          </a>
+
+          <a
+            href="https://wa.me/923455074541"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 hover:border-emerald-500/50 flex items-center gap-3 transition-colors group"
+          >
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 flex items-center justify-center shrink-0">
+              <Phone className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Admin WhatsApp</span>
+              <span className="text-xs font-mono font-semibold text-slate-800 dark:text-slate-200 group-hover:text-emerald-600">
+                0345-50-74-541
+              </span>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      {/* 5. Danger Zone: Account Deletion (Section 99) */}
       <div className="bg-rose-950/20 border border-rose-900/40 rounded-3xl p-6 space-y-3">
         <div className="flex items-center gap-2 text-rose-400">
           <AlertTriangle className="w-5 h-5" />

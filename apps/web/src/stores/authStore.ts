@@ -31,6 +31,16 @@ interface AuthState {
   notify: (message: string, type?: "success" | "info" | "warning" | "error") => void;
   clearToast: () => void;
 
+  // Subscription & Payment Modals (Sections 48–57)
+  upgradeModalOpen: boolean;
+  checkoutModalOpen: boolean;
+  activeFeaturePrompt: string | null;
+  openUpgradeModal: (featureName?: string) => void;
+  closeUpgradeModal: () => void;
+  openCheckoutModal: () => void;
+  closeCheckoutModal: () => void;
+  upgradeToPro: () => void;
+
   // Auth Operations
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (data: {
@@ -69,6 +79,38 @@ export const useAuthStore = create<AuthState>()(
       onboardingModalOpen: false,
       pendingAction: null,
       lastToast: null,
+      upgradeModalOpen: false,
+      checkoutModalOpen: false,
+      activeFeaturePrompt: null,
+
+      openUpgradeModal: (featureName) => {
+        set({
+          upgradeModalOpen: true,
+          activeFeaturePrompt: featureName || null,
+        });
+      },
+
+      closeUpgradeModal: () => {
+        set({ upgradeModalOpen: false, activeFeaturePrompt: null });
+      },
+
+      openCheckoutModal: () => {
+        set({ upgradeModalOpen: false, checkoutModalOpen: true });
+      },
+
+      closeCheckoutModal: () => {
+        set({ checkoutModalOpen: false });
+      },
+
+      upgradeToPro: () => {
+        set((state) => ({
+          checkoutModalOpen: false,
+          user: state.user
+            ? { ...state.user, plan: "pro" as any, subscriptionTier: "pro" as any }
+            : null,
+        }));
+        get().showToast("🎉 Congratulations! Your account has been upgraded to BuildCost Pro.", "success");
+      },
 
       openLoginModal: (pending?: PendingAction) => {
         set({

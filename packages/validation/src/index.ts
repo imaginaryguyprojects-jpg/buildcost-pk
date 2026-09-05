@@ -1,3 +1,3 @@
-export * from "./project.schema.js";
-export * from "./calculator.schema.js";
-export * from "./rate.schema.js";
+export * from "./project.schema";
+export * from "./calculator.schema";
+export * from "./rate.schema";

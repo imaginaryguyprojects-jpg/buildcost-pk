@@ -53,3 +53,22 @@ export interface CalculationSnapshot {
   ratesSnapshot: Record<string, { rate: number; source: string; verifiedAt: string }>;
   createdAt: string;
 }
+
+export interface FloorHeightConfiguration {
+  floorNumber: number; // 0 = Ground Floor, 1 = First Floor, -1 = Basement
+  floorName: string;
+  coveredAreaSqft: number;
+  floorToFloorHeightFt: number; // default 10.5 ft
+  clearCeilingHeightFt: number; // default 9.5 ft
+  wallHeightFt: number; // default 9.5 ft
+  roomsCount?: number;
+  notes?: string;
+}
+
+export interface BuildingHeightParameters {
+  foundationDepthFt: number; // default 4.5 ft
+  plinthHeightFt: number; // default 3.0 ft
+  parapetWallHeightFt: number; // default 3.5 ft
+  floors: FloorHeightConfiguration[];
+}
+

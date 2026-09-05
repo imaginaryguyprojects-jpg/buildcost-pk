@@ -3,7 +3,10 @@
 import React, { useState } from "react";
 import { Bot, Send, Sparkles, Building2, ShieldAlert, CheckCircle2, Calculator } from "lucide-react";
 import { formatPKR, formatLakhCrore, formatNumber } from "@/lib/formatters";
-import { calculateCompleteHouseEstimate, calculateConcrete, calculateBrickwork } from "@buildcost/calculations";
+import { calculateCompleteHouseEstimate, calculateConcrete, calculateBrickwork, simulatePriceScenario } from "@buildcost/calculations";
+import { canUseFeature } from "@buildcost/config";
+import { useAuthStore } from "@/stores/authStore";
+import { Sliders, TrendingUp, RefreshCw, Crown } from "lucide-react";
 
 interface Message {
   id: string;
@@ -25,6 +28,32 @@ const PRESET_PROMPTS = [
 ];
 
 export default function AIAdvisorPage() {
+  const { user, openUpgradeModal } = useAuthStore();
+  const isPro = canUseFeature(user?.plan, "price_scenario_simulator");
+
+  const [showSimulator, setShowSimulator] = useState(false);
+  const [steelDelta, setSteelDelta] = useState(10);
+  const [cementDelta, setCementDelta] = useState(5);
+  const [bricksDelta, setBricksDelta] = useState(-3);
+  const [labourDelta, setLabourDelta] = useState(8);
+
+  const baselineEstimate = calculateCompleteHouseEstimate({
+    plotAreaMarla: 5,
+    marlaSqft: 225,
+    coveredAreaSqft: 2200,
+    numberOfFloors: 2,
+    quality: "standard",
+    cityId: "isb",
+    cityName: "Islamabad"
+  });
+
+  const scenarioResult = simulatePriceScenario(baselineEstimate, {
+    steelPct: steelDelta,
+    cementPct: cementDelta,
+    bricksPct: bricksDelta,
+    labourPct: labourDelta
+  });
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -143,21 +172,224 @@ export default function AIAdvisorPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              AI Construction Cost Advisor
+              AI Construction Cost Advisor & Inflation Simulator
             </h1>
             <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">
               GPT Civil Intelligence
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Engineered civil heuristics and cost models for Pakistani building bylaws and real-time market rates
+            Civil engineering heuristics, material sensitivity modeling, and cost estimation across Pakistani housing authorities
           </p>
         </div>
+
+        <button
+          onClick={() => setShowSimulator(!showSimulator)}
+          className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border ${
+            showSimulator
+              ? "bg-emerald-600 text-white border-emerald-600"
+              : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-emerald-500"
+          }`}
+        >
+          <Sliders className="w-4 h-4 text-emerald-500" />
+          <span>{showSimulator ? "Hide Price Simulator" : "Open Price Simulator"}</span>
+        </button>
       </div>
+
+      {/* Section 79: Price Sensitivity & Inflation Simulator */}
+      {showSimulator && (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-5 animate-in fade-in duration-300">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <div>
+                <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Commodity Price Sensitivity & Inflation Stress Test
+                </h2>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Simulate material and labour price fluctuations on a benchmark 5 Marla (2,200 sqft) double-story project
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setSteelDelta(0);
+                  setCementDelta(0);
+                  setBricksDelta(0);
+                  setLabourDelta(0);
+                }}
+                className="text-xs text-slate-500 hover:text-emerald-600 flex items-center gap-1 transition-colors"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Reset to 0%</span>
+              </button>
+
+              {!isPro && (
+                <button
+                  onClick={() => openUpgradeModal("Price Sensitivity & Inflation Simulator")}
+                  className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold border border-emerald-500/30 flex items-center gap-1.5 transition-colors"
+                >
+                  <Crown className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Pro Feature</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {!isPro && (
+            <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20">
+              <div className="flex items-center gap-2">
+                <Crown className="w-4 h-4 text-amber-500 shrink-0" />
+                <span className="text-xs text-slate-700 dark:text-slate-300">
+                  You are previewing the <strong className="text-emerald-600 dark:text-emerald-400">Price Sensitivity Simulator</strong>. Upgrade to Pro for unlimited multi-project scenarios, PDF export, and custom vendor rates.
+                </span>
+              </div>
+              <button
+                onClick={() => openUpgradeModal("Price Sensitivity & Inflation Simulator")}
+                className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shrink-0 shadow-sm transition-all"
+              >
+                Upgrade Now
+              </button>
+            </div>
+          )}
+
+          {/* Results Summary Pill Banner */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+              <span className="text-[10px] text-slate-500 block uppercase font-medium">Baseline Cost</span>
+              <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">
+                {formatPKR(scenarioResult.baselineTotal)}
+              </span>
+            </div>
+
+            <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+              <span className="text-[10px] text-slate-500 block uppercase font-medium">Adjusted Scenario</span>
+              <span className="text-sm font-extrabold text-slate-900 dark:text-white">
+                {formatPKR(scenarioResult.scenarioTotal)}
+              </span>
+            </div>
+
+            <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+              <span className="text-[10px] text-slate-500 block uppercase font-medium">Net Variance</span>
+              <span className={`text-sm font-extrabold ${scenarioResult.deltaAmount >= 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                {scenarioResult.deltaAmount >= 0 ? "+" : ""}{formatPKR(scenarioResult.deltaAmount)}
+              </span>
+            </div>
+
+            <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+              <span className="text-[10px] text-slate-500 block uppercase font-medium">Budget Impact</span>
+              <span className={`text-sm font-extrabold ${scenarioResult.deltaPercentage >= 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                {scenarioResult.deltaPercentage >= 0 ? "+" : ""}{scenarioResult.deltaPercentage.toFixed(1)}%
+              </span>
+            </div>
+          </div>
+
+          {/* Sliders Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            {/* Steel Slider */}
+            <div className="space-y-1.5 bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+              <div className="flex justify-between text-xs font-semibold">
+                <span className="text-slate-700 dark:text-slate-300">Deformed Steel Rebar (Grade 60)</span>
+                <span className={`font-mono font-bold ${steelDelta > 0 ? "text-rose-500" : steelDelta < 0 ? "text-emerald-500" : "text-slate-500"}`}>
+                  {steelDelta > 0 ? `+${steelDelta}%` : `${steelDelta}%`}
+                </span>
+              </div>
+              <input
+                type="range"
+                min="-30"
+                max="50"
+                step="5"
+                value={steelDelta}
+                onChange={(e) => setSteelDelta(Number(e.target.value))}
+                className="w-full accent-emerald-600 cursor-pointer"
+              />
+              <div className="flex justify-between text-[10px] text-slate-400">
+                <span>-30%</span>
+                <span>0%</span>
+                <span>+50%</span>
+              </div>
+            </div>
+
+            {/* Cement Slider */}
+            <div className="space-y-1.5 bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+              <div className="flex justify-between text-xs font-semibold">
+                <span className="text-slate-700 dark:text-slate-300">OPC Cement (50kg Bags)</span>
+                <span className={`font-mono font-bold ${cementDelta > 0 ? "text-rose-500" : cementDelta < 0 ? "text-emerald-500" : "text-slate-500"}`}>
+                  {cementDelta > 0 ? `+${cementDelta}%` : `${cementDelta}%`}
+                </span>
+              </div>
+              <input
+                type="range"
+                min="-30"
+                max="50"
+                step="5"
+                value={cementDelta}
+                onChange={(e) => setCementDelta(Number(e.target.value))}
+                className="w-full accent-emerald-600 cursor-pointer"
+              />
+              <div className="flex justify-between text-[10px] text-slate-400">
+                <span>-30%</span>
+                <span>0%</span>
+                <span>+50%</span>
+              </div>
+            </div>
+
+            {/* Bricks Slider */}
+            <div className="space-y-1.5 bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+              <div className="flex justify-between text-xs font-semibold">
+                <span className="text-slate-700 dark:text-slate-300">Red Clay Bricks (Awwal)</span>
+                <span className={`font-mono font-bold ${bricksDelta > 0 ? "text-rose-500" : bricksDelta < 0 ? "text-emerald-500" : "text-slate-500"}`}>
+                  {bricksDelta > 0 ? `+${bricksDelta}%` : `${bricksDelta}%`}
+                </span>
+              </div>
+              <input
+                type="range"
+                min="-30"
+                max="50"
+                step="5"
+                value={bricksDelta}
+                onChange={(e) => setBricksDelta(Number(e.target.value))}
+                className="w-full accent-emerald-600 cursor-pointer"
+              />
+              <div className="flex justify-between text-[10px] text-slate-400">
+                <span>-30%</span>
+                <span>0%</span>
+                <span>+50%</span>
+              </div>
+            </div>
+
+            {/* Labour Slider */}
+            <div className="space-y-1.5 bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+              <div className="flex justify-between text-xs font-semibold">
+                <span className="text-slate-700 dark:text-slate-300">Labour & Contractor Execution</span>
+                <span className={`font-mono font-bold ${labourDelta > 0 ? "text-rose-500" : labourDelta < 0 ? "text-emerald-500" : "text-slate-500"}`}>
+                  {labourDelta > 0 ? `+${labourDelta}%` : `${labourDelta}%`}
+                </span>
+              </div>
+              <input
+                type="range"
+                min="-30"
+                max="50"
+                step="5"
+                value={labourDelta}
+                onChange={(e) => setLabourDelta(Number(e.target.value))}
+                className="w-full accent-emerald-600 cursor-pointer"
+              />
+              <div className="flex justify-between text-[10px] text-slate-400">
+                <span>-30%</span>
+                <span>0%</span>
+                <span>+50%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Preset Suggestions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

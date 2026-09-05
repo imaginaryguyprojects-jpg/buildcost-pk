@@ -135,6 +135,81 @@ export default function VendorsPage() {
         </div>
       </div>
 
+      {/* Vendor Rate & Transport Comparison (Section 80) */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-5 shadow-xs space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <TrendingDown className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+              Vendor Delivered Rate Comparison (Market vs. Supplier Logistics)
+            </h2>
+          </div>
+          <span className="text-[11px] text-slate-500">True landed cost including freight &amp; unloading charges</span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          {/* Comparison 1: Cement */}
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60 space-y-2">
+            <div className="flex items-center justify-between font-bold text-slate-800 dark:text-slate-200">
+              <span>Bestway / Fauji Cement (200 Bags)</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[11px]">Islamabad / RWP</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                <div className="font-bold text-slate-900 dark:text-white">Al-Madina Traders</div>
+                <div className="text-slate-500 text-[11px]">Base: Rs. 1,420/bag</div>
+                <div className="text-slate-500 text-[11px]">Freight: Rs. 6,000 (Rs. 30/bag)</div>
+                <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+                  Landed: Rs. 1,450/bag
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-800 bg-emerald-50/20">
+                <div className="font-bold text-slate-900 dark:text-white flex items-center justify-between">
+                  <span>Fauji Direct Agency</span>
+                  <span className="text-[9px] font-bold text-emerald-600 uppercase">Save Rs. 5</span>
+                </div>
+                <div className="text-slate-500 text-[11px]">Base: Rs. 1,440/bag</div>
+                <div className="text-slate-500 text-[11px]">Freight: Rs. 1,000 (Rs. 5/bag)</div>
+                <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+                  Landed: Rs. 1,445/bag (Best)
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Comparison 2: Grade 60 Steel */}
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60 space-y-2">
+            <div className="flex items-center justify-between font-bold text-slate-800 dark:text-slate-200">
+              <span>Grade 60 Deformed Rebar (5 Tons)</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[11px]">Lahore / Gujranwala</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                <div className="font-bold text-slate-900 dark:text-white">Mughal Steel Dealer</div>
+                <div className="text-slate-500 text-[11px]">Base: Rs. 260,000/ton</div>
+                <div className="text-slate-500 text-[11px]">Trailer: Rs. 15,000</div>
+                <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+                  Landed: Rs. 263,000/ton
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-800 bg-emerald-50/20">
+                <div className="font-bold text-slate-900 dark:text-white flex items-center justify-between">
+                  <span>Ittefaq Mills Outlet</span>
+                  <span className="text-[9px] font-bold text-emerald-600 uppercase">Save Rs. 600</span>
+                </div>
+                <div className="text-slate-500 text-[11px]">Base: Rs. 258,000/ton</div>
+                <div className="text-slate-500 text-[11px]">Trailer: Rs. 22,000</div>
+                <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+                  Landed: Rs. 262,400/ton (Best)
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Category Filter Pills */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
         {["all", "cement", "steel", "bricks", "sand", "crush", "tiles", "paint", "plumbing", "electrical"].map((cat) => (

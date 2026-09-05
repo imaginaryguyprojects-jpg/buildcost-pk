@@ -2,6 +2,8 @@ import { AreaUnit, CurrencyUnit } from "@buildcost/config";
 
 export type UserRole = "user" | "admin" | "superadmin";
 
+export type SubscriptionTier = "free" | "pro" | "business";
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -10,6 +12,8 @@ export interface UserProfile {
   companyName?: string;
   cityId: string;
   role: UserRole;
+  plan?: SubscriptionTier;
+  subscriptionTier?: SubscriptionTier;
   avatarUrl?: string;
   createdAt: string;
   updatedAt: string;

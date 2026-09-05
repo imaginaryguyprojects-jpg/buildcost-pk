@@ -41,10 +41,10 @@ export function Topbar() {
 
   const topNavLinks = [
     { label: "Dashboard", href: "/dashboard" },
-    { label: "History", href: "/history" },
+    { label: "Projects", href: "/projects" },
+    { label: "Calculator", href: "/calculator" },
     { label: "Rates", href: "/rates/materials" },
-    { label: "Labour", href: "/labour" },
-    { label: "Advisor", href: "/advisor" }
+    { label: "Profile", href: "/profile" }
   ];
 
   return (

@@ -40,9 +40,32 @@ export default function HouseEstimatePage() {
   const [customCementRate, setCustomCementRate] = useState<number>(1450);
   const [customSteelRate, setCustomSteelRate] = useState<number>(260);
   const [customBrickRate, setCustomBrickRate] = useState<number>(14);
+  const [customSandRate, setCustomSandRate] = useState<number>(45);
+  const [customCrushRate, setCustomCrushRate] = useState<number>(65);
+
+  // Building & Floor Heights (Sections 12 & 13)
+  const [showAdvancedHeights, setShowAdvancedHeights] = useState<boolean>(false);
+  const [foundationDepthFt, setFoundationDepthFt] = useState<number>(4.5);
+  const [plinthHeightFt, setPlinthHeightFt] = useState<number>(3.0);
+  const [groundFloorHeight, setGroundFloorHeight] = useState<number>(10.5);
+  const [upperFloorHeight, setUpperFloorHeight] = useState<number>(10.0);
 
   const selectedStandard = MARLA_STANDARDS.find((m) => m.id === marlaStandardId) || MARLA_STANDARDS[0];
   const selectedCity = PAKISTANI_CITIES.find((c) => c.id === cityId) || PAKISTANI_CITIES[0];
+
+  const buildingHeights = {
+    foundationDepthFt,
+    plinthHeightFt,
+    parapetWallHeightFt: 3.5,
+    floors: Array.from({ length: numberOfFloors }, (_, idx) => ({
+      floorNumber: idx,
+      floorName: idx === 0 ? "Ground Floor" : idx === 1 ? "First Floor" : idx === 2 ? "Second Floor" : `Floor ${idx + 1}`,
+      coveredAreaSqft: Math.round(coveredAreaSqft / numberOfFloors),
+      floorToFloorHeightFt: idx === 0 ? groundFloorHeight : upperFloorHeight,
+      clearCeilingHeightFt: idx === 0 ? Math.max(8, groundFloorHeight - 1) : Math.max(8, upperFloorHeight - 1),
+      wallHeightFt: idx === 0 ? Math.max(8, groundFloorHeight - 1) : Math.max(8, upperFloorHeight - 1)
+    }))
+  };
 
   const estimate = calculateCompleteHouseEstimate({
     plotAreaMarla,
@@ -52,9 +75,12 @@ export default function HouseEstimatePage() {
     quality,
     cityId,
     cityName: selectedCity.name,
+    buildingHeights,
     customCementRate,
     customSteelRate,
-    customBrickRate
+    customBrickRate,
+    customSandRate,
+    customCrushRate
   });
 
   const handleSaveEstimate = () => {
@@ -68,15 +94,20 @@ export default function HouseEstimatePage() {
         quality,
         cityId,
         cityName: selectedCity.name,
+        buildingHeights,
         customCementRate,
         customSteelRate,
-        customBrickRate
+        customBrickRate,
+        customSandRate,
+        customCrushRate
       },
       result: estimate,
       ratesSnapshot: {
         mat_cement: { rate: customCementRate, source: "APCMA Dealer Price Index", verifiedAt: "Today 09:30 AM" },
         mat_steel_g60: { rate: customSteelRate * 1000, source: "PSRMA Mills Ex-Factory", verifiedAt: "Today 09:30 AM" },
-        mat_brick_awwal: { rate: customBrickRate, source: "Bhatta Kiln Association", verifiedAt: "Today 09:30 AM" }
+        mat_brick_awwal: { rate: customBrickRate, source: "Bhatta Kiln Association", verifiedAt: "Today 09:30 AM" },
+        mat_sand: { rate: customSandRate, source: `${selectedCity.name} Riverbed Quarry`, verifiedAt: "Today 09:30 AM" },
+        mat_crush: { rate: customCrushRate, source: "Margalla/Sargodha Crusher Plant", verifiedAt: "Today 09:30 AM" }
       }
     };
 
@@ -222,28 +253,106 @@ export default function HouseEstimatePage() {
               </div>
             </div>
 
-            {/* Quality Tier */}
-            <div>
-              <label className="text-slate-700 dark:text-slate-300 font-semibold block mb-1.5">
-                Construction Quality Specification
-              </label>
-              <select
-                value={quality}
-                onChange={(e) => setQuality(e.target.value as ConstructionQuality)}
-                className="w-full bg-slate-50/60 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-              >
-                <option value="economy">Economy (Basic Finishes / Local Fittings)</option>
-                <option value="standard">Standard (A-Quality Grey + Porcelain Tiles)</option>
-                <option value="premium">Premium (Imported Fixtures, Teak Wood, Double Glazed)</option>
-                <option value="luxury">Luxury (Smart Home, Spanish Marble &amp; HVAC)</option>
-              </select>
+            {/* Multi-Storey Building Heights & Floor Specifications (Sections 12 & 13) */}
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Building &amp; Floor Heights
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedHeights(!showAdvancedHeights)}
+                  className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                >
+                  {showAdvancedHeights ? "Hide Details ▲" : "Configure Storeys ▼"}
+                </button>
+              </div>
+
+              {showAdvancedHeights ? (
+                <div className="space-y-3 bg-slate-50 dark:bg-slate-800/40 p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/60 animate-in fade-in duration-200">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] text-slate-600 dark:text-slate-400 font-medium block mb-1">
+                        Foundation Depth (ft)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        min="2"
+                        max="15"
+                        value={foundationDepthFt}
+                        onChange={(e) => setFoundationDepthFt(parseFloat(e.target.value) || 4.5)}
+                        className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs font-mono text-slate-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-600 dark:text-slate-400 font-medium block mb-1">
+                        Plinth Level Height (ft)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        min="1"
+                        max="8"
+                        value={plinthHeightFt}
+                        onChange={(e) => setPlinthHeightFt(parseFloat(e.target.value) || 3.0)}
+                        className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs font-mono text-slate-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] text-slate-600 dark:text-slate-400 font-medium block mb-1">
+                        Ground Floor Height (ft)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        min="8"
+                        max="18"
+                        value={groundFloorHeight}
+                        onChange={(e) => setGroundFloorHeight(parseFloat(e.target.value) || 10.5)}
+                        className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs font-mono text-slate-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-600 dark:text-slate-400 font-medium block mb-1">
+                        Upper Floors Height (ft)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        min="8"
+                        max="16"
+                        value={upperFloorHeight}
+                        onChange={(e) => setUpperFloorHeight(parseFloat(e.target.value) || 10.0)}
+                        className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs font-mono text-slate-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+                  <div className="text-[10px] text-slate-500 italic">
+                    * Clear ceiling height is assumed 1.0 ft below floor-to-floor height to allow for RCC slab &amp; screed.
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between text-[11px] text-slate-500 bg-slate-50/60 dark:bg-slate-800/40 p-2 rounded-lg border border-slate-200/60 dark:border-slate-800">
+                  <span>Ground: {groundFloorHeight}ft • Upper: {upperFloorHeight}ft</span>
+                  <span>Foundation: {foundationDepthFt}ft</span>
+                </div>
+              )}
             </div>
 
-            {/* Custom Material Rates */}
+            {/* Custom Material Rates (Sections 15, 16, 17) */}
             <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
-              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wider">
-                Custom Material Rates (Optional)
-              </span>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Material Rates (Project Custom / Market)
+                </span>
+                <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                  Priority Active
+                </span>
+              </div>
               <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label className="text-[10px] text-slate-500 font-medium block mb-1">
@@ -276,6 +385,33 @@ export default function HouseEstimatePage() {
                     step="0.5"
                     value={customBrickRate}
                     onChange={(e) => setCustomBrickRate(parseFloat(e.target.value) || 0)}
+                    className="w-full bg-slate-50/60 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs font-mono font-semibold text-slate-800 dark:text-slate-100"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                <div>
+                  <label className="text-[10px] text-slate-500 font-medium block mb-1">
+                    Sand / Rait (CFT)
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    value={customSandRate}
+                    onChange={(e) => setCustomSandRate(parseFloat(e.target.value) || 0)}
+                    className="w-full bg-slate-50/60 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs font-mono font-semibold text-slate-800 dark:text-slate-100"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-500 font-medium block mb-1">
+                    Crush / Bajri (CFT)
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    value={customCrushRate}
+                    onChange={(e) => setCustomCrushRate(parseFloat(e.target.value) || 0)}
                     className="w-full bg-slate-50/60 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs font-mono font-semibold text-slate-800 dark:text-slate-100"
                   />
                 </div>
