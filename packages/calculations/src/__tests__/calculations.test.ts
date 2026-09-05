@@ -22,7 +22,11 @@ import {
   compareWorkforceScenarios,
   calculateFullHouseEstimate,
   calculateProjectHealthScore,
-  calculateWhatIfScenario
+  calculateWhatIfScenario,
+  calculateMarble,
+  calculateVolume,
+  calculateBudgetVariance,
+  calculateProgress
 } from "../index.ts";
 
 describe("BuildCost Connect Calculation Engine Test Suite", () => {
@@ -371,7 +375,63 @@ describe("BuildCost Connect Calculation Engine Test Suite", () => {
       expect(result.percentageDifference).toBe(3.25);
       expect(result.components[0].newCost).toBe(2750000);
     });
+
+    it("calculates Marble requirements with wastage and polishing", () => {
+      const marble = calculateMarble({
+        areaSqft: 500,
+        marbleRatePerSqft: 150,
+        wastagePercent: 7,
+        installationRatePerSqft: 45,
+        polishingRatePerSqft: 30
+      });
+
+      expect(marble.netAreaSqft).toBe(500);
+      expect(marble.wastageQuantitySqft).toBe(35);
+      expect(marble.requiredQuantitySqft).toBe(535);
+      expect(marble.materialCost).toBe(535 * 150);
+      expect(marble.installationCost).toBe(500 * 45);
+      expect(marble.polishingCost).toBe(500 * 30);
+      expect(marble.totalCost).toBe(marble.materialCost + marble.installationCost + marble.polishingCost);
+    });
+
+    it("computes 3D Volume in CFT and M3 accurately", () => {
+      const volFt = calculateVolume(10, 10, 10, "ft");
+      expect(volFt.volumeCft).toBe(1000);
+      expect(volFt.volumeM3).toBeCloseTo(28.32, 1);
+
+      const volM = calculateVolume(2, 3, 4, "m");
+      expect(volM.volumeM3).toBe(24);
+      expect(volM.volumeCft).toBeCloseTo(847.55, 1);
+    });
+
+    it("evaluates Budget Variance and Financial Health", () => {
+      const healthy = calculateBudgetVariance(10000000, 6000000, 6500000);
+      expect(healthy.remainingBudget).toBe(4000000);
+      expect(healthy.isOverBudget).toBe(false);
+      expect(healthy.health).toBe("HEALTHY");
+
+      const over = calculateBudgetVariance(5000000, 5500000, 5000000);
+      expect(over.remainingBudget).toBe(-500000);
+      expect(over.isOverBudget).toBe(true);
+      expect(over.health).toBe("CRITICAL");
+    });
+
+    it("computes Weighted Multi-Stage Construction Progress", () => {
+      const progress = calculateProgress([
+        { name: "Foundation", progressPercent: 100, weight: 2 },
+        { name: "Structure", progressPercent: 100, weight: 3 },
+        { name: "Finishing", progressPercent: 50, weight: 3 },
+        { name: "Handover", progressPercent: 0, weight: 2 }
+      ]);
+
+      // (100*2 + 100*3 + 50*3 + 0*2) / 10 = (200 + 300 + 150) / 10 = 650 / 10 = 65%
+      expect(progress.overallProgressPercent).toBe(65);
+      expect(progress.completedStagesCount).toBe(2);
+      expect(progress.inProgressStagesCount).toBe(1);
+      expect(progress.pendingStagesCount).toBe(1);
+    });
   });
 });
+
 
 
