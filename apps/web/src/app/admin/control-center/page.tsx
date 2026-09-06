@@ -40,7 +40,9 @@ import {
   Check,
   X,
   Compass,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Activity,
+  MessageCircle
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useProjectStore } from "@/stores/projectStore";
@@ -58,6 +60,7 @@ import { cn } from "@/lib/utils";
 
 type ControlTab =
   | "overview"
+  | "live_analytics"
   | "plans_access"
   | "project_access"
   | "features"
@@ -105,6 +108,7 @@ export default function SuperAdminControlCenterPage() {
     payments,
     approvePayment,
     rejectPayment,
+    getAdminContactUserWhatsAppUrl,
     featureFlags,
     updateFeatureFlag,
     bulkUpdateFeatureFlags,
@@ -266,6 +270,15 @@ export default function SuperAdminControlCenterPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
+          {/* Live Analytics Dashboard Direct Link */}
+          <Link
+            href="/admin/live-analytics"
+            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm shadow-emerald-900/30"
+          >
+            <Activity className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Live Analytics</span>
+          </Link>
+
           {/* Emergency Panic Button */}
           <button
             type="button"
@@ -343,6 +356,7 @@ export default function SuperAdminControlCenterPage() {
           <nav className="space-y-0.5 text-xs font-medium">
             {[
               { id: "overview", label: "Dashboard & KPIs", icon: LayoutGrid, count: null },
+              { id: "live_analytics", label: "Live Analytics & Pulse", icon: Activity, count: "LIVE" },
               { id: "plans_access", label: "Plans & Access Control", icon: ShieldCheck, count: null },
               { id: "project_access", label: "Project Access Manager", icon: FolderArchive, count: "PRO" },
               { id: "features", label: "Feature Manager & Flags", icon: Zap, count: featureFlags.length },
@@ -509,6 +523,71 @@ export default function SuperAdminControlCenterPage() {
                     ))}
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: LIVE ANALYTICS & PULSE */}
+          {activeTab === "live_analytics" && (
+            <div className="space-y-6 max-w-5xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-black text-white flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-emerald-400" />
+                    Live Analytics &amp; Multi-Platform Pulse
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Real-time telemetry, 18 KPI cards, 8-stage conversion funnels, WhatsApp analytics, and system health.
+                  </p>
+                </div>
+                <Link
+                  href="/admin/live-analytics"
+                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center gap-2 transition-all shadow-md shadow-amber-500/20"
+                >
+                  <span>Launch Dedicated Analytics Screen</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+
+              {/* Quick Pulse Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-400">Active Now (5 Min)</span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                  </div>
+                  <div className="text-2xl font-black text-white font-mono">38 Users</div>
+                  <p className="text-[11px] text-slate-500">20 Web • 13 Android • 5 Extension</p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+                  <span className="text-xs font-bold text-slate-400">Conversion Funnel</span>
+                  <div className="text-2xl font-black text-amber-400 font-mono">4.9%</div>
+                  <p className="text-[11px] text-slate-500">Free to Pro paid conversions</p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+                  <span className="text-xs font-bold text-slate-400">Gross Platform Revenue</span>
+                  <div className="text-2xl font-black text-emerald-400 font-mono">Rs. 549,725</div>
+                  <p className="text-[11px] text-slate-500">Easypaisa, JazzCash &amp; Raast</p>
+                </div>
+              </div>
+
+              {/* Full CTA Banner */}
+              <div className="p-6 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-900/90 to-amber-950/40 border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <h3 className="text-base font-bold text-white">Access the Complete 14-Module Analytics Suite</h3>
+                  <p className="text-xs text-slate-300">
+                    Includes 18 Top KPIs, Free vs Pro retention cohorts, multi-platform comparisons, 15 feature execution metrics, WhatsApp CTA telemetry, 13 Pakistani cities, and microservice latencies.
+                  </p>
+                </div>
+                <Link
+                  href="/admin/live-analytics"
+                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shrink-0 flex items-center gap-2 shadow-lg shadow-amber-500/20"
+                >
+                  <Activity className="w-4 h-4" />
+                  <span>Open Live Analytics Dashboard</span>
+                </Link>
               </div>
             </div>
           )}
@@ -1134,24 +1213,41 @@ export default function SuperAdminControlCenterPage() {
               {/* Live Pending Submissions Queue */}
               <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-white">Customer Payment Verification Queue</h3>
-                  <span className="text-xs text-amber-400 font-bold">
-                    {payments.filter(p => p.status === "pending").length} Pending Verification
-                  </span>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">Customer Payment Verification Queue</h3>
+                    <p className="text-[11px] text-slate-400">Review proof slips and communicate with subscribers via WhatsApp</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-amber-400 font-bold">
+                      {payments.filter(p => p.status === "pending" || p.status === "under_review").length} Pending Review
+                    </span>
+                    <Link
+                      href="/admin"
+                      className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1 transition-all border border-slate-700"
+                    >
+                      <span>Full Payments Hub</span>
+                      <ExternalLink className="w-3 h-3 text-slate-400" />
+                    </Link>
+                  </div>
                 </div>
 
                 <div className="divide-y divide-slate-800">
                   {payments.map((p) => (
                     <div key={p.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                       <div>
-                        <div className="font-bold text-white flex items-center gap-2">
+                        <div className="font-bold text-white flex items-center gap-2 flex-wrap">
                           <span>{p.userName}</span>
                           <span className="text-[10px] text-slate-400">({p.userEmail})</span>
                           <span className={cn(
                             "px-2 py-0.5 rounded text-[9px] font-bold uppercase",
-                            p.status === "approved" ? "bg-emerald-950 text-emerald-400" : p.status === "rejected" ? "bg-rose-950 text-rose-400" : "bg-amber-950 text-amber-400"
+                            p.status === "approved" ? "bg-emerald-950 text-emerald-400 border border-emerald-800/50" :
+                            p.status === "rejected" ? "bg-rose-950 text-rose-400 border border-rose-800/50" :
+                            p.status === "under_review" ? "bg-blue-950 text-blue-400 border border-blue-800/50" :
+                            p.status === "expired" ? "bg-slate-800 text-slate-400" :
+                            p.status === "refunded" ? "bg-purple-950 text-purple-400 border border-purple-800/50" :
+                            "bg-amber-950 text-amber-400 border border-amber-800/50"
                           )}>
-                            {p.status}
+                            {p.status.replace("_", " ")}
                           </span>
                         </div>
                         <div className="text-[11px] text-slate-400 mt-0.5">
@@ -1159,31 +1255,46 @@ export default function SuperAdminControlCenterPage() {
                         </div>
                       </div>
 
-                      {p.status === "pending" && (
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              approvePayment(p.id, user?.fullName || "Super Admin");
-                              showToast(`Approved Pro subscription for ${p.userName}!`, "success");
-                            }}
-                            className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold"
+                      <div className="flex items-center gap-2">
+                        {p.userPhone && (
+                          <a
+                            href={getAdminContactUserWhatsAppUrl({ userPhone: p.userPhone, name: p.userName, amount: p.amountPkr })}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-2.5 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-1 transition-all"
+                            title="Open WhatsApp chat with prefilled verification update"
                           >
-                            Approve Pro
-                          </button>
-                          <button
-                            onClick={() => {
-                              const reason = prompt("Enter rejection reason:");
-                              if (reason) {
-                                rejectPayment(p.id, reason, user?.fullName || "Super Admin");
-                                showToast(`Rejected payment ${p.id}`, "info");
-                              }
-                            }}
-                            className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold"
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      )}
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            <span>WhatsApp User</span>
+                          </a>
+                        )}
+
+                        {p.status === "pending" && (
+                          <>
+                            <button
+                              onClick={() => {
+                                approvePayment(p.id, user?.fullName || "Super Admin");
+                                showToast(`Approved Pro subscription for ${p.userName}!`, "success");
+                              }}
+                              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer"
+                            >
+                              Approve Pro
+                            </button>
+                            <button
+                              onClick={() => {
+                                const reason = prompt("Enter rejection reason:");
+                                if (reason) {
+                                  rejectPayment(p.id, reason, user?.fullName || "Super Admin");
+                                  showToast(`Rejected payment ${p.id}`, "info");
+                                }
+                              }}
+                              className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold cursor-pointer"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

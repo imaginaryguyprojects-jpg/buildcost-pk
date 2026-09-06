@@ -135,6 +135,43 @@ export interface SuperAdminAuditRecord {
     ipAddress?: string;
     createdAt: string;
 }
+export type PaymentStatusType = "pending" | "under_review" | "approved" | "rejected" | "expired" | "refunded";
+export interface PromotionCampaign {
+    id: string;
+    name: string;
+    code: string;
+    description?: string;
+    startDate: string;
+    endDate: string;
+    eligibleUsers: "all_free" | "new_users" | "contractors" | "all";
+    targetPlan: "pro";
+    discountPct: number;
+    trialDays: number;
+    featuresUnlocked: string[];
+    isActive: boolean;
+    createdBy?: string;
+    createdAt?: string;
+}
+export interface ActiveSessionRecord {
+    id: string;
+    userId?: string;
+    guestId?: string;
+    platform: "web" | "android" | "extension";
+    plan: "free" | "pro" | "business";
+    city: string;
+    ipAddress?: string;
+    lastActiveAt: string;
+}
+export interface PlatformUsageMetrics {
+    users: number;
+    sessions: number;
+    activeUsers: number;
+    calculations: number;
+    projects: number;
+    pdfs: number;
+    shares: number;
+    conversions: number;
+}
 /**
  * Official Project Owner & Admin Configuration
  * Sections 106–109 & 114–120

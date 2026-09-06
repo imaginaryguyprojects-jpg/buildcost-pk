@@ -103,6 +103,8 @@ export default function AdminDashboardPage() {
     auditEntries,
     approvePayment,
     rejectPayment,
+    updatePaymentStatus,
+    getAdminContactUserWhatsAppUrl,
     businessName,
     adminEmail,
     adminWhatsApp,
@@ -126,7 +128,7 @@ export default function AdminDashboardPage() {
 
   const [activeTab, setActiveTab] = useState<"payments" | "accounts" | "rates" | "activity" | "settings" | "analytics">("payments");
   const [analyticsRange, setAnalyticsRange] = useState<"today" | "7d" | "30d" | "3m" | "1y">("30d");
-  const [paymentFilter, setPaymentFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
+  const [paymentFilter, setPaymentFilter] = useState<"all" | "pending" | "under_review" | "approved" | "rejected" | "expired" | "refunded">("all");
   const [selectedPayment, setSelectedPayment] = useState<PaymentSubmission | null>(null);
   const [rejectingPayment, setRejectingPayment] = useState<PaymentSubmission | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
@@ -249,10 +251,19 @@ export default function AdminDashboardPage() {
     return p.status === paymentFilter;
   });
 
-  const pendingCount = payments.filter((p) => p.status === "pending").length;
-  const approvedTotalRevenue = payments
+  const pendingPaymentsCount = payments.filter((p) => p.status === "pending" || p.status === "under_review").length;
+  const approvedPaymentsCount = payments.filter((p) => p.status === "approved").length;
+  const rejectedPaymentsCount = payments.filter((p) => p.status === "rejected").length;
+  const totalPaymentsCount = payments.length;
+  const totalRevenuePkr = payments
     .filter((p) => p.status === "approved")
     .reduce((sum, p) => sum + p.amountPkr, 0);
+  const pendingAmountPkr = payments
+    .filter((p) => p.status === "pending" || p.status === "under_review")
+    .reduce((sum, p) => sum + p.amountPkr, 0);
+
+  const pendingCount = pendingPaymentsCount;
+  const approvedTotalRevenue = totalRevenuePkr;
 
   return (
     <div className="space-y-6">
@@ -500,127 +511,211 @@ export default function AdminDashboardPage() {
 
       {/* TAB 1: SECTION 110 & 111: PAYMENT VERIFICATION CENTER */}
       {activeTab === "payments" && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl overflow-hidden shadow-xs">
-          <div className="p-4 border-b border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-emerald-600" />
-                <span>Customer Payment Verification Center</span>
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Review Easypaisa, JazzCash, and Bank transfer receipts. Approving will activate the customer&apos;s Pro subscription.
-              </p>
+        <div className="space-y-4">
+          {/* SECTION 4: 6 TOP KPI CARDS FOR PAYMENTS */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3.5 shadow-xs">
+              <span className="text-[10px] uppercase font-bold text-amber-600 dark:text-amber-400 block mb-1">
+                Pending Payments
+              </span>
+              <div className="text-xl font-black text-slate-900 dark:text-white">
+                {pendingPaymentsCount}
+              </div>
+              <span className="text-[10px] text-slate-400">Needs review</span>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                onClick={() => setActiveTab("settings")}
-                className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center gap-1.5 hover:bg-emerald-100 transition-all shadow-xs"
-              >
-                <Settings className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Edit Payment Accounts</span>
-              </button>
-
-              {/* Filter Pills */}
-              <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-                {(["all", "pending", "approved", "rejected"] as const).map((filter) => (
-                  <button
-                    key={filter}
-                    onClick={() => setPaymentFilter(filter)}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold capitalize transition-all ${
-                      paymentFilter === filter
-                        ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs"
-                        : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
-                    }`}
-                  >
-                    {filter}
-                  </button>
-                ))}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3.5 shadow-xs">
+              <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 block mb-1">
+                Approved Payments
+              </span>
+              <div className="text-xl font-black text-slate-900 dark:text-white">
+                {approvedPaymentsCount}
               </div>
+              <span className="text-[10px] text-slate-400">Pro activated</span>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3.5 shadow-xs">
+              <span className="text-[10px] uppercase font-bold text-rose-600 dark:text-rose-400 block mb-1">
+                Rejected Payments
+              </span>
+              <div className="text-xl font-black text-slate-900 dark:text-white">
+                {rejectedPaymentsCount}
+              </div>
+              <span className="text-[10px] text-slate-400">Declined verification</span>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3.5 shadow-xs">
+              <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
+                Total Payments
+              </span>
+              <div className="text-xl font-black text-slate-900 dark:text-white">
+                {totalPaymentsCount}
+              </div>
+              <span className="text-[10px] text-slate-400">All-time submissions</span>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3.5 shadow-xs">
+              <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 block mb-1">
+                Total Revenue
+              </span>
+              <div className="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                Rs. {totalRevenuePkr.toLocaleString()}
+              </div>
+              <span className="text-[10px] text-slate-400">Approved funds</span>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3.5 shadow-xs">
+              <span className="text-[10px] uppercase font-bold text-cyan-600 dark:text-cyan-400 block mb-1">
+                Pending Amount
+              </span>
+              <div className="text-xl font-black text-slate-900 dark:text-white">
+                Rs. {pendingAmountPkr.toLocaleString()}
+              </div>
+              <span className="text-[10px] text-slate-400">Awaiting clearance</span>
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="bg-slate-50 dark:bg-slate-950/80 border-b border-slate-200/80 dark:border-slate-800 text-slate-500 uppercase font-semibold">
-                  <th className="py-3 px-4">Customer</th>
-                  <th className="py-3 px-4">Plan &amp; Method</th>
-                  <th className="py-3 px-4">Amount</th>
-                  <th className="py-3 px-4">TRX / TID Reference</th>
-                  <th className="py-3 px-4">Submitted Date</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                {filteredPayments.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="py-8 text-center text-slate-400">
-                      No payment submissions matching this filter.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredPayments.map((p) => (
-                    <tr key={p.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3 px-4">
-                        <div className="font-bold text-slate-900 dark:text-white">{p.userName}</div>
-                        <div className="text-[11px] text-slate-500">{p.userPhone} • {p.userEmail}</div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="font-bold uppercase text-[10px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                          {p.provider.replace("_", " ")}
-                        </span>
-                        <div className="text-[10px] text-slate-400 mt-0.5 font-medium">
-                          {p.plan === "pro_annual" ? "Pro Annual" : "Pro Monthly"}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                        Rs. {p.amountPkr.toLocaleString()}
-                      </td>
-                      <td className="py-3 px-4 font-mono text-slate-800 dark:text-slate-200 font-bold">
-                        {p.trxId}
-                      </td>
-                      <td className="py-3 px-4 text-slate-500">
-                        {p.submittedAt}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
-                            p.status === "approved"
-                              ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
-                              : p.status === "rejected"
-                              ? "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800"
-                              : "bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
-                          }`}
-                        >
-                          {p.status}
-                        </span>
-                        {p.rejectionReason && (
-                          <div className="text-[10px] text-rose-600 italic mt-0.5 max-w-xs truncate">
-                            {p.rejectionReason}
-                          </div>
-                        )}
-                        {p.approvedBy && (
-                          <div className="text-[9px] text-slate-400 mt-0.5">
-                            By {p.approvedBy}
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
-                          {/* [View] Action Button */}
-                          <button
-                            onClick={() => setSelectedPayment(p)}
-                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
-                            title="View Payment Slip & Details"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl overflow-hidden shadow-xs">
+            <div className="p-4 border-b border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-emerald-600" />
+                  <span>Customer Payment Verification Center</span>
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Review payment slips. Approving activates Pro subscription. Rejecting requires a clear reason.
+                </p>
+              </div>
 
-                          {p.status === "pending" && (
-                            <>
-                              {/* [Approve] Action Button */}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => setActiveTab("settings")}
+                  className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center gap-1.5 hover:bg-emerald-100 transition-all shadow-xs"
+                >
+                  <Settings className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Edit Payment Accounts</span>
+                </button>
+
+                {/* Filter Pills (All 7 Statuses) */}
+                <div className="flex flex-wrap items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                  {(["all", "pending", "under_review", "approved", "rejected", "expired", "refunded"] as const).map((filter) => (
+                    <button
+                      key={filter}
+                      onClick={() => setPaymentFilter(filter)}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+                        paymentFilter === filter
+                          ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs"
+                          : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
+                      }`}
+                    >
+                      {filter.replace("_", " ")}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-slate-950/80 border-b border-slate-200/80 dark:border-slate-800 text-slate-500 uppercase font-semibold">
+                    <th className="py-3 px-4">User</th>
+                    <th className="py-3 px-4">Plan</th>
+                    <th className="py-3 px-4">Amount</th>
+                    <th className="py-3 px-4">Payment Method</th>
+                    <th className="py-3 px-4">Transaction ID</th>
+                    <th className="py-3 px-4">Date</th>
+                    <th className="py-3 px-4 text-center">Slip</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                  {filteredPayments.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="py-8 text-center text-slate-400">
+                        No payment submissions matching this filter.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredPayments.map((p) => (
+                      <tr key={p.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-slate-900 dark:text-white">{p.userName}</div>
+                          <div className="text-[11px] text-slate-500">{p.userPhone} &bull; {p.userEmail}</div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="text-[10px] font-bold uppercase text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+                            {p.plan === "pro_annual" ? "Pro Annual" : "Pro Monthly"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                          Rs. {p.amountPkr.toLocaleString()}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="font-bold uppercase text-[10px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                            {p.provider.replace("_", " ")}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 font-mono text-slate-800 dark:text-slate-200 font-bold">
+                          {p.trxId}
+                        </td>
+                        <td className="py-3 px-4 text-slate-500 font-mono text-[11px]">
+                          {p.paymentDate || p.submittedAt}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedPayment(p)}
+                            className="p-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 transition-colors inline-flex items-center gap-1 text-[10px] font-bold"
+                            title="Inspect payment slip receipt"
+                          >
+                            <FileCheck2 className="w-3.5 h-3.5" />
+                            <span>Slip</span>
+                          </button>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span
+                            className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                              p.status === "approved"
+                                ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
+                                : p.status === "rejected"
+                                ? "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800"
+                                : p.status === "under_review"
+                                ? "bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800"
+                                : p.status === "expired"
+                                ? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700"
+                                : p.status === "refunded"
+                                ? "bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800"
+                                : "bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
+                            }`}
+                          >
+                            {p.status.replace("_", " ")}
+                          </span>
+                          {p.rejectionReason && (
+                            <div className="text-[10px] text-rose-600 italic mt-0.5 max-w-xs truncate">
+                              {p.rejectionReason}
+                            </div>
+                          )}
+                          {p.approvedBy && (
+                            <div className="text-[9px] text-slate-400 mt-0.5">
+                              By {p.approvedBy}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            {/* [View] Action Button */}
+                            <button
+                              onClick={() => setSelectedPayment(p)}
+                              className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
+                              title="View Payment Slip & Details"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+
+                            {/* [Approve] Action Button */}
+                            {p.status !== "approved" && (
                               <button
                                 onClick={() => handleApprove(p)}
                                 className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs flex items-center gap-1 transition-colors"
@@ -629,8 +724,21 @@ export default function AdminDashboardPage() {
                                 <Check className="w-3 h-3" />
                                 <span>Approve</span>
                               </button>
+                            )}
 
-                              {/* [Reject] Action Button */}
+                            {/* [Under Review] Toggle */}
+                            {p.status === "pending" && (
+                              <button
+                                onClick={() => updatePaymentStatus(p.id, "under_review")}
+                                className="px-2 py-1 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-700 dark:bg-cyan-950/60 dark:text-cyan-400 text-xs font-semibold transition-colors"
+                                title="Mark as Under Review"
+                              >
+                                Review
+                              </button>
+                            )}
+
+                            {/* [Reject] Action Button */}
+                            {p.status !== "rejected" && p.status !== "approved" && (
                               <button
                                 onClick={() => handleOpenRejectModal(p)}
                                 className="px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400 text-xs font-semibold transition-colors"
@@ -638,18 +746,36 @@ export default function AdminDashboardPage() {
                               >
                                 <X className="w-3 h-3" />
                               </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                            )}
+
+                            {/* [ WhatsApp User ] Action Button (Section 4) */}
+                            <button
+                              onClick={() => {
+                                const waUrl = getAdminContactUserWhatsAppUrl({
+                                  name: p.userName,
+                                  amount: p.amountPkr,
+                                  userPhone: p.userPhone
+                                });
+                                window.open(waUrl, "_blank", "noopener,noreferrer");
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 font-bold text-xs flex items-center gap-1 transition-colors border border-emerald-200 dark:border-emerald-800"
+                              title="Contact User on WhatsApp with verification notice"
+                            >
+                              <MessageSquare className="w-3 h-3 text-emerald-600" />
+                              <span>WhatsApp</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
+
 
       {/* VIEW PAYMENT SLIP MODAL */}
       {selectedPayment && (
@@ -717,29 +843,47 @@ export default function AdminDashboardPage() {
               )}
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
-                onClick={() => setSelectedPayment(null)}
-                className="px-3 py-1.5 rounded-xl text-slate-500 hover:text-slate-700 text-xs font-semibold"
+                type="button"
+                onClick={() => {
+                  const waUrl = getAdminContactUserWhatsAppUrl({
+                    name: selectedPayment.userName,
+                    amount: selectedPayment.amountPkr,
+                    userPhone: selectedPayment.userPhone
+                  });
+                  window.open(waUrl, "_blank", "noopener,noreferrer");
+                }}
+                className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 font-bold text-xs flex items-center gap-1.5 transition-colors border border-emerald-200 dark:border-emerald-800"
               >
-                Close
+                <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                <span>WhatsApp Customer</span>
               </button>
-              {selectedPayment.status === "pending" && (
-                <>
-                  <button
-                    onClick={() => handleOpenRejectModal(selectedPayment)}
-                    className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs"
-                  >
-                    Reject
-                  </button>
-                  <button
-                    onClick={() => handleApprove(selectedPayment)}
-                    className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs"
-                  >
-                    Approve &amp; Activate Pro
-                  </button>
-                </>
-              )}
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSelectedPayment(null)}
+                  className="px-3 py-1.5 rounded-xl text-slate-500 hover:text-slate-700 text-xs font-semibold"
+                >
+                  Close
+                </button>
+                {selectedPayment.status !== "approved" && (
+                  <>
+                    <button
+                      onClick={() => handleOpenRejectModal(selectedPayment)}
+                      className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs"
+                    >
+                      Reject
+                    </button>
+                    <button
+                      onClick={() => handleApprove(selectedPayment)}
+                      className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs"
+                    >
+                      Approve &amp; Activate Pro
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>

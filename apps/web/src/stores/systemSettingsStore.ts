@@ -6,6 +6,10 @@ import {
   PaymentMethodConfig,
   PaymentAccount,
   PaymentAccountType,
+  PaymentStatusType,
+  PromotionCampaign,
+  ActiveSessionRecord,
+  PlatformUsageMetrics,
   SUPER_ADMIN_EMAILS,
   isSuperAdminEmail,
   FeatureFlagItem,
@@ -20,6 +24,10 @@ import {
 export type {
   PaymentAccount,
   PaymentAccountType,
+  PaymentStatusType,
+  PromotionCampaign,
+  ActiveSessionRecord,
+  PlatformUsageMetrics,
   FeatureFlagItem,
   PlatformContentItem,
   PlatformSectionItem,
@@ -39,8 +47,11 @@ export interface PaymentSubmission {
   provider: "easypaisa" | "jazzcash" | "bank_transfer" | string;
   trxId: string;
   screenshotName: string;
+  paymentDate?: string;
+  note?: string;
+  slipUrl?: string;
   submittedAt: string;
-  status: "pending" | "approved" | "rejected";
+  status: PaymentStatusType;
   approvedAt?: string;
   approvedBy?: string;
   rejectionReason?: string;
@@ -117,6 +128,13 @@ interface SystemSettingsState {
   submitPaymentVerification: (submission: Omit<PaymentSubmission, "id" | "submittedAt" | "status">) => PaymentSubmission;
   approvePayment: (paymentId: string, adminName?: string) => void;
   rejectPayment: (paymentId: string, reason: string, adminName?: string) => void;
+  updatePaymentStatus: (paymentId: string, status: PaymentStatusType, reason?: string, adminName?: string) => void;
+
+  // Promotions & Campaigns
+  promotions: PromotionCampaign[];
+  addPromotion: (promo: PromotionCampaign) => void;
+  updatePromotion: (id: string, updates: Partial<PromotionCampaign>) => void;
+  togglePromotionActive: (id: string) => void;
 
   // Super Admin Control Center Actions
   updateFeatureFlag: (key: string, updates: Partial<FeatureFlagItem>) => void;
@@ -136,6 +154,12 @@ interface SystemSettingsState {
     paymentMethod: string;
     amount: number;
     trxId?: string;
+    paymentDate?: string;
+  }) => string;
+  getAdminContactUserWhatsAppUrl: (details: {
+    name: string;
+    amount: number;
+    userPhone?: string;
   }) => string;
 }
 
@@ -302,6 +326,37 @@ export const INITIAL_EMERGENCY_STATUS: PlatformEmergencyStatus = {
   ratesUpdateEnabled: true
 };
 
+export const INITIAL_PROMOTIONS: PromotionCampaign[] = [
+  {
+    id: "promo_1",
+    name: "Ramadan Kareem Pro Special",
+    code: "RAMADAN2026",
+    description: "25% discount on annual Pro subscription with priority support",
+    startDate: "2026-03-01",
+    endDate: "2026-04-15",
+    eligibleUsers: "all_free",
+    targetPlan: "pro",
+    discountPct: 25,
+    trialDays: 0,
+    featuresUnlocked: ["advanced_grey_structure", "advanced_boq", "vendor_management"],
+    isActive: true
+  },
+  {
+    id: "promo_2",
+    name: "7-Day Pro Contractor Trial",
+    code: "TRIAL7DAY",
+    description: "Complimentary 7-day access to BOQ Studio and Rate Intelligence",
+    startDate: "2026-09-01",
+    endDate: "2026-09-30",
+    eligibleUsers: "all_free",
+    targetPlan: "pro",
+    discountPct: 0,
+    trialDays: 7,
+    featuresUnlocked: ["advanced_grey_structure", "advanced_boq", "vendor_management", "ai_construction_advisor"],
+    isActive: true
+  }
+];
+
 export const INITIAL_SUPERADMIN_AUDITS: SuperAdminAuditRecord[] = [
   {
     id: "aud_init_1",
@@ -354,6 +409,7 @@ export const useSystemSettingsStore = create<SystemSettingsState>()(
       platformMedia: INITIAL_MEDIA_ASSETS,
       emergencyStatus: INITIAL_EMERGENCY_STATUS,
       superAdminAuditLogs: INITIAL_SUPERADMIN_AUDITS,
+      promotions: INITIAL_PROMOTIONS,
 
       updateFeatureFlag: (key, updates) => {
         set((state) => ({
@@ -897,9 +953,58 @@ export const useSystemSettingsStore = create<SystemSettingsState>()(
         });
       },
 
+      updatePaymentStatus: (paymentId, status, reason, adminName = "Umer Sheikh (Admin)") => {
+        const now = new Date().toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" }) + " PKT";
+        set((state) => {
+          const target = state.payments.find((p) => p.id === paymentId);
+          const updatedPayments = state.payments.map((p) =>
+            p.id === paymentId
+              ? {
+                  ...p,
+                  status,
+                  ...(status === "approved" ? { approvedAt: now, approvedBy: adminName } : {}),
+                  ...(reason ? { rejectionReason: reason } : {})
+                }
+              : p
+          );
+
+          const newAudit: SystemAuditEntry = {
+            id: `audit_${Date.now()}`,
+            adminName,
+            action: `Payment Status -> ${status.toUpperCase()}`,
+            details: `Updated ${target?.provider.toUpperCase() || "Payment"} TRX #${target?.trxId || paymentId} to ${status.toUpperCase()}${reason ? ` (${reason})` : ""}`,
+            timestamp: now
+          };
+
+          return {
+            payments: updatedPayments,
+            auditEntries: [newAudit, ...state.auditEntries]
+          };
+        });
+      },
+
+      // Promotions Management
+      addPromotion: (promo) => {
+        set((state) => ({
+          promotions: [promo, ...state.promotions]
+        }));
+      },
+
+      updatePromotion: (id, updates) => {
+        set((state) => ({
+          promotions: state.promotions.map((p) => (p.id === id ? { ...p, ...updates } : p))
+        }));
+      },
+
+      togglePromotionActive: (id) => {
+        set((state) => ({
+          promotions: state.promotions.map((p) => (p.id === id ? { ...p, isActive: !p.isActive } : p))
+        }));
+      },
+
       /**
-       * Section 108: Generates WhatsApp pre-filled message URL
-       * Does NOT auto-send; customer must explicitly press Send in WhatsApp.
+       * Generates official WhatsApp payment slip submission URL
+       * Does NOT auto-send; customer explicitly reviews and sends in WhatsApp.
        */
       getWhatsAppPaymentUrl: (details) => {
         const { adminWhatsAppRaw } = get();
@@ -911,17 +1016,32 @@ export const useSystemSettingsStore = create<SystemSettingsState>()(
             : "Bank Transfer";
 
         const textMessage =
-          `Hello BuildCost Connect Admin,\n\n` +
-          `I have made a payment for the Pro subscription.\n\n` +
-          `Name: ${details.name || "[Your Name]"}\n` +
-          `Email: ${details.email || "[Your Email]"}\n` +
+          `PRO Upgrade Payment\n\n` +
+          `Name: ${details.name || "Customer"}\n` +
+          `Email: ${details.email || "customer@buildcost.pk"}\n` +
+          `Amount: PKR ${details.amount.toLocaleString()}\n` +
           `Payment Method: ${providerName}\n` +
-          `Amount: Rs. ${details.amount.toLocaleString()}\n` +
-          `Transaction ID: ${details.trxId || "[Transaction ID]"}\n\n` +
-          `I am attaching my payment slip for verification.`;
+          `Transaction ID: ${details.trxId || "N/A"}\n` +
+          `Payment Date: ${details.paymentDate || new Date().toISOString().split("T")[0]}\n\n` +
+          `"Payment slip attached."`;
 
         const encodedMessage = encodeURIComponent(textMessage);
         return `https://wa.me/${adminWhatsAppRaw}?text=${encodedMessage}`;
+      },
+
+      /**
+       * Admin 1-Click WhatsApp User Contact URL
+       * Pre-fills message without auto-sending.
+       */
+      getAdminContactUserWhatsAppUrl: (details) => {
+        const rawPhone = (details.userPhone || "").replace(/\D/g, "").replace(/^0/, "92");
+        const textMessage =
+          `Hello ${details.name || "Valued User"},\n\n` +
+          `We received your Pro subscription payment of PKR ${details.amount.toLocaleString()}.\n` +
+          `Your payment is currently under verification.`;
+
+        const encoded = encodeURIComponent(textMessage);
+        return rawPhone ? `https://wa.me/${rawPhone}?text=${encoded}` : `https://wa.me/?text=${encoded}`;
       }
     }),
     {
@@ -948,6 +1068,9 @@ export const useSystemSettingsStore = create<SystemSettingsState>()(
         }
         if (!state.superAdminAuditLogs || state.superAdminAuditLogs.length === 0) {
           state.superAdminAuditLogs = INITIAL_SUPERADMIN_AUDITS;
+        }
+        if (!state.promotions || state.promotions.length === 0) {
+          state.promotions = INITIAL_PROMOTIONS;
         }
         // Ensure default accounts sync to legacy fields
         const defaultEp = state.paymentAccounts.find((a) => a.type === "easypaisa" && a.isDefault) || state.paymentAccounts.find((a) => a.type === "easypaisa");
