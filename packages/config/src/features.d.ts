@@ -1,4 +1,4 @@
-export type FeatureKey = "vendor_management" | "purchase_orders" | "bill_upload" | "material_photos" | "inventory_tracking" | "site_diary" | "budget_variance" | "advanced_boq" | "secure_share" | "custom_material_rates" | "price_scenario_simulator" | "unlimited_projects" | "professional_pdf" | "priority_support";
+export type FeatureKey = "project_management" | "vendor_management" | "purchase_orders" | "bill_upload" | "material_photos" | "inventory_tracking" | "site_diary" | "budget_variance" | "advanced_boq" | "secure_share" | "custom_material_rates" | "price_scenario_simulator" | "unlimited_projects" | "professional_pdf" | "priority_support" | "material_price_alerts" | "transport_calculator" | "cash_flow_planner" | "ai_construction_advisor" | "floor_plan_analysis" | "estimate_vs_actual" | "workforce_simulator" | "society_rules";
 export interface PlanLimits {
     maxProjects: number;
     maxSavedEstimates: number;

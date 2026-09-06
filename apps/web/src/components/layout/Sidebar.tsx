@@ -28,9 +28,11 @@ import {
   TrendingUp,
   User,
   Hammer,
-  Activity
+  Activity,
+  Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/stores/authStore";
 
 interface NavGroup {
   title: string;
@@ -89,6 +91,7 @@ const navGroups: NavGroup[] = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { isSuperAdmin } = useAuthStore();
 
   return (
     <aside className="hidden lg:flex w-64 flex-col bg-white dark:bg-slate-950 border-r border-slate-200/80 dark:border-slate-800/80 p-4 select-none shrink-0 min-h-screen transition-colors">
@@ -120,6 +123,10 @@ export function Sidebar() {
                   pathname === item.href ||
                   (item.href !== "/dashboard" && pathname.startsWith(item.href));
                 const Icon = item.icon;
+                const isAdminItem = item.href === "/admin";
+                const isSuper = isAdminItem && isSuperAdmin();
+                const label = isSuper ? "God-Mode Admin" : item.label;
+                const badge = isSuper ? "⚡ GOD" : item.badge;
 
                 return (
                   <Link
@@ -128,7 +135,11 @@ export function Sidebar() {
                     className={cn(
                       "flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all duration-150",
                       isActive
-                        ? "bg-emerald-600 text-white shadow-xs font-bold"
+                        ? isSuper
+                          ? "bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black shadow-xs"
+                          : "bg-emerald-600 text-white shadow-xs font-bold"
+                        : isSuper
+                        ? "text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 font-bold"
                         : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/80 dark:hover:bg-slate-900/80"
                     )}
                   >
@@ -136,27 +147,37 @@ export function Sidebar() {
                       <Icon
                         className={cn(
                           "w-4 h-4 transition-transform",
-                          isActive ? "text-white" : "text-slate-400 dark:text-slate-500"
+                          isActive
+                            ? isSuper
+                              ? "text-slate-950"
+                              : "text-white"
+                            : isSuper
+                            ? "text-amber-500"
+                            : "text-slate-400 dark:text-slate-500"
                         )}
                       />
-                      <span>{item.label}</span>
+                      <span>{label}</span>
                     </div>
-                    {item.badge && (
+                    {badge && (
                       <span
                         className={cn(
                           "text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider",
-                          item.badge === "PRO"
+                          badge === "⚡ GOD"
+                            ? isActive
+                              ? "bg-slate-950/20 text-slate-950 font-black"
+                              : "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40"
+                            : badge === "PRO"
                             ? isActive
                               ? "bg-white/20 text-white font-black"
                               : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
-                            : item.badge === "ADMIN"
+                            : badge === "ADMIN"
                             ? "bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
                             : isActive
                             ? "bg-white/20 text-white"
                             : "bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
                         )}
                       >
-                        {item.badge}
+                        {badge}
                       </span>
                     )}
                   </Link>

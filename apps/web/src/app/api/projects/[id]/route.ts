@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { ProjectUpdateSchema } from "@buildcost/validation";
-import { canUseFeature } from "@buildcost/config";
+import { canUseFeature, isSuperAdminEmail } from "@buildcost/config";
 
 export async function GET(
   request: NextRequest,
@@ -22,7 +22,8 @@ export async function GET(
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
-    if (user && project.user_id !== user.id) {
+    const isGodMode = user?.email ? isSuperAdminEmail(user.email) : false;
+    if (user && project.user_id !== user.id && !isGodMode) {
       return NextResponse.json({ error: "Unauthorized access" }, { status: 403 });
     }
 
@@ -50,9 +51,10 @@ export async function PATCH(
 
     const supabase = await createServerSupabase();
     const { data: { user } } = await supabase.auth.getUser();
+    const isGodMode = user?.email ? isSuperAdminEmail(user.email) : false;
 
     const clientTierHeader = request.headers.get("x-user-plan") || "pro";
-    if (!canUseFeature(clientTierHeader, "project_management")) {
+    if (!isGodMode && !canUseFeature(clientTierHeader, "project_management")) {
       return NextResponse.json({ error: "Project editing is a PRO feature", upgradeRequired: true }, { status: 403 });
     }
 
@@ -62,11 +64,16 @@ export async function PATCH(
     };
 
     if (user) {
-      const { error } = await supabase
+      let updateQuery = supabase
         .from("projects")
         .update(updates)
-        .eq("id", id)
-        .eq("user_id", user.id);
+        .eq("id", id);
+
+      if (!isGodMode) {
+        updateQuery = updateQuery.eq("user_id", user.id);
+      }
+
+      const { error } = await updateQuery;
 
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
@@ -76,7 +83,7 @@ export async function PATCH(
         project_id: id,
         user_id: user.id,
         action: updates.totalBudget ? "budget_changed" : "project_edited",
-        metadata: { updatedFields: Object.keys(updates) },
+        metadata: { updatedFields: Object.keys(updates), isGodMode },
       });
     }
 
@@ -94,9 +101,10 @@ export async function DELETE(
     const { id } = await params;
     const supabase = await createServerSupabase();
     const { data: { user } } = await supabase.auth.getUser();
+    const isGodMode = user?.email ? isSuperAdminEmail(user.email) : false;
 
     const clientTierHeader = request.headers.get("x-user-plan") || "pro";
-    if (!canUseFeature(clientTierHeader, "project_management")) {
+    if (!isGodMode && !canUseFeature(clientTierHeader, "project_management")) {
       return NextResponse.json({ error: "Project deletion is a PRO feature", upgradeRequired: true }, { status: 403 });
     }
 
@@ -107,7 +115,7 @@ export async function DELETE(
         .eq("id", id)
         .single();
 
-      if (!project || project.user_id !== user.id) {
+      if (!project || (project.user_id !== user.id && !isGodMode)) {
         return NextResponse.json({ error: "Unauthorized or project not found" }, { status: 403 });
       }
 
@@ -115,10 +123,15 @@ export async function DELETE(
         project_id: id,
         user_id: user.id,
         action: "project_deleted",
-        metadata: { deletedAt: new Date().toISOString() },
+        metadata: { deletedAt: new Date().toISOString(), isGodMode },
       });
 
-      const { error } = await supabase.from("projects").delete().eq("id", id).eq("user_id", user.id);
+      let deleteQuery = supabase.from("projects").delete().eq("id", id);
+      if (!isGodMode) {
+        deleteQuery = deleteQuery.eq("user_id", user.id);
+      }
+
+      const { error } = await deleteQuery;
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
       }

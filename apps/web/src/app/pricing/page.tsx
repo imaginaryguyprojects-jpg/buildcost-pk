@@ -29,6 +29,7 @@ export default function PricingComparisonPage() {
     proAnnualRate,
     freeProjectLimit,
     freePdfLimit,
+    paymentAccounts,
     easypaisa,
     jazzcash,
     bankTransfer,
@@ -287,47 +288,39 @@ export default function PricingComparisonPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-          {/* Easypaisa */}
-          <div className="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/60 space-y-1.5">
-            <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span>Easypaisa Account</span>
-            </div>
-            <div className="text-slate-600 dark:text-slate-300">
-              Title: <strong className="text-slate-900 dark:text-white">{easypaisa.accountName}</strong>
-            </div>
-            <div className="text-emerald-700 dark:text-emerald-400 font-mono font-bold text-sm">
-              {easypaisa.accountNumber}
-            </div>
-          </div>
-
-          {/* JazzCash */}
-          <div className="p-4 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/60 space-y-1.5">
-            <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-amber-500" />
-              <span>JazzCash Account</span>
-            </div>
-            <div className="text-slate-600 dark:text-slate-300">
-              Title: <strong className="text-slate-900 dark:text-white">{jazzcash.accountName}</strong>
-            </div>
-            <div className="text-amber-700 dark:text-amber-400 font-mono font-bold text-sm">
-              {jazzcash.accountNumber}
-            </div>
-          </div>
-
-          {/* Bank Transfer */}
-          <div className="p-4 rounded-2xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/60 space-y-1.5">
-            <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-blue-500" />
-              <span>Bank Transfer / Raast</span>
-            </div>
-            <div className="text-slate-600 dark:text-slate-300">
-              {bankTransfer.bankName} • <strong className="text-slate-900 dark:text-white">{bankTransfer.accountTitle}</strong>
-            </div>
-            <div className="text-blue-700 dark:text-blue-400 font-mono font-bold text-xs truncate">
-              {bankTransfer.accountNumber}
-            </div>
-          </div>
+          {paymentAccounts.filter(a => a.isActive).map((acc) => {
+            const isEp = acc.type === "easypaisa";
+            const isJc = acc.type === "jazzcash";
+            return (
+              <div
+                key={acc.id}
+                className={`p-4 rounded-2xl border space-y-1.5 ${
+                  isEp
+                    ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/60"
+                    : isJc
+                    ? "bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800/60"
+                    : "bg-cyan-50/50 dark:bg-cyan-950/20 border-cyan-200 dark:border-cyan-800/60"
+                }`}
+              >
+                <div className="font-bold text-slate-900 dark:text-white flex items-center justify-between gap-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`w-2 h-2 rounded-full ${isEp ? "bg-emerald-500" : isJc ? "bg-rose-500" : "bg-cyan-500"}`} />
+                    <span>{acc.title}</span>
+                  </div>
+                  {acc.isDefault && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold border border-amber-500/20">Default</span>
+                  )}
+                </div>
+                <div className="text-slate-600 dark:text-slate-300">
+                  Title: <strong className="text-slate-900 dark:text-white">{acc.accountTitle}</strong>
+                  {acc.bankName && <span className="block text-[11px] text-slate-500">{acc.bankName}</span>}
+                </div>
+                <div className={`font-mono font-black text-sm ${isEp ? "text-emerald-700 dark:text-emerald-400" : isJc ? "text-rose-700 dark:text-rose-400" : "text-cyan-700 dark:text-cyan-400"}`}>
+                  {acc.iban || acc.accountNumber}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 

@@ -29,6 +29,7 @@ export function PaymentCheckoutModal() {
     easypaisa,
     jazzcash,
     bankTransfer,
+    paymentAccounts,
     adminWhatsApp,
     adminEmail,
     submitPaymentVerification,
@@ -46,6 +47,32 @@ export function PaymentCheckoutModal() {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submittedTrx, setSubmittedTrx] = useState("");
+
+  const activeEasypaisa = paymentAccounts.find((a) => a.type === "easypaisa" && a.isDefault && a.isActive) ||
+    paymentAccounts.find((a) => a.type === "easypaisa" && a.isActive) || {
+      accountTitle: easypaisa.accountName,
+      accountNumber: easypaisa.accountNumber,
+      whatsappForSlip: adminWhatsApp,
+      instructions: "Send the subscription fee to Easypaisa account. Copy the 11-digit TID and upload screenshot or share via WhatsApp."
+    };
+
+  const activeJazzcash = paymentAccounts.find((a) => a.type === "jazzcash" && a.isDefault && a.isActive) ||
+    paymentAccounts.find((a) => a.type === "jazzcash" && a.isActive) || {
+      accountTitle: jazzcash.accountName,
+      accountNumber: jazzcash.accountNumber,
+      whatsappForSlip: adminWhatsApp,
+      instructions: "Open JazzCash app > Money Transfer > Mobile Account. Send payment, enter Transaction Reference (TID), and share slip on WhatsApp."
+    };
+
+  const activeBank = paymentAccounts.find((a) => a.type === "bank_transfer" && a.isDefault && a.isActive) ||
+    paymentAccounts.find((a) => a.type === "bank_transfer" && a.isActive) || {
+      accountTitle: bankTransfer.accountName,
+      accountNumber: bankTransfer.accountNumber,
+      bankName: bankTransfer.bankName,
+      iban: bankTransfer.iban,
+      whatsappForSlip: adminWhatsApp,
+      instructions: "Transfer via Raast or IBAN from any banking app. Enter Transaction ID and upload screenshot slip for instant admin approval."
+    };
 
   if (!checkoutModalOpen) return null;
 
@@ -300,15 +327,15 @@ export function PaymentCheckoutModal() {
                     <div>
                       <span className="text-[10px] text-slate-500 uppercase font-bold">Easypaisa Beneficiary Account</span>
                       <div className="text-sm font-mono font-black text-slate-900 dark:text-white">
-                        {easypaisa.accountNumber}
+                        {activeEasypaisa.accountNumber}
                       </div>
                       <div className="text-[11px] text-slate-700 dark:text-slate-300 font-semibold">
-                        Account Name: <span className="text-emerald-700 dark:text-emerald-400 font-bold">{easypaisa.accountName}</span>
+                        Account Name: <span className="text-emerald-700 dark:text-emerald-400 font-bold">{activeEasypaisa.accountTitle}</span>
                       </div>
                     </div>
                     <button
                       type="button"
-                      onClick={() => handleCopy(easypaisa.accountNumber, "easypaisa")}
+                      onClick={() => handleCopy(activeEasypaisa.accountNumber, "easypaisa")}
                       className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 shadow-xs"
                     >
                       {copiedKey === "easypaisa" ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
@@ -319,7 +346,7 @@ export function PaymentCheckoutModal() {
                   {/* Action Buttons for Easypaisa per Section 109 */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                     <a
-                      href={`tel:${easypaisa.accountNumber.replace(/-/g, "")}`}
+                      href={`tel:${activeEasypaisa.accountNumber.replace(/-/g, "")}`}
                       className="py-2 px-3 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-slate-50"
                     >
                       <Phone className="w-3.5 h-3.5 text-emerald-600" />
@@ -342,11 +369,11 @@ export function PaymentCheckoutModal() {
                       Payment Instructions:
                     </span>
                     <ol className="text-[11px] text-slate-600 dark:text-slate-400 space-y-1 list-decimal list-inside leading-relaxed">
-                      <li>Send <strong>Rs. {amount.toLocaleString()}</strong> to configured Easypaisa account (<strong>{easypaisa.accountNumber}</strong> - <strong>{easypaisa.accountName}</strong>).</li>
+                      <li>Send <strong>Rs. {amount.toLocaleString()}</strong> to configured Easypaisa account (<strong>{activeEasypaisa.accountNumber}</strong> - <strong>{activeEasypaisa.accountTitle}</strong>).</li>
                       <li>Enter the transaction / reference number below.</li>
                       <li>Upload payment screenshot / slip.</li>
                       <li>Submit payment verification request.</li>
-                      <li>Optionally contact Admin on WhatsApp (<strong>{adminWhatsApp}</strong>).</li>
+                      <li>Optionally contact Admin on WhatsApp (<strong>{activeEasypaisa.whatsappForSlip || adminWhatsApp}</strong>).</li>
                       <li>Admin verifies the payment.</li>
                       <li>Pro subscription is activated after approval.</li>
                     </ol>
@@ -361,15 +388,15 @@ export function PaymentCheckoutModal() {
                     <div>
                       <span className="text-[10px] text-slate-500 uppercase font-bold">JazzCash Mobile Account</span>
                       <div className="text-sm font-mono font-black text-slate-900 dark:text-white">
-                        {jazzcash.accountNumber}
+                        {activeJazzcash.accountNumber}
                       </div>
                       <div className="text-[11px] text-slate-700 dark:text-slate-300 font-semibold">
-                        Account Name: <span className="text-rose-700 dark:text-rose-400 font-bold">{jazzcash.accountName}</span>
+                        Account Name: <span className="text-rose-700 dark:text-rose-400 font-bold">{activeJazzcash.accountTitle}</span>
                       </div>
                     </div>
                     <button
                       type="button"
-                      onClick={() => handleCopy(jazzcash.accountNumber, "jazzcash")}
+                      onClick={() => handleCopy(activeJazzcash.accountNumber, "jazzcash")}
                       className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 shadow-xs"
                     >
                       {copiedKey === "jazzcash" ? <Check className="w-3.5 h-3.5 text-rose-500" /> : <Copy className="w-3.5 h-3.5" />}
@@ -380,7 +407,7 @@ export function PaymentCheckoutModal() {
                   {/* Action Buttons for JazzCash */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                     <a
-                      href={`tel:${jazzcash.accountNumber.replace(/-/g, "")}`}
+                      href={`tel:${activeJazzcash.accountNumber.replace(/-/g, "")}`}
                       className="py-2 px-3 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-slate-50"
                     >
                       <Phone className="w-3.5 h-3.5 text-rose-600" />
@@ -404,9 +431,9 @@ export function PaymentCheckoutModal() {
                     </span>
                     <ol className="text-[11px] text-slate-600 dark:text-slate-400 space-y-1 list-decimal list-inside leading-relaxed">
                       <li>Open JazzCash app → <strong>Money Transfer</strong> → <strong>Mobile Account</strong>.</li>
-                      <li>Send <strong>Rs. {amount.toLocaleString()}</strong> to <strong>{jazzcash.accountNumber}</strong> ({jazzcash.accountName}).</li>
+                      <li>Send <strong>Rs. {amount.toLocaleString()}</strong> to <strong>{activeJazzcash.accountNumber}</strong> ({activeJazzcash.accountTitle}).</li>
                       <li>Take a screenshot or note the 10-12 digit TID / Transaction Reference.</li>
-                      <li>Attach receipt or share slip directly to WhatsApp (<strong>{adminWhatsApp}</strong>).</li>
+                      <li>Attach receipt or share slip directly to WhatsApp (<strong>{activeJazzcash.whatsappForSlip || adminWhatsApp}</strong>).</li>
                     </ol>
                   </div>
                 </div>
@@ -418,9 +445,9 @@ export function PaymentCheckoutModal() {
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="text-[10px] text-slate-500 uppercase font-bold">Corporate Bank / Raast</span>
-                      <div className="text-sm font-bold text-slate-900 dark:text-white">{bankTransfer.bankName}</div>
+                      <div className="text-sm font-bold text-slate-900 dark:text-white">{activeBank.bankName || "Corporate Bank"}</div>
                       <div className="text-[11px] text-slate-700 dark:text-slate-300 font-semibold">
-                        Account Title: <span className="text-cyan-700 dark:text-cyan-400 font-bold">{bankTransfer.accountName}</span>
+                        Account Title: <span className="text-cyan-700 dark:text-cyan-400 font-bold">{activeBank.accountTitle}</span>
                       </div>
                     </div>
                   </div>
@@ -428,11 +455,11 @@ export function PaymentCheckoutModal() {
                   <div className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-700">
                     <div>
                       <span className="text-[10px] text-slate-500 uppercase font-bold">IBAN / Raast ID</span>
-                      <div className="text-xs font-mono font-bold text-slate-900 dark:text-white">{bankTransfer.iban}</div>
+                      <div className="text-xs font-mono font-bold text-slate-900 dark:text-white">{activeBank.iban || activeBank.accountNumber}</div>
                     </div>
                     <button
                       type="button"
-                      onClick={() => handleCopy(bankTransfer.iban || "", "iban")}
+                      onClick={() => handleCopy(activeBank.iban || activeBank.accountNumber, "iban")}
                       className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100"
                     >
                       {copiedKey === "iban" ? <Check className="w-3.5 h-3.5 text-cyan-500" /> : <Copy className="w-3.5 h-3.5" />}
@@ -459,9 +486,9 @@ export function PaymentCheckoutModal() {
                     </span>
                     <ol className="text-[11px] text-slate-600 dark:text-slate-400 space-y-1 list-decimal list-inside leading-relaxed">
                       <li>Use any banking app (HBL, Meezan, Allied, MCB, UBL) or Raast Instant Transfer.</li>
-                      <li>Transfer <strong>Rs. {amount.toLocaleString()}</strong> to IBAN <strong>{bankTransfer.iban}</strong>.</li>
+                      <li>Transfer <strong>Rs. {amount.toLocaleString()}</strong> to IBAN <strong>{activeBank.iban || activeBank.accountNumber}</strong>.</li>
                       <li>Enter your Bank Reference / Transaction ID below.</li>
-                      <li>Share receipt image via WhatsApp (<strong>{adminWhatsApp}</strong>).</li>
+                      <li>Share receipt image via WhatsApp (<strong>{activeBank.whatsappForSlip || adminWhatsApp}</strong>).</li>
                     </ol>
                   </div>
                 </div>

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { ProjectCreateSchema } from "@buildcost/validation";
-import { canUseFeature } from "@buildcost/config";
+import { canUseFeature, isSuperAdminEmail } from "@buildcost/config";
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,11 +17,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ projects: [], authenticated: false });
     }
 
+    const isGodMode = user.email ? isSuperAdminEmail(user.email) : false;
+
     let query = supabase
       .from("projects")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("updated_at", { ascending: false });
+      .select("*");
+
+    if (!isGodMode) {
+      query = query.eq("user_id", user.id);
+    }
+    query = query.order("updated_at", { ascending: false });
 
     if (status && status !== "all") {
       query = query.eq("status", status);
@@ -61,15 +66,19 @@ export async function POST(request: NextRequest) {
     let userId = user?.id;
 
     if (user) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("subscription_tier, role")
-        .eq("id", user.id)
-        .single();
-      if (profile?.role === "admin") {
+      if (user.email && isSuperAdminEmail(user.email)) {
         userTier = "pro";
-      } else if (profile?.subscription_tier) {
-        userTier = profile.subscription_tier;
+      } else {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("subscription_tier, role")
+          .eq("id", user.id)
+          .single();
+        if (profile?.role === "admin" || profile?.role === "superadmin") {
+          userTier = "pro";
+        } else if (profile?.subscription_tier) {
+          userTier = profile.subscription_tier;
+        }
       }
     }
 

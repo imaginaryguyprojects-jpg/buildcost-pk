@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import {
   ShieldCheck,
   Edit3,
@@ -34,13 +35,16 @@ import {
   FileSpreadsheet,
   FileText,
   Compass,
-  Hammer
+  Hammer,
+  Wallet,
+  Zap
 } from "lucide-react";
 import { useProjectStore } from "@/stores/projectStore";
 import { useAuthStore } from "@/stores/authStore";
-import { useSystemSettingsStore, PaymentSubmission } from "@/stores/systemSettingsStore";
-import { PAKISTANI_CITIES } from "@buildcost/config";
+import { useSystemSettingsStore, PaymentSubmission, PaymentAccount } from "@/stores/systemSettingsStore";
+import { PAKISTANI_CITIES, SUPER_ADMIN_EMAILS, isSuperAdminEmail } from "@buildcost/config";
 import { formatPKR, formatNumber } from "@/lib/formatters";
+import { PaymentAccountsManager } from "@/components/admin/PaymentAccountsManager";
 
 interface AuditEntry {
   id: string;
@@ -92,9 +96,10 @@ const LIVE_ACTIVITIES: ActivityEvent[] = [
 
 export default function AdminDashboardPage() {
   const { materialRates, updateMaterialRate, selectedCityId, setSelectedCityId } = useProjectStore();
-  const { showToast, upgradeToPro, user } = useAuthStore();
+  const { showToast, upgradeToPro, user, isSuperAdmin, loginAsSuperAdmin } = useAuthStore();
   const {
     payments,
+    paymentAccounts,
     auditEntries,
     approvePayment,
     rejectPayment,
@@ -119,7 +124,7 @@ export default function AdminDashboardPage() {
     updateSubscriptionLimits
   } = useSystemSettingsStore();
 
-  const [activeTab, setActiveTab] = useState<"payments" | "rates" | "activity" | "settings" | "analytics">("payments");
+  const [activeTab, setActiveTab] = useState<"payments" | "accounts" | "rates" | "activity" | "settings" | "analytics">("payments");
   const [analyticsRange, setAnalyticsRange] = useState<"today" | "7d" | "30d" | "3m" | "1y">("30d");
   const [paymentFilter, setPaymentFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
   const [selectedPayment, setSelectedPayment] = useState<PaymentSubmission | null>(null);
@@ -282,6 +287,81 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
+      {/* Super Admin God-Mode Banner & Quick Switcher */}
+      {isSuperAdmin() ? (
+        <div className="p-4 rounded-3xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/40 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black shrink-0 border border-emerald-500/30 shadow-inner">
+              <Zap className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-black uppercase tracking-wider text-emerald-400">
+                  Super Admin God-Mode Active
+                </span>
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono font-bold border border-emerald-500/30">
+                  {user?.email || "imaginary.guy.project@gmail.com"}
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                  Full Write &amp; Delete Rights
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Absolute platform authority: Create, edit, delete, and override projects, rates, vendors, and receiving payout accounts without restrictions.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            <Link
+              href="/admin/control-center"
+              className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs shadow-md transition-all flex items-center gap-1.5"
+            >
+              <Zap className="w-3.5 h-3.5 fill-slate-950" />
+              <span>Platform Control Center (20 Modules)</span>
+            </Link>
+            <button
+              onClick={() => setActiveTab("accounts")}
+              className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
+            >
+              <Wallet className="w-3.5 h-3.5" />
+              <span>Payment Accounts ({paymentAccounts.length})</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="p-4 rounded-3xl bg-amber-500/10 border border-amber-500/30 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-500 flex items-center justify-center font-black shrink-0">
+              <AlertCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                Super Admin Access Required
+              </span>
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
+                You are currently viewed as <strong className="text-white">{user?.email || "Guest"}</strong>. To manage payment accounts and system settings, authenticate as a Super Admin below:
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap shrink-0">
+            <button
+              onClick={() => loginAsSuperAdmin("imaginary.guy.project@gmail.com")}
+              className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1.5"
+            >
+              <Zap className="w-3.5 h-3.5" />
+              <span>Log In: imaginary.guy.project@gmail.com</span>
+            </button>
+            <button
+              onClick={() => loginAsSuperAdmin("umershahzad0@gmail.com")}
+              className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs shadow-sm transition-all flex items-center gap-1.5"
+            >
+              <Zap className="w-3.5 h-3.5" />
+              <span>Log In: umershahzad0@gmail.com</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 4 Executive KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
@@ -350,6 +430,23 @@ export default function AdminDashboardPage() {
               {pendingCount}
             </span>
           )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab("accounts")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            activeTab === "accounts"
+              ? "bg-emerald-600 text-white shadow-xs"
+              : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+          }`}
+        >
+          <Wallet className="w-3.5 h-3.5" />
+          <span>Payment Accounts</span>
+          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+            activeTab === "accounts" ? "bg-white text-emerald-700" : "bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+          }`}>
+            {paymentAccounts.length}
+          </span>
         </button>
 
         <button
@@ -698,6 +795,11 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* TAB: PAYMENT & PAYOUT ACCOUNTS (GOD-MODE CRUD) */}
+      {activeTab === "accounts" && (
+        <PaymentAccountsManager />
       )}
 
       {/* TAB 2: Live Activity Feed */}

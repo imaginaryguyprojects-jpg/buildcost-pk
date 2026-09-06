@@ -332,10 +332,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 Grey Structure
               </span>
               <span className="text-base font-black text-slate-800 dark:text-slate-200 font-mono">
-                {formatPKR(estimate.greyStructureCost)}
+                {formatPKR(estimate.materialsCost + estimate.labourCost)}
               </span>
               <span className="text-[10px] text-slate-500 block mt-0.5">
-                {Math.round((estimate.greyStructureCost / estimate.grandTotal) * 100)}% of total
+                {Math.round(((estimate.materialsCost + estimate.labourCost) / estimate.grandTotal) * 100)}% of total
               </span>
             </div>
 
@@ -652,7 +652,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             <div className="text-right">
               <span className="text-xs text-slate-400 block">Subtotal Grey</span>
               <span className="text-lg font-black text-emerald-600 dark:text-emerald-400 font-mono">
-                {formatPKR(greyEstimate.grandTotal)}
+                {formatPKR(greyEstimate.costs.grandTotal)}
               </span>
             </div>
           </div>
@@ -668,9 +668,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70">
-                {greyEstimate.materials.map((m) => (
+                {Object.values(greyEstimate.materials).map((m) => (
                   <tr key={m.materialId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                    <td className="p-3.5 font-bold text-slate-800 dark:text-slate-200">{m.materialName}</td>
+                    <td className="p-3.5 font-bold text-slate-800 dark:text-slate-200">{m.name}</td>
                     <td className="p-3.5 text-slate-600 dark:text-slate-300">
                       {formatNumber(m.finalQuantity)} {m.unit}
                     </td>
@@ -678,7 +678,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                       Rs. {formatNumber(m.unitRate)}
                     </td>
                     <td className="p-3.5 text-right font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-                      {formatPKR(m.cost)}
+                      {formatPKR(m.totalCost)}
                     </td>
                   </tr>
                 ))}
@@ -866,8 +866,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
             {vendors.map((v) => (
               <div key={v.id} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
-                <div className="font-bold text-slate-800 dark:text-slate-200">{v.name}</div>
-                <div className="text-slate-500 text-[11px]">{v.category} • {v.phone}</div>
+                <div className="font-bold text-slate-800 dark:text-slate-200">{v.vendorName || v.businessName}</div>
+                <div className="text-slate-500 text-[11px]">{v.category} • {v.mobileNumber}</div>
                 <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between">
                   <span className="text-slate-400">Balance:</span>
                   <span className="font-bold font-mono text-rose-500">{formatPKR(v.outstandingBalance || 0)}</span>
