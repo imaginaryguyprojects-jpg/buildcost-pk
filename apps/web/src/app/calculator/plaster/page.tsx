@@ -16,11 +16,20 @@ export default function PlasterCalculatorPage() {
   const [sandPerCft, setSandPerCft] = useState<number>(45);
   const [labourPerSqft, setLabourPerSqft] = useState<number>(25);
 
-  const result = calculatePlaster(wallAreaSqft || 1, openingsSqft || 0, thicknessInches || 0.5, mixRatio, 7, {
-    cementPerBag,
-    sandPerCft,
-    labourPerSqft
-  });
+  const safeArea = Math.max(1, Math.abs(Number(wallAreaSqft) || 1));
+  const safeOpenings = Math.max(0, Math.min(safeArea - 1, Math.abs(Number(openingsSqft) || 0)));
+  const safeThickness = Math.max(0.1, Math.abs(Number(thicknessInches) || 0.5));
+
+  let result: ReturnType<typeof calculatePlaster>;
+  try {
+    result = calculatePlaster(safeArea, safeOpenings, safeThickness, mixRatio, 7, {
+      cementPerBag: Math.max(0, cementPerBag || 0),
+      sandPerCft: Math.max(0, sandPerCft || 0),
+      labourPerSqft: Math.max(0, labourPerSqft || 0)
+    });
+  } catch {
+    result = calculatePlaster(800, 50, 0.5, "1:4", 7);
+  }
 
   return (
     <div className="space-y-6">

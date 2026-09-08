@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import {
   Calculator,
@@ -20,15 +20,26 @@ import {
   User,
   PieChart as PieChartIcon,
   Zap,
-  ShieldCheck
+  ShieldCheck,
+  X,
+  Boxes,
+  Hammer,
+  Truck,
+  Layers,
+  Bot,
+  Compass,
+  Sparkles,
+  Lock,
+  ExternalLink
 } from "lucide-react";
 import { useProjectStore } from "@/stores/projectStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useSystemSettingsStore } from "@/stores/systemSettingsStore";
-import { SUPER_ADMIN_EMAILS } from "@buildcost/config";
-import { formatPKR, formatNumber } from "@/lib/formatters";
-import { calculateFullHouseEstimate } from "@buildcost/calculations";
+import { SUPER_ADMIN_EMAILS, PAKISTANI_CITIES } from "@buildcost/config";
+import { formatPKR, formatNumber, formatCurrency } from "@/lib/formatters";
+import { PrimaryPropertyCalculator } from "@/components/dashboard/PrimaryPropertyCalculator";
 import { DashboardProCard } from "@/components/pro/DashboardProCard";
+import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
   const {
@@ -38,691 +49,329 @@ export default function DashboardPage() {
     getActiveProject,
     reminders,
     purchases,
-    siteDiary
+    siteDiary,
+    materialRates,
+    vendors
   } = useProjectStore();
+
+  const { user, isSuperAdmin, openCheckoutModal, openProjectUpgradeModal } = useAuthStore();
+  const isSuper = isSuperAdmin();
+  const [superAdminBannerDismissed, setSuperAdminBannerDismissed] = useState(false);
 
   const activeProject = getActiveProject();
 
-  // Progressive Estimation based on active project
-  const fullEstimate = calculateFullHouseEstimate({
-    plotAreaMarla: activeProject?.plotUnit === "kanal" ? (activeProject?.plotArea || 1) * 20 : (activeProject?.plotArea || 5),
-    coveredAreaSqft: activeProject?.coveredArea || 2000,
-    numberOfFloors: activeProject?.numberOfFloors || 2,
-    hasBasement: activeProject?.hasBasement || false,
-    quality: (activeProject?.constructionQuality as any) || "standard"
-  });
-
-  const totalEstimatedCost = fullEstimate.summary.totalProjectEstimate;
-  const totalBudget = activeProject?.totalBudget || Math.round(totalEstimatedCost * 1.05);
-
-  // Actual expenditure from purchases or empirical baseline
-  const recordedPurchaseTotal = purchases.reduce((sum, p) => sum + p.totalAmount, 0);
-  const actualSpending = recordedPurchaseTotal > 0 ? recordedPurchaseTotal : Math.round(totalEstimatedCost * 0.42);
-  const remainingBudget = Math.max(0, totalBudget - actualSpending);
-  const budgetHealth =
-    actualSpending > totalBudget
-      ? "OVER BUDGET"
-      : actualSpending > totalBudget * 0.85
-      ? "WARNING"
-      : "ON TRACK";
-
-  // Construction progress percentage
-  const constructionProgress = 62;
-
-  // Project Progress Stage breakdown (Section 33)
-  const progressStages = [
-    { name: "Excavation & Foundation", progress: 100, status: "completed" },
-    { name: "RCC Structure & Slabs", progress: 75, status: "in_progress" },
-    { name: "Brick Masonry & Walls", progress: 40, status: "in_progress" },
-    { name: "Plaster & Screed", progress: 0, status: "pending" },
-    { name: "Finishing & Fixtures", progress: 0, status: "pending" }
-  ];
-
-  // Next upcoming reminders (Section 33: only next 3-4 items)
+  // Next upcoming reminders (only next 3 items)
   const upcomingReminders = reminders.slice(0, 3);
 
-  // Recent site activities
-  const recentActivities = siteDiary.length > 0
-    ? siteDiary.slice(0, 3).map((entry) => ({
-        id: entry.id,
-        date: entry.logDate,
-        weather: entry.weather,
-        workDone: entry.workCompleted
-      }))
-    : [
-        { id: "1", date: "Today", weather: "Clear", workDone: "Completed first floor beam shuttering inspection with civil engineer." },
-        { id: "2", date: "Yesterday", weather: "Sunny", workDone: "Received 350 bags of Fauji Portland Cement at site gate." },
-        { id: "3", date: "2 days ago", weather: "Mild", workDone: "Compacted ground floor sand filling and checked levels." }
-      ];
-  const { user, isSuperAdmin, loginAsSuperAdmin } = useAuthStore();
-  const { paymentAccounts } = useSystemSettingsStore();
-  const isSuper = isSuperAdmin();
-
-  const activeEasypaisa = paymentAccounts.find((a) => a.type === "easypaisa" && a.isActive);
-  const activeJazzcash = paymentAccounts.find((a) => a.type === "jazzcash" && a.isActive);
-  const activeBank = paymentAccounts.find((a) => (a.type === "bank_transfer" || a.type === "raast") && a.isActive);
-
-  const customerName = activeProject?.clientName || user?.fullName || "Muhammad Usman (Client)";
-  const isComplete = constructionProgress >= 100;
-  const projectStatus = isComplete ? "Complete" : "In Progress";
-  const completedPhasesCount = progressStages.filter(s => s.status === "completed").length;
+  // Quick live benchmarks for the compact lower section
+  const sampleRates = materialRates.slice(0, 4);
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
-      {/* SUPER ADMIN EXECUTIVE GOD-MODE & PAYMENT OVERVIEW CARD */}
-      {isSuper && (
-        <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-teal-500/10 border-2 border-amber-500/40 dark:border-amber-400/40 shadow-lg relative overflow-hidden">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                  <Zap className="w-3 h-3 text-amber-500" />
-                  Super Admin God-Mode Active
-                </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400">
-                  Logged in as <strong className="text-slate-800 dark:text-slate-200">{user?.email}</strong>
-                </span>
-              </div>
-              <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
-                Platform Payout &amp; Receiving Account Status
-              </h2>
-              <p className="text-xs text-slate-600 dark:text-slate-400">
-                These are the live payment accounts currently displayed to customers on the pricing and checkout pages.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2.5">
-              <Link
-                href="/admin?tab=accounts"
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-950/20 flex items-center gap-1.5 transition-all"
-              >
-                <CreditCard className="w-4 h-4" />
-                <span>Manage Payment Accounts</span>
-              </Link>
-              <Link
-                href="/admin"
-                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 text-xs font-bold shadow-md flex items-center gap-1.5 transition-all"
-              >
-                <ShieldCheck className="w-4 h-4 text-amber-400" />
-                <span>God-Mode Admin</span>
-              </Link>
-            </div>
+    <div className="space-y-6 max-w-7xl mx-auto text-slate-900 dark:text-slate-100 pb-12">
+      {/* 1-Line Compact Dismissible Super Admin Banner */}
+      {isSuper && !superAdminBannerDismissed && (
+        <div className="p-2.5 px-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs text-amber-800 dark:text-amber-300">
+          <div className="flex items-center gap-2 min-w-0">
+            <Zap className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <span className="truncate">
+              Super Admin God-Mode Active — Logged in as <strong>{user?.email}</strong>
+            </span>
           </div>
-
-          {/* Quick Account Snapshots */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 pt-4 border-t border-amber-500/20">
-            {/* JazzCash Snapshot */}
-            <div className="p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 shadow-xs">
-              <div className="flex items-center justify-between text-[10px] uppercase font-bold text-rose-500 mb-1">
-                <span>JazzCash Payout</span>
-                {activeJazzcash ? (
-                  <span className="text-emerald-600 font-extrabold">Active</span>
-                ) : (
-                  <span className="text-rose-500 font-extrabold">Inactive</span>
-                )}
-              </div>
-              <div className="text-sm font-mono font-black text-slate-900 dark:text-white">
-                {activeJazzcash?.accountNumber || "Not configured"}
-              </div>
-              <div className="text-[11px] text-slate-500 truncate">
-                Title: {activeJazzcash?.accountTitle || "—"}
-              </div>
-            </div>
-
-            {/* EasyPaisa Snapshot */}
-            <div className="p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 shadow-xs">
-              <div className="flex items-center justify-between text-[10px] uppercase font-bold text-emerald-500 mb-1">
-                <span>EasyPaisa Payout</span>
-                {activeEasypaisa ? (
-                  <span className="text-emerald-600 font-extrabold">Active</span>
-                ) : (
-                  <span className="text-rose-500 font-extrabold">Inactive</span>
-                )}
-              </div>
-              <div className="text-sm font-mono font-black text-slate-900 dark:text-white">
-                {activeEasypaisa?.accountNumber || "Not configured"}
-              </div>
-              <div className="text-[11px] text-slate-500 truncate">
-                Title: {activeEasypaisa?.accountTitle || "—"}
-              </div>
-            </div>
-
-            {/* Bank Snapshot */}
-            <div className="p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 shadow-xs">
-              <div className="flex items-center justify-between text-[10px] uppercase font-bold text-blue-500 mb-1">
-                <span>Bank / Raast Payout</span>
-                {activeBank ? (
-                  <span className="text-emerald-600 font-extrabold">Active</span>
-                ) : (
-                  <span className="text-rose-500 font-extrabold">Inactive</span>
-                )}
-              </div>
-              <div className="text-xs font-mono font-black text-slate-900 dark:text-white truncate">
-                {activeBank?.iban || activeBank?.accountNumber || "Not configured"}
-              </div>
-              <div className="text-[11px] text-slate-500 truncate">
-                {activeBank?.bankName || "Bank"} • {activeBank?.accountTitle || "—"}
-              </div>
-            </div>
+          <div className="flex items-center gap-3 shrink-0 ml-2">
+            <Link
+              href="/admin/control-center"
+              className="text-[11px] font-bold text-amber-700 dark:text-amber-300 underline hover:text-amber-500"
+            >
+              Control Center
+            </Link>
+            <Link
+              href="/admin?tab=accounts"
+              className="text-[11px] font-bold text-amber-700 dark:text-amber-300 underline hover:text-amber-500"
+            >
+              Payment Accounts
+            </Link>
+            <button
+              onClick={() => setSuperAdminBannerDismissed(true)}
+              className="p-1 text-amber-500 hover:text-amber-700 dark:hover:text-amber-200"
+              title="Dismiss"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       )}
 
-      {/* TOP HEADER: GREETING & ADD PROJECT */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-            Welcome, {user?.fullName || "John Anderson"}
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Real-time construction progress and cost analytics for your property portfolio.
-          </p>
-        </div>
+      {/* ======================================================== */}
+      {/* SECTION 1: PRIMARY PROPERTY CALCULATOR (HERO PLACEMENT) */}
+      {/* ======================================================== */}
+      <PrimaryPropertyCalculator />
 
-        <div className="flex items-center gap-3">
-          {/* Project Selector */}
-          <select
-            value={activeProjectId || ""}
-            onChange={(e) => setActiveProjectId(e.target.value)}
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-200 shadow-xs focus:outline-none"
-          >
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.projectName}
-              </option>
-            ))}
-          </select>
+      {/* ======================================================== */}
+      {/* SECTION 2: COMPACT SECONDARY DASHBOARD MODULES */}
+      {/* (Carefully sized so they do NOT compete with Calculator) */}
+      {/* ======================================================== */}
+      <div className="space-y-4 pt-4 border-t border-slate-200/80 dark:border-slate-800/80">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
+              <Boxes className="w-4 h-4 text-emerald-500" />
+              <span>Construction Suite &amp; Market Intelligence</span>
+            </h2>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Deep-dive civil engineering modules, daily trade rates, and project khata.
+            </p>
+          </div>
 
           <Link
-            href="/projects/new"
-            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-950/20 transition-all active:scale-95"
+            href="/calculator"
+            className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
           >
-            <Plus className="w-4 h-4" />
-            <span>Add New Project</span>
+            <span>All Calculators</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        {/* 8 Compact Supporting Tool Cards (2 Rows of 4 on Desktop, 2x2 on Mobile) */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          {/* 1. Material Rates */}
+          <Link
+            href="/rates/materials"
+            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Market Feeds</span>
+              <div className="w-7 h-7 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                <TrendingUp className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div>
+              <span className="font-bold text-slate-800 dark:text-white block group-hover:text-emerald-400 transition-colors">
+                Material Rates
+              </span>
+              <span className="text-[10px] text-slate-400">
+                Cement, Steel, Bricks across 13 cities
+              </span>
+            </div>
+          </Link>
+
+          {/* 2. Labour Rates */}
+          <Link
+            href="/labour"
+            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Daily Wages</span>
+              <div className="w-7 h-7 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                <Hammer className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div>
+              <span className="font-bold text-slate-800 dark:text-white block group-hover:text-emerald-400 transition-colors">
+                Labour &amp; Mistri
+              </span>
+              <span className="text-[10px] text-slate-400">
+                Mason, helper, plumber, electrician
+              </span>
+            </div>
+          </Link>
+
+          {/* 3. Grey Structure Estimator */}
+          <Link
+            href="/calculator/concrete"
+            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Civil Shell</span>
+              <div className="w-7 h-7 rounded-xl bg-cyan-500/10 text-cyan-500 flex items-center justify-center">
+                <Building className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div>
+              <span className="font-bold text-slate-800 dark:text-white block group-hover:text-emerald-400 transition-colors">
+                Grey Structure
+              </span>
+              <span className="text-[10px] text-slate-400">
+                RCC slabs, columns, beams, brickwork
+              </span>
+            </div>
+          </Link>
+
+          {/* 4. Finishing Works */}
+          <Link
+            href="/calculator/paint"
+            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">17 Categories</span>
+              <div className="w-7 h-7 rounded-xl bg-teal-500/10 text-teal-500 flex items-center justify-center">
+                <Layers className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div>
+              <span className="font-bold text-slate-800 dark:text-white block group-hover:text-emerald-400 transition-colors">
+                Finishing Package
+              </span>
+              <span className="text-[10px] text-slate-400">
+                Tiles, marble, sanitary, woodwork
+              </span>
+            </div>
+          </Link>
+
+          {/* 5. BOQ Studio */}
+          <Link
+            href="/boq"
+            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                <span>Formal Bills</span>
+                <span className="px-1 py-0.2 rounded bg-amber-500/20 text-amber-500 text-[8px] font-bold">PRO</span>
+              </span>
+              <div className="w-7 h-7 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center">
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div>
+              <span className="font-bold text-slate-800 dark:text-white block group-hover:text-emerald-400 transition-colors">
+                BOQ Generator
+              </span>
+              <span className="text-[10px] text-slate-400">
+                Itemized Bill of Quantities export
+              </span>
+            </div>
+          </Link>
+
+          {/* 6. Vendor Khata */}
+          <Link
+            href="/vendors"
+            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                <span>Khata</span>
+                <span className="px-1 py-0.2 rounded bg-amber-500/20 text-amber-500 text-[8px] font-bold">PRO</span>
+              </span>
+              <div className="w-7 h-7 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+                <Building className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div>
+              <span className="font-bold text-slate-800 dark:text-white block group-hover:text-emerald-400 transition-colors">
+                Vendor Directory
+              </span>
+              <span className="text-[10px] text-slate-400">
+                Supplier ledger, dues &amp; purchases
+              </span>
+            </div>
+          </Link>
+
+          {/* 7. Transport & Freight */}
+          <Link
+            href="/transport"
+            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Logistics</span>
+              <div className="w-7 h-7 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
+                <Truck className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div>
+              <span className="font-bold text-slate-800 dark:text-white block group-hover:text-emerald-400 transition-colors">
+                Transport Calculator
+              </span>
+              <span className="text-[10px] text-slate-400">
+                Dumper, Mazada &amp; Shahzore tariffs
+              </span>
+            </div>
+          </Link>
+
+          {/* 8. AI Advisor */}
+          <Link
+            href="/advisor"
+            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                <span>Civil AI</span>
+                <span className="px-1 py-0.2 rounded bg-amber-500/20 text-amber-500 text-[8px] font-bold">PRO</span>
+              </span>
+              <div className="w-7 h-7 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                <Bot className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div>
+              <span className="font-bold text-slate-800 dark:text-white block group-hover:text-emerald-400 transition-colors">
+                AI Construction Advisor
+              </span>
+              <span className="text-[10px] text-slate-400">
+                Smart cost reduction recommendations
+              </span>
+            </div>
           </Link>
         </div>
       </div>
 
-      {/* PRO PROMOTION CARD (Section 3) */}
-      <DashboardProCard />
-
-      {/* THREE HIGH-FIDELITY MODULAR CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Card 1: Current Project Details & State */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between relative overflow-hidden group">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                Current Project
-              </span>
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            </div>
-
-            <div>
-              <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
-                {activeProject?.projectName || "Residential Complex Alpha"}
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                {activeProject?.location || "Islamabad, PK"} • {activeProject?.coveredArea || 2000} sqft
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-5 p-4 rounded-2xl bg-gradient-to-br from-emerald-50/70 via-teal-50/40 to-slate-50 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-slate-900 border border-emerald-100/80 dark:border-emerald-900/40">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400 block">
-              Current State / Budget
-            </span>
-            <div className="text-2xl font-black font-mono text-slate-900 dark:text-white mt-1">
-              Rs. {formatNumber(totalBudget)}
-            </div>
-            <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold mt-0.5 block">
-              {budgetHealth === "ON TRACK" ? "● Within Planned Budget" : `● ${budgetHealth}`}
-            </span>
-          </div>
-        </div>
-
-        {/* Card 2: Dynamic Donut Chart — Project Progress Breakdown */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-              Project Progress Breakdown
-            </h3>
-            <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/40">
-              Live Site
-            </span>
-          </div>
-
-          {/* SVG Donut Chart */}
-          <div className="flex items-center justify-center my-2 relative">
-            <svg className="w-36 h-36 transform -rotate-90" viewBox="0 0 120 120">
-              {/* Background circle track */}
-              <circle
-                cx="60"
-                cy="60"
-                r="46"
-                stroke="#f1f5f9"
-                strokeWidth="15"
-                className="dark:stroke-slate-800"
-                fill="none"
-              />
-              {/* In-Progress slice (pastel sky blue) */}
-              <circle
-                cx="60"
-                cy="60"
-                r="46"
-                stroke="#93c5fd"
-                strokeWidth="15"
-                strokeDasharray={`${2 * Math.PI * 46}`}
-                strokeDashoffset={`${2 * Math.PI * 46 * (1 - 0.95)}`}
-                strokeLinecap="round"
-                fill="none"
-              />
-              {/* Completed slice (rich emerald green) */}
-              <circle
-                cx="60"
-                cy="60"
-                r="46"
-                stroke="#059669"
-                strokeWidth="15"
-                strokeDasharray={`${2 * Math.PI * 46}`}
-                strokeDashoffset={`${2 * Math.PI * 46 * (1 - (constructionProgress / 100))}`}
-                strokeLinecap="round"
-                fill="none"
-              />
-            </svg>
-
-            {/* Donut Center Label */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none px-2">
-              <span className="text-xs font-black text-slate-900 dark:text-white leading-tight line-clamp-1 max-w-[80px]">
-                {activeProject?.projectName?.split(" ")[0] || "Alpha"}
-              </span>
-              <span className="text-sm font-black font-mono text-emerald-600 dark:text-emerald-400">
-                {constructionProgress}%
-              </span>
-              <span className="text-[8px] text-slate-400 uppercase font-semibold">Done</span>
-            </div>
-          </div>
-
-          {/* Donut Legend */}
-          <div className="flex items-center justify-center gap-4 text-[11px] pt-2 border-t border-slate-100 dark:border-slate-800/80">
-            <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-600" />
-              <span>{constructionProgress}% Complete</span>
-            </div>
-            <div className="flex items-center gap-1.5 font-semibold text-slate-500 dark:text-slate-400">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-300" />
-              <span>In-Progress</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Card 3: Project Overview Card with Customer Name & Status Badge */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4">
+      {/* ======================================================== */}
+      {/* SECTION 3: PROJECT ACTIVITY & REMINDERS (COMPACT FOOTER) */}
+      {/* ======================================================== */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 text-xs pt-2">
+        {/* Active Project Card */}
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-3">
           <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Active Workspace</span>
+            <Link href="/projects" className="text-emerald-500 text-[11px] font-semibold hover:underline">
+              View All ({projects.length})
+            </Link>
+          </div>
+          <div>
             <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-              Project Overview
+              {activeProject?.projectName || "Default Estimator"}
             </h3>
-            <span className="text-slate-400 hover:text-slate-600 cursor-pointer">•••</span>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              {activeProject?.location || "Islamabad"} • {activeProject?.coveredArea || 2000} sqft
+            </p>
           </div>
-
-          {/* Details list */}
-          <div className="space-y-3 text-xs">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800/60">
-              <span className="text-slate-500 font-medium">Customer:</span>
-              <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5 text-emerald-600" />
-                <span>{customerName}</span>
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800/60">
-              <span className="text-slate-500 font-medium">Project:</span>
-              <span className="font-bold text-slate-900 dark:text-white">
-                {activeProject?.projectName || "Residential Alpha"}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800/60">
-              <span className="text-slate-500 font-medium">Location:</span>
-              <span className="font-semibold text-slate-700 dark:text-slate-300">
-                {activeProject?.location || "Islamabad, PK"}
-              </span>
-            </div>
-          </div>
-
-          {/* Status Indicators with Clean Badges */}
-          <div className="p-3 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/40 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                Status:
-              </span>
-              <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider ${
-                projectStatus === "Complete"
-                  ? "bg-emerald-600 text-white shadow-xs"
-                  : "bg-emerald-200/80 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-200 border border-emerald-300/80 dark:border-emerald-700"
-              }`}>
-                {projectStatus}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-slate-500">Phases:</span>
-              <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
-                {completedPhasesCount} / {progressStages.length} Complete
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. THE FIVE CORE KPI CARDS (Section 33) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        {/* Total Estimated Cost */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
-          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
-            Total Estimate
-          </span>
-          <div className="text-lg sm:text-xl font-black font-mono text-slate-900 dark:text-white mt-1">
-            Rs. {formatNumber(totalEstimatedCost)}
-          </div>
-          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium block mt-0.5">
-            Rs. {fullEstimate.summary.costPerSqft} / sqft
-          </span>
-        </div>
-
-        {/* Actual Spending */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
-          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
-            Actual Spent
-          </span>
-          <div className="text-lg sm:text-xl font-black font-mono text-slate-900 dark:text-white mt-1">
-            Rs. {formatNumber(actualSpending)}
-          </div>
-          <span className="text-[10px] text-slate-400 font-medium block mt-0.5">
-            {Math.round((actualSpending / (totalBudget || 1)) * 100)}% of Budget
-          </span>
-        </div>
-
-        {/* Remaining Budget */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
-          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
-            Remaining Budget
-          </span>
-          <div className="text-lg sm:text-xl font-black font-mono text-emerald-600 dark:text-emerald-400 mt-1">
-            Rs. {formatNumber(remainingBudget)}
-          </div>
-          <span className="text-[10px] text-slate-400 font-medium block mt-0.5">
-            Total: Rs. {formatNumber(totalBudget)}
-          </span>
-        </div>
-
-        {/* Construction Progress */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
-          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
-            Site Progress
-          </span>
-          <div className="text-lg sm:text-xl font-black font-mono text-cyan-600 dark:text-cyan-400 mt-1">
-            {constructionProgress}%
-          </div>
-          <span className="text-[10px] text-slate-400 font-medium block mt-0.5">
-            Phase 2 of 5 active
-          </span>
-        </div>
-
-        {/* Estimated Completion */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs col-span-2 sm:col-span-1">
-          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
-            Est. Completion
-          </span>
-          <div className="text-sm sm:text-base font-bold text-slate-900 dark:text-white mt-1">
-            18 Dec 2026
-          </div>
-          <span className="text-[10px] text-slate-400 font-medium block mt-0.5">
-            ~104 days remaining
-          </span>
-        </div>
-      </div>
-
-      {/* 3. MID ROW: COST BREAKDOWN + STAGE PROGRESS (Section 33) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Card A: Cost Breakdown Chart (Percentage Split) */}
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-              Cost Allocation Breakdown
-            </h3>
+          <div className="flex items-center gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
             <Link
-              href="/calculator"
-              className="text-xs font-semibold text-emerald-600 hover:text-emerald-500 flex items-center gap-1"
+              href="/projects/new"
+              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] flex items-center gap-1 shadow-xs transition-all"
             >
-              <span>Full Details</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <Plus className="w-3.5 h-3.5" />
+              <span>Create Project</span>
             </Link>
-          </div>
-
-          {/* Horizontal multi-color bar */}
-          <div className="w-full h-4 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex">
-            <div
-              style={{ width: `${fullEstimate.percentages.greyStructurePercent}%` }}
-              className="bg-emerald-600 h-full"
-              title="Grey Structure"
-            />
-            <div
-              style={{ width: `${fullEstimate.percentages.finishingPercent}%` }}
-              className="bg-teal-500 h-full"
-              title="Finishing"
-            />
-            <div
-              style={{ width: `${fullEstimate.percentages.labourPercent}%` }}
-              className="bg-cyan-500 h-full"
-              title="Labour"
-            />
-            <div
-              style={{ width: `${fullEstimate.percentages.otherAndContingencyPercent}%` }}
-              className="bg-amber-400 h-full"
-              title="Other & Contingency"
-            />
-          </div>
-
-          {/* Category List */}
-          <div className="grid grid-cols-2 gap-3 text-xs pt-1">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-emerald-600 shrink-0" />
-              <div>
-                <span className="text-slate-500 block text-[11px]">Grey Structure ({fullEstimate.percentages.greyStructurePercent}%)</span>
-                <span className="font-mono font-bold text-slate-900 dark:text-white">
-                  Rs. {formatNumber(fullEstimate.summary.greyStructureCost)}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-teal-500 shrink-0" />
-              <div>
-                <span className="text-slate-500 block text-[11px]">Finishing Works ({fullEstimate.percentages.finishingPercent}%)</span>
-                <span className="font-mono font-bold text-slate-900 dark:text-white">
-                  Rs. {formatNumber(fullEstimate.summary.finishingCost)}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-cyan-500 shrink-0" />
-              <div>
-                <span className="text-slate-500 block text-[11px]">Labour Wages ({fullEstimate.percentages.labourPercent}%)</span>
-                <span className="font-mono font-bold text-slate-900 dark:text-white">
-                  Rs. {formatNumber(fullEstimate.summary.labourCost)}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-amber-400 shrink-0" />
-              <div>
-                <span className="text-slate-500 block text-[11px]">Logistics &amp; Contingency ({fullEstimate.percentages.otherAndContingencyPercent}%)</span>
-                <span className="font-mono font-bold text-slate-900 dark:text-white">
-                  Rs. {formatNumber(fullEstimate.summary.contingencyCost + fullEstimate.summary.transportCost)}
-                </span>
-              </div>
-            </div>
           </div>
         </div>
 
-        {/* Card B: Project Stage Progress (Section 33) */}
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
+        {/* Site Reminders Card */}
+        <div className="lg:col-span-2 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-2.5">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-              Construction Stage Progress
-            </h3>
-            <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">
-              Overall: {constructionProgress}%
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-amber-500" />
+              <span>Upcoming Construction Reminders</span>
             </span>
-          </div>
-
-          <div className="space-y-3 text-xs">
-            {progressStages.map((st, idx) => (
-              <div key={idx} className="space-y-1">
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                    {st.progress === 100 ? (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    ) : st.progress > 0 ? (
-                      <Clock className="w-3.5 h-3.5 text-cyan-600" />
-                    ) : (
-                      <div className="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-slate-600" />
-                    )}
-                    <span>{st.name}</span>
-                  </span>
-                  <span className="font-mono font-bold text-slate-700 dark:text-slate-300">
-                    {st.progress}%
-                  </span>
-                </div>
-                <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                  <div
-                    style={{ width: `${st.progress}%` }}
-                    className={`h-full ${st.progress === 100 ? "bg-emerald-500" : "bg-cyan-500"}`}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* 4. BOTTOM ROW: RECENT ACTIVITY & REMINDERS (Section 33) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Recent Site Activity (few items only) */}
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-              Recent Site Log
-            </h3>
-            <Link href="/diary" className="text-xs font-semibold text-emerald-600 hover:text-emerald-500">
-              View Diary
+            <Link href="/reminders" className="text-emerald-500 text-[11px] font-semibold hover:underline">
+              View All
             </Link>
           </div>
-
-          <div className="space-y-2.5 text-xs">
-            {recentActivities.map((act) => (
-              <div key={act.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex items-start gap-2.5">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                <div>
-                  <span className="text-[10px] font-bold text-slate-400 block">{act.date} • {act.weather}</span>
-                  <p className="text-slate-700 dark:text-slate-300 mt-0.5 leading-relaxed">{act.workDone}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Upcoming Reminders (3 items only) */}
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-              Upcoming Site Reminders
-            </h3>
-            <Link href="/reminders" className="text-xs font-semibold text-emerald-600 hover:text-emerald-500">
-              All Tasks
-            </Link>
-          </div>
-
-          <div className="space-y-2.5 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {upcomingReminders.length > 0 ? (
               upcomingReminders.map((rem) => (
-                <div key={rem.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-amber-500" />
-                    <div>
-                      <span className="font-semibold text-slate-800 dark:text-slate-200 block">{rem.title}</span>
-                      <span className="text-[10px] text-slate-400">Due: {rem.reminderDate}</span>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
-                    {rem.priority}
+                <div key={rem.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800/80 space-y-1">
+                  <span className="font-semibold text-slate-800 dark:text-slate-200 block truncate text-[11px]">
+                    {rem.title}
+                  </span>
+                  <span className="text-[10px] text-slate-400 block truncate">
+                    Date: {rem.reminderDate}
                   </span>
                 </div>
               ))
             ) : (
-              <div className="space-y-2">
-                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-emerald-500" />
-                    <div>
-                      <span className="font-semibold text-slate-800 dark:text-slate-200 block">Ground Floor RCC Slab Curing (Day 7)</span>
-                      <span className="text-[10px] text-slate-400">Due: Tomorrow 08:00 AM</span>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">High</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-cyan-500" />
-                    <div>
-                      <span className="font-semibold text-slate-800 dark:text-slate-200 block">Vendor Udhaar Payment - Al-Madina Steel</span>
-                      <span className="text-[10px] text-slate-400">Due: 10 Sep 2026</span>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-cyan-50 text-cyan-700 border border-cyan-200">Payment</span>
-                </div>
+              <div className="col-span-3 text-center py-2 text-slate-400 text-xs">
+                No pending site alerts. Ready for next construction stage.
               </div>
             )}
           </div>
-        </div>
-      </div>
-
-      {/* 5. QUICK ACTIONS (Section 33) */}
-      <div className="p-5 rounded-3xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 block">
-            Immediate Next Steps
-          </span>
-          <p className="text-xs text-emerald-700/80 dark:text-emerald-400 mt-0.5">
-            Quickly update estimates, log purchases, or generate contractor quotations
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          <Link
-            href="/calculator"
-            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all"
-          >
-            <Calculator className="w-3.5 h-3.5" />
-            <span>Launch Calculator</span>
-          </Link>
-          <Link
-            href="/purchases"
-            className="px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl shadow-xs hover:bg-slate-50 transition-all flex items-center gap-1.5"
-          >
-            <ShoppingCart className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Record Purchase</span>
-          </Link>
-          <Link
-            href="/boq"
-            className="px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl shadow-xs hover:bg-slate-50 transition-all flex items-center gap-1.5"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-cyan-600" />
-            <span>View BOQ</span>
-          </Link>
         </div>
       </div>
     </div>

@@ -17,11 +17,13 @@ import {
   ShieldCheck,
   Search,
   CreditCard,
-  Zap
+  Zap,
+  Menu
 } from "lucide-react";
 import { PAKISTANI_CITIES } from "@buildcost/config";
 import { useProjectStore } from "@/stores/projectStore";
 import { useAuthStore } from "@/stores/authStore";
+import { MobileDrawer } from "./MobileDrawer";
 import { cn } from "@/lib/utils";
 
 export function Topbar() {
@@ -45,6 +47,7 @@ export function Topbar() {
   
   const [cityMenuOpen, setCityMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const selectedCity = PAKISTANI_CITIES.find((c) => c.id === selectedCityId) || PAKISTANI_CITIES[0];
 
@@ -60,18 +63,28 @@ export function Topbar() {
   ];
 
   return (
-    <header className="h-16 bg-white/95 dark:bg-slate-950/95 border-b border-slate-200 dark:border-slate-800/80 px-4 md:px-8 flex items-center justify-between sticky top-0 z-40 backdrop-blur-md transition-colors">
-      {/* Brand on Mobile / Tablet */}
-      <div className="flex items-center gap-6">
-        <Link href="/" className="flex lg:hidden items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold text-sm">
-            BC
-          </div>
-          <span className="font-bold text-slate-900 dark:text-slate-100 text-sm md:text-base">BuildCost Connect</span>
-        </Link>
+    <>
+      <header className="h-14 bg-white/95 dark:bg-slate-950/95 border-b border-slate-200 dark:border-slate-800/80 px-3 sm:px-4 md:px-6 flex items-center justify-between sticky top-0 z-40 backdrop-blur-md transition-colors">
+        {/* Brand & Drawer Trigger on Mobile / Tablet */}
+        <div className="flex items-center gap-2 sm:gap-4 md:gap-6">
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(true)}
+            className="lg:hidden p-1.5 -ml-1 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            aria-label="Open Navigation Menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
 
-        {/* Center top nav links */}
-        <nav className="hidden md:flex items-center gap-1">
+          <Link href="/" className="flex lg:hidden items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold text-sm">
+              BC
+            </div>
+            <span className="font-bold text-slate-900 dark:text-slate-100 text-sm md:text-base">BuildCost Connect</span>
+          </Link>
+
+          {/* Center top nav links */}
+          <nav className="hidden md:flex items-center gap-1">
           {topNavLinks.map((link) => {
             const isActive = pathname === link.href || (link.href !== "/dashboard" && pathname.startsWith(link.href));
             return (
@@ -409,5 +422,7 @@ export function Topbar() {
         )}
       </div>
     </header>
+    <MobileDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
+  </>
   );
 }

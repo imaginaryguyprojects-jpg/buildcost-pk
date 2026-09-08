@@ -1,34 +1,78 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { fallbackAppReleases, AppReleaseConfig } from "@/lib/appUpdateState";
 
 /**
- * BuildCost Connect — Cross-Platform App Update Metadata Endpoint (Sections 70, 71, 110)
+ * BuildCost Connect — Cross-Platform App Update & OTA Metadata Endpoint
  * 
- * Provides versioned release metadata for Android (EAS / Direct APK) and Chrome Extension:
- * - Checks whether client version meets minimum supported version
+ * Provides dynamic release metadata for Android APK, Web, and Mobile OTA:
+ * - Compares client versionCode against latestVersionCode and minimumVersionCode
+ * - Determines mandatory update enforcement (critical native patches)
+ * - Returns OTA bundle URL and channel for instant in-app JS updates
  * - Provides verified release notes and signed APK download URL
- * - Does not silently execute installs; client prompts user with explicit confirmation
  */
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const clientPlatform = searchParams.get("platform") || "android";
-  const currentVersionCode = parseInt(searchParams.get("versionCode") || "10", 10);
+  const clientPlatform = (searchParams.get("platform") || "android").toLowerCase();
+  const currentVersionCode = parseInt(searchParams.get("versionCode") || "0", 10);
 
-  const updatePayload = {
-    platform: clientPlatform,
-    latestVersion: "1.1.0",
-    latestVersionCode: 11,
-    minimumVersionCode: 10,
-    mandatoryUpdate: currentVersionCode < 10,
-    releaseNotes: "BuildCost Connect Phase 1.1: Advanced RCC structural calculators, 17-category finishing, Pakistani workforce scenarios, and live PBS/APCMA market rates.",
-    downloadUrl: "https://buildcostconnect.pk/releases/buildcost-v1.1.0.apk",
-    releaseDate: "2026-09-05",
-    verifiedSignatureSha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  let releaseConfig: AppReleaseConfig = fallbackAppReleases[clientPlatform] || fallbackAppReleases.android;
+  let source = "fallback";
+
+  try {
+    const supabase = await createServerSupabaseClient();
+    if (supabase) {
+      const { data, error } = await supabase
+        .from("app_releases")
+        .select("*")
+        .eq("platform", clientPlatform)
+        .single();
+
+      if (!error && data) {
+        releaseConfig = {
+          platform: data.platform,
+          latestVersion: data.latest_version,
+          latestVersionCode: Number(data.latest_version_code),
+          minimumVersionCode: Number(data.minimum_version_code),
+          mandatoryUpdate: Boolean(data.mandatory_update),
+          otaAvailable: Boolean(data.ota_available),
+          otaBundleUrl: data.ota_bundle_url || "",
+          otaChannel: data.ota_channel || "production",
+          apkDownloadUrl: data.apk_download_url || "",
+          releaseNotes: data.release_notes || "",
+          updatedAt: data.updated_at || new Date().toISOString()
+        };
+        source = "database";
+      }
+    }
+  } catch (err: any) {
+    console.error("Error fetching app release from database:", err?.message);
+  }
+
+  // Calculate update requirement flags
+  const updateAvailable = currentVersionCode > 0 && currentVersionCode < releaseConfig.latestVersionCode;
+  const isMandatory = releaseConfig.mandatoryUpdate || (currentVersionCode > 0 && currentVersionCode < releaseConfig.minimumVersionCode);
+
+  const payload = {
+    platform: releaseConfig.platform,
+    latestVersion: releaseConfig.latestVersion,
+    latestVersionCode: releaseConfig.latestVersionCode,
+    minimumVersionCode: releaseConfig.minimumVersionCode,
+    updateAvailable,
+    mandatoryUpdate: isMandatory,
+    otaAvailable: releaseConfig.otaAvailable,
+    otaBundleUrl: releaseConfig.otaBundleUrl,
+    otaChannel: releaseConfig.otaChannel,
+    downloadUrl: releaseConfig.apkDownloadUrl,
+    releaseNotes: releaseConfig.releaseNotes,
+    releaseDate: releaseConfig.updatedAt,
+    source,
     serverTimestamp: new Date().toISOString()
   };
 
-  return NextResponse.json(updatePayload, {
+  return NextResponse.json(payload, {
     headers: {
-      "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600"
+      "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120"
     }
   });
 }

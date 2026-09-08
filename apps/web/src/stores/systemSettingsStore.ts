@@ -18,7 +18,10 @@ import {
   PlatformNavigationItem,
   PlatformMediaAsset,
   PlatformEmergencyStatus,
-  SuperAdminAuditRecord
+  SuperAdminAuditRecord,
+  SubscriptionPlan,
+  LaunchPriceConfig,
+  DEFAULT_LAUNCH_PRICE_CONFIG
 } from "@buildcost/config";
 
 export type {
@@ -34,7 +37,8 @@ export type {
   PlatformNavigationItem,
   PlatformMediaAsset,
   PlatformEmergencyStatus,
-  SuperAdminAuditRecord
+  SuperAdminAuditRecord,
+  SubscriptionPlan
 };
 
 export interface PaymentSubmission {
@@ -75,11 +79,16 @@ interface SystemSettingsState {
   bankTransfer: PaymentMethodConfig;
   proMonthlyRate: number;
   proAnnualRate: number;
+  pricingCurrency: string;
+  isPricingLoading: boolean;
+  subscriptionPlans: SubscriptionPlan[];
   freeProjectLimit: number;
   freePdfLimit: number;
   upgradeBannerVisible: boolean;
   promotionalHeadline: string;
   promotionalDiscountPct: number;
+  launchPriceConfig: LaunchPriceConfig;
+  updateLaunchPriceConfig: (updates: Partial<LaunchPriceConfig>) => void;
 
   // Live Dynamic Payment & Payout Accounts (God-Mode CRUD)
   paymentAccounts: PaymentAccount[];
@@ -97,6 +106,13 @@ interface SystemSettingsState {
   superAdminAuditLogs: SuperAdminAuditRecord[];
 
   // Update actions
+  fetchSubscriptionPlans: () => Promise<void>;
+  saveProPricing: (updates: {
+    monthlyPrice: number;
+    annualPrice?: number;
+    currency?: string;
+    reason?: string;
+  }) => Promise<{ success: boolean; error?: string }>;
   updateBusinessSettings: (settings: {
     businessName?: string;
     adminEmail?: string;
@@ -368,6 +384,39 @@ export const INITIAL_SUPERADMIN_AUDITS: SuperAdminAuditRecord[] = [
   }
 ];
 
+export const INITIAL_SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
+  {
+    id: "plan_free",
+    name: "Free Starter",
+    slug: "free",
+    tier: "free",
+    description: "Standard residential civil estimators and basic project tools",
+    price: 0,
+    priceMonthlyPkr: 0,
+    priceAnnualPkr: 0,
+    currency: "PKR",
+    billingPeriod: "monthly",
+    maxProjects: 3,
+    features: { basicEstimator: true, greyStructure: true, defaultRates: true, pdfExport: true },
+    isActive: true
+  },
+  {
+    id: "plan_pro",
+    name: "BuildCost Pro",
+    slug: "pro",
+    tier: "pro",
+    description: "Full construction management, procurement, vendor ledgers & live rate tracking",
+    price: 200,
+    priceMonthlyPkr: 200,
+    priceAnnualPkr: 500,
+    currency: "PKR",
+    billingPeriod: "monthly",
+    maxProjects: 999999,
+    features: { unlimitedProjects: true, advancedBoq: true, vendorKhata: true, aiAdvisor: true },
+    isActive: true
+  }
+];
+
 export const useSystemSettingsStore = create<SystemSettingsState>()(
   persist(
     (set, get) => ({
@@ -389,8 +438,12 @@ export const useSystemSettingsStore = create<SystemSettingsState>()(
       },
       bankTransfer: { ...BUSINESS_CONFIG.bankTransfer },
 
-      proMonthlyRate: 1999,
-      proAnnualRate: 19990,
+      proMonthlyRate: 200,
+      proAnnualRate: 500,
+      pricingCurrency: "PKR",
+      isPricingLoading: false,
+      subscriptionPlans: INITIAL_SUBSCRIPTION_PLANS,
+      launchPriceConfig: DEFAULT_LAUNCH_PRICE_CONFIG,
       freeProjectLimit: 2,
       freePdfLimit: 3,
       upgradeBannerVisible: true,
@@ -519,6 +572,82 @@ export const useSystemSettingsStore = create<SystemSettingsState>()(
             ...state.superAdminAuditLogs
           ]
         }));
+      },
+
+      fetchSubscriptionPlans: async () => {
+        try {
+          set({ isPricingLoading: true });
+          const res = await fetch("/api/pricing", { cache: "no-store" });
+          if (!res.ok) {
+            set({ isPricingLoading: false });
+            return;
+          }
+          const data = await res.json();
+          if (data.success && Array.isArray(data.plans)) {
+            const proPlan = data.plans.find((p: SubscriptionPlan) => p.slug === "pro" || p.tier === "pro");
+            set((state) => ({
+              subscriptionPlans: data.plans,
+              proMonthlyRate: data.proMonthlyRate || (proPlan?.priceMonthlyPkr ?? proPlan?.price) || state.proMonthlyRate,
+              proAnnualRate: data.proAnnualRate || proPlan?.priceAnnualPkr || state.proAnnualRate,
+              pricingCurrency: data.currency || proPlan?.currency || state.pricingCurrency || "PKR",
+              isPricingLoading: false
+            }));
+          } else {
+            set({ isPricingLoading: false });
+          }
+        } catch (err) {
+          console.error("[PricingStore] Error fetching subscription plans:", err);
+          set({ isPricingLoading: false });
+        }
+      },
+
+      saveProPricing: async (updates) => {
+        try {
+          const { monthlyPrice, annualPrice, currency = "PKR", reason } = updates;
+          const computedAnnual = annualPrice !== undefined ? annualPrice : monthlyPrice * 10;
+
+          // Call server-side protected admin pricing API
+          const res = await fetch("/api/admin/pricing", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              planSlug: "pro",
+              price: monthlyPrice,
+              priceMonthlyPkr: monthlyPrice,
+              priceAnnualPkr: computedAnnual,
+              currency,
+              reason: reason || `Updated Pro pricing to ${currency} ${monthlyPrice}`
+            })
+          });
+
+          const result = await res.json();
+          if (result.success) {
+            set((state) => ({
+              proMonthlyRate: monthlyPrice,
+              proAnnualRate: computedAnnual,
+              pricingCurrency: currency,
+              subscriptionPlans: state.subscriptionPlans.map((p) =>
+                p.slug === "pro" || p.tier === "pro"
+                  ? {
+                      ...p,
+                      price: monthlyPrice,
+                      priceMonthlyPkr: monthlyPrice,
+                      priceAnnualPkr: computedAnnual,
+                      currency
+                    }
+                  : p
+              )
+            }));
+            // Refresh from DB to guarantee store consistency
+            await get().fetchSubscriptionPlans();
+            return { success: true };
+          } else {
+            return { success: false, error: result.error || "Failed to update pricing" };
+          }
+        } catch (err: any) {
+          console.error("[PricingStore] saveProPricing failed:", err);
+          return { success: false, error: err?.message || "Network error" };
+        }
       },
 
       updateBusinessSettings: (settings) => {
@@ -1002,6 +1131,27 @@ export const useSystemSettingsStore = create<SystemSettingsState>()(
         }));
       },
 
+      updateLaunchPriceConfig: (updates) => {
+        set((state) => {
+          const updated = { ...state.launchPriceConfig, ...updates };
+          return {
+            launchPriceConfig: updated,
+            proMonthlyRate: updated.enabled ? updated.monthlyPrice : updated.regularMonthlyPrice,
+            proAnnualRate: updated.enabled ? updated.annualPrice : updated.regularAnnualPrice,
+            auditEntries: [
+              {
+                id: `audit_${Date.now()}`,
+                adminName: "Super Admin",
+                action: "Updated Launch Pricing Settings",
+                details: `Launch Active: ${updated.enabled}, Monthly: PKR ${updated.monthlyPrice}, Annual: PKR ${updated.annualPrice}`,
+                timestamp: new Date().toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" }) + " PKT"
+              },
+              ...state.auditEntries
+            ]
+          };
+        });
+      },
+
       /**
        * Generates official WhatsApp payment slip submission URL
        * Does NOT auto-send; customer explicitly reviews and sends in WhatsApp.
@@ -1097,6 +1247,13 @@ export const useSystemSettingsStore = create<SystemSettingsState>()(
             accountNumber: defaultBank.accountNumber,
             iban: defaultBank.iban
           };
+        }
+
+        // Live synchronisation of centralized subscription plans from server
+        if (typeof window !== "undefined" && typeof state.fetchSubscriptionPlans === "function") {
+          setTimeout(() => {
+            state.fetchSubscriptionPlans();
+          }, 0);
         }
       }
     }

@@ -53,34 +53,38 @@ export default function HouseEstimatePage() {
   const selectedStandard = MARLA_STANDARDS.find((m) => m.id === marlaStandardId) || MARLA_STANDARDS[0];
   const selectedCity = PAKISTANI_CITIES.find((c) => c.id === cityId) || PAKISTANI_CITIES[0];
 
+  const safeCoveredArea = Math.max(10, coveredAreaSqft || 10);
+  const safeFloors = Math.max(1, numberOfFloors || 1);
+  const safePlotArea = Math.max(0.1, plotAreaMarla || 0.1);
+
   const buildingHeights = {
-    foundationDepthFt,
-    plinthHeightFt,
+    foundationDepthFt: Math.max(1, foundationDepthFt || 4.5),
+    plinthHeightFt: Math.max(0.5, plinthHeightFt || 3.0),
     parapetWallHeightFt: 3.5,
-    floors: Array.from({ length: numberOfFloors }, (_, idx) => ({
+    floors: Array.from({ length: safeFloors }, (_, idx) => ({
       floorNumber: idx,
       floorName: idx === 0 ? "Ground Floor" : idx === 1 ? "First Floor" : idx === 2 ? "Second Floor" : `Floor ${idx + 1}`,
-      coveredAreaSqft: Math.round(coveredAreaSqft / numberOfFloors),
-      floorToFloorHeightFt: idx === 0 ? groundFloorHeight : upperFloorHeight,
-      clearCeilingHeightFt: idx === 0 ? Math.max(8, groundFloorHeight - 1) : Math.max(8, upperFloorHeight - 1),
-      wallHeightFt: idx === 0 ? Math.max(8, groundFloorHeight - 1) : Math.max(8, upperFloorHeight - 1)
+      coveredAreaSqft: Math.round(safeCoveredArea / safeFloors),
+      floorToFloorHeightFt: idx === 0 ? (groundFloorHeight || 10.5) : (upperFloorHeight || 10.0),
+      clearCeilingHeightFt: idx === 0 ? Math.max(8, (groundFloorHeight || 10.5) - 1) : Math.max(8, (upperFloorHeight || 10.0) - 1),
+      wallHeightFt: idx === 0 ? Math.max(8, (groundFloorHeight || 10.5) - 1) : Math.max(8, (upperFloorHeight || 10.0) - 1)
     }))
   };
 
   const estimate = calculateCompleteHouseEstimate({
-    plotAreaMarla,
+    plotAreaMarla: safePlotArea,
     marlaSqft: selectedStandard.sqft,
-    coveredAreaSqft,
-    numberOfFloors,
+    coveredAreaSqft: safeCoveredArea,
+    numberOfFloors: safeFloors,
     quality,
     cityId,
     cityName: selectedCity.name,
     buildingHeights,
-    customCementRate,
-    customSteelRate,
-    customBrickRate,
-    customSandRate,
-    customCrushRate
+    customCementRate: Math.max(0, customCementRate || 0),
+    customSteelRate: Math.max(0, customSteelRate || 0),
+    customBrickRate: Math.max(0, customBrickRate || 0),
+    customSandRate: Math.max(0, customSandRate || 0),
+    customCrushRate: Math.max(0, customCrushRate || 0)
   });
 
   const handleSaveEstimate = () => {

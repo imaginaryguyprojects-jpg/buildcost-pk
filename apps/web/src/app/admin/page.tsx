@@ -123,7 +123,11 @@ export default function AdminDashboardPage() {
     updateJazzCashSettings,
     updateBankSettings,
     updatePricing,
-    updateSubscriptionLimits
+    updateSubscriptionLimits,
+    saveProPricing,
+    fetchSubscriptionPlans,
+    launchPriceConfig,
+    updateLaunchPriceConfig
   } = useSystemSettingsStore();
 
   const [activeTab, setActiveTab] = useState<"payments" | "accounts" | "rates" | "activity" | "settings" | "analytics">("payments");
@@ -156,6 +160,36 @@ export default function AdminDashboardPage() {
   const [formUpgradeBannerVisible, setFormUpgradeBannerVisible] = useState(upgradeBannerVisible);
   const [formPromotionalHeadline, setFormPromotionalHeadline] = useState(promotionalHeadline);
   const [formPromotionalDiscountPct, setFormPromotionalDiscountPct] = useState(promotionalDiscountPct);
+
+  // Launch Pricing form states
+  const [formLaunchEnabled, setFormLaunchEnabled] = useState(launchPriceConfig?.enabled ?? true);
+  const [formLaunchMonthly, setFormLaunchMonthly] = useState(launchPriceConfig?.monthlyPrice ?? 200);
+  const [formLaunchAnnual, setFormLaunchAnnual] = useState(launchPriceConfig?.annualPrice ?? 500);
+  const [formRegularMonthly, setFormRegularMonthly] = useState(launchPriceConfig?.regularMonthlyPrice ?? 399);
+  const [formRegularAnnual, setFormRegularAnnual] = useState(launchPriceConfig?.regularAnnualPrice ?? 3999);
+  const [formLaunchUrduMsg, setFormLaunchUrduMsg] = useState(launchPriceConfig?.messageUrdu ?? "");
+  const [formLaunchEngMsg, setFormLaunchEngMsg] = useState(launchPriceConfig?.messageEnglish ?? "");
+
+  React.useEffect(() => {
+    fetchSubscriptionPlans();
+  }, [fetchSubscriptionPlans]);
+
+  React.useEffect(() => {
+    setFormMonthlyPrice(proMonthlyRate);
+    setFormAnnualPrice(proAnnualRate);
+  }, [proMonthlyRate, proAnnualRate]);
+
+  React.useEffect(() => {
+    if (launchPriceConfig) {
+      setFormLaunchEnabled(launchPriceConfig.enabled);
+      setFormLaunchMonthly(launchPriceConfig.monthlyPrice);
+      setFormLaunchAnnual(launchPriceConfig.annualPrice);
+      setFormRegularMonthly(launchPriceConfig.regularMonthlyPrice);
+      setFormRegularAnnual(launchPriceConfig.regularAnnualPrice);
+      setFormLaunchUrduMsg(launchPriceConfig.messageUrdu || "");
+      setFormLaunchEngMsg(launchPriceConfig.messageEnglish || "");
+    }
+  }, [launchPriceConfig]);
 
   const handleStartEdit = (rateId: string, currentRate: number) => {
     setEditingId(rateId);
@@ -213,7 +247,7 @@ export default function AdminDashboardPage() {
     setSelectedPayment(null);
   };
 
-  const handleSaveAllSettings = () => {
+  const handleSaveAllSettings = async () => {
     updateBusinessSettings({
       businessName: formBusinessName,
       adminEmail: formEmail,
@@ -243,7 +277,27 @@ export default function AdminDashboardPage() {
       promotionalDiscountPct: formPromotionalDiscountPct
     });
 
-    showToast("Admin settings saved successfully. Updated contacts and subscription limits are live across platform.", "success");
+    updateLaunchPriceConfig({
+      enabled: formLaunchEnabled,
+      monthlyPrice: formLaunchMonthly,
+      annualPrice: formLaunchAnnual,
+      regularMonthlyPrice: formRegularMonthly,
+      regularAnnualPrice: formRegularAnnual,
+      messageUrdu: formLaunchUrduMsg,
+      messageEnglish: formLaunchEngMsg
+    });
+
+    const activeMonthly = formLaunchEnabled ? formLaunchMonthly : formMonthlyPrice;
+    const activeAnnual = formLaunchEnabled ? formLaunchAnnual : formAnnualPrice;
+
+    await saveProPricing({
+      monthlyPrice: activeMonthly,
+      annualPrice: activeAnnual,
+      currency: "PKR",
+      reason: `Admin updated Pro subscription price to PKR ${activeMonthly}/mo via Admin Settings`
+    });
+
+    showToast("Admin settings saved successfully. Updated contacts, launch rates, and subscription limits are live across platform.", "success");
   };
 
   const filteredPayments = payments.filter((p) => {
@@ -1301,6 +1355,119 @@ export default function AdminDashboardPage() {
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 font-mono text-slate-900 dark:text-white font-bold"
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Section 3.5: Special Launch Celebration Pricing */}
+            <div className="bg-gradient-to-br from-emerald-950/20 via-white dark:via-slate-900 to-white dark:to-slate-900 border border-emerald-500/40 rounded-3xl p-6 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-500/20 pb-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-emerald-800 dark:text-emerald-400">
+                      🎉 Special Launch Celebration Pricing
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30">
+                      {formLaunchEnabled ? "Active & Live (PKR 200/mo, PKR 500/yr)" : "Disabled (Using Regular Rates)"}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                    Control introductory launch rates and the bilingual Urdu &amp; English celebration banner shown to all public visitors.
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={formLaunchEnabled}
+                    onChange={(e) => setFormLaunchEnabled(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-200 dark:bg-slate-800 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                  <span className="ml-2 text-xs font-bold text-slate-700 dark:text-slate-300">
+                    {formLaunchEnabled ? "Launch Pricing ON" : "Launch Pricing OFF"}
+                  </span>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                <div>
+                  <label className="text-emerald-700 dark:text-emerald-400 font-bold block mb-1">
+                    Launch Monthly Price (PKR)
+                  </label>
+                  <input
+                    type="number"
+                    value={formLaunchMonthly}
+                    onChange={(e) => setFormLaunchMonthly(Number(e.target.value))}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-emerald-300 dark:border-emerald-500/40 rounded-xl p-2.5 font-mono text-slate-900 dark:text-white font-black"
+                  />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">Configured: PKR 200</span>
+                </div>
+                <div>
+                  <label className="text-emerald-700 dark:text-emerald-400 font-bold block mb-1">
+                    Launch Annual Price (PKR)
+                  </label>
+                  <input
+                    type="number"
+                    value={formLaunchAnnual}
+                    onChange={(e) => setFormLaunchAnnual(Number(e.target.value))}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-emerald-300 dark:border-emerald-500/40 rounded-xl p-2.5 font-mono text-slate-900 dark:text-white font-black"
+                  />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">Configured: PKR 500</span>
+                </div>
+                <div>
+                  <label className="text-slate-600 dark:text-slate-400 block mb-1">
+                    Regular Monthly Baseline (PKR)
+                  </label>
+                  <input
+                    type="number"
+                    value={formRegularMonthly}
+                    onChange={(e) => setFormRegularMonthly(Number(e.target.value))}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 font-mono text-slate-900 dark:text-white"
+                  />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">Baseline: PKR 399</span>
+                </div>
+                <div>
+                  <label className="text-slate-600 dark:text-slate-400 block mb-1">
+                    Regular Annual Baseline (PKR)
+                  </label>
+                  <input
+                    type="number"
+                    value={formRegularAnnual}
+                    onChange={(e) => setFormRegularAnnual(Number(e.target.value))}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 font-mono text-slate-900 dark:text-white"
+                  />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">Baseline: PKR 3,999</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div>
+                  <label className="text-slate-700 dark:text-slate-300 font-bold block mb-1">
+                    Urdu Announcement Message (اردو پیغام)
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={formLaunchUrduMsg}
+                    onChange={(e) => setFormLaunchUrduMsg(e.target.value)}
+                    dir="rtl"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-slate-900 dark:text-white font-urdu text-sm leading-relaxed"
+                    placeholder="یہ خصوصی قیمت ہماری launching کی خوشی میں رکھی گئی ہے..."
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-700 dark:text-slate-300 font-bold block mb-1">
+                    English Announcement Message
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={formLaunchEngMsg}
+                    onChange={(e) => setFormLaunchEngMsg(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-slate-900 dark:text-white text-xs leading-relaxed"
+                    placeholder="These special prices are being offered as part of our launch celebration..."
+                  />
+                </div>
+              </div>
+              <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                ⚡ Real-time sync: When enabled, Pro monthly becomes PKR {formLaunchMonthly} and annual becomes PKR {formLaunchAnnual} across the site.
               </div>
             </div>
 

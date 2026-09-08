@@ -5,3 +5,5 @@ export * from "./units";
 export * from "./defaults";
 export * from "./features";
 export * from "./business";
+
+export * from "./mobile-ota-template";

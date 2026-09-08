@@ -222,6 +222,51 @@ export interface PlatformUsageMetrics {
   conversions: number;
 }
 
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  slug: string;
+  tier: "free" | "pro" | "business";
+  description: string;
+  price: number;
+  priceMonthlyPkr: number;
+  priceAnnualPkr: number;
+  currency: string;
+  billingPeriod: "monthly" | "annual";
+  maxProjects: number;
+  maxSavedEstimates?: number;
+  maxVendors?: number;
+  maxStorageMb?: number;
+  features: Record<string, boolean>;
+  isActive: boolean;
+  updatedAt?: string;
+  createdAt?: string;
+}
+
+export interface LaunchPriceConfig {
+  enabled: boolean;
+  monthlyPrice: number;
+  annualPrice: number;
+  regularMonthlyPrice: number;
+  regularAnnualPrice: number;
+  currency: string;
+  messageUrdu: string;
+  messageEnglish: string;
+}
+
+export const DEFAULT_LAUNCH_PRICE_CONFIG: LaunchPriceConfig = {
+  enabled: true,
+  monthlyPrice: 200,
+  annualPrice: 500,
+  regularMonthlyPrice: 399,
+  regularAnnualPrice: 3999,
+  currency: "PKR",
+  messageUrdu:
+    "Introducing Launch Price 🎉\n\nیہ خصوصی قیمت ہماری launching کی خوشی میں رکھی گئی ہے۔\n\nPro subscription ابھی صرف:\n\nPKR 200/month\nPKR 500/year\n\nپر دستیاب ہے۔\n\nیہ Introducing / Launching Price ہے۔\nمستقبل میں subscription price بڑھ سکتی ہے۔",
+  messageEnglish:
+    "Introducing Launch Price 🎉\n\nThese special prices are being offered as part of our launch celebration.\n\nPro is currently available for:\n\nPKR 200/month\nPKR 500/year\n\nThis is an introductory launch price.\nThe Pro subscription price may increase in the future."
+};
+
 
 /**
  * Official Project Owner & Admin Configuration

@@ -180,3 +180,66 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const {
+      planSlug = "pro",
+      billingPeriod = "monthly",
+      amountPkr,
+      transactionReference,
+      provider,
+      userName,
+      userEmail,
+      userPhone,
+      receiptScreenshotUrl
+    } = body;
+
+    const supabase = await createServerSupabaseClient();
+
+    // Query server single source of truth for subscription plans
+    const { data: plan } = await supabase
+      .from("subscription_plans")
+      .select("*")
+      .eq("slug", planSlug)
+      .single();
+
+    const expectedAmount = billingPeriod === "annual"
+      ? (plan?.price_annual_pkr || 29990)
+      : (plan?.price_monthly_pkr || plan?.price || 2999);
+
+    const submittedAmount = Number(amountPkr || 0);
+    const isAmountMatched = Math.abs(submittedAmount - expectedAmount) < 1;
+
+    // Record payment submission
+    const { data: newPayment, error } = await supabase
+      .from("payment_verifications")
+      .insert({
+        user_name: userName || "Customer",
+        user_email: userEmail || "customer@buildcost.pk",
+        user_phone: userPhone || null,
+        plan_id: plan?.id || "plan_pro",
+        plan_name: plan?.name || (planSlug === "pro" ? "BuildCost Pro" : "Free Plan"),
+        amount_pkr: submittedAmount,
+        provider: provider || "easypaisa",
+        transaction_reference: transactionReference || "N/A",
+        receipt_screenshot_url: receiptScreenshotUrl || null,
+        status: "pending"
+      })
+      .select()
+      .single();
+
+    return NextResponse.json({
+      success: true,
+      payment: newPayment,
+      expectedAmount,
+      isAmountMatched,
+      message: isAmountMatched
+        ? "Payment registered and pending admin verification."
+        : `Payment submitted with amount Rs. ${submittedAmount}, expected plan price is Rs. ${expectedAmount}.`
+    });
+  } catch (err: any) {
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  }
+}

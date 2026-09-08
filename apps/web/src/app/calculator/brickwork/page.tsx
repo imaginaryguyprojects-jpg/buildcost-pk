@@ -18,20 +18,31 @@ export default function BrickworkCalculatorPage() {
   const [sandPerCft, setSandPerCft] = useState<number>(45);
   const [masonPerSqft, setMasonPerSqft] = useState<number>(40);
 
-  const result = calculateBrickwork(
-    wallLengthFt || 1,
-    wallHeightFt || 1,
-    wallThicknessIn || 9,
-    openingsSqft || 0,
-    mortarMix,
-    5,
-    {
-      brickPerThousand,
-      cementPerBag,
-      sandPerCft,
-      masonPerSqft
-    }
-  );
+  const safeLength = Math.max(1, Math.abs(Number(wallLengthFt) || 1));
+  const safeHeight = Math.max(1, Math.abs(Number(wallHeightFt) || 1));
+  const grossArea = safeLength * safeHeight;
+  const safeOpenings = Math.max(0, Math.min(grossArea - 1, Math.abs(Number(openingsSqft) || 0)));
+  const safeThickness = Math.max(1, Math.abs(Number(wallThicknessIn) || 9));
+
+  let result: ReturnType<typeof calculateBrickwork>;
+  try {
+    result = calculateBrickwork(
+      safeLength,
+      safeHeight,
+      safeThickness,
+      safeOpenings,
+      mortarMix,
+      5,
+      {
+        brickPerThousand: Math.max(0, brickPerThousand || 0),
+        cementPerBag: Math.max(0, cementPerBag || 0),
+        sandPerCft: Math.max(0, sandPerCft || 0),
+        masonPerSqft: Math.max(0, masonPerSqft || 0)
+      }
+    );
+  } catch {
+    result = calculateBrickwork(40, 10, 9, 42, "1:5", 5);
+  }
 
   return (
     <div className="space-y-6">

@@ -9,6 +9,8 @@ export interface BrickworkRates {
 }
 
 export interface BrickworkCalculationResult {
+  grossAreaSqft: number;
+  netAreaSqft: number;
   grossVolumeCft: number;
   deductionVolumeCft: number;
   netMasonryCft: number;
@@ -123,6 +125,8 @@ export function calculateBrickwork(
   ];
 
   return {
+    grossAreaSqft: grossWallAreaSqft,
+    netAreaSqft: netWallAreaSqft,
     grossVolumeCft: Math.round(grossVolumeCft * 100) / 100,
     deductionVolumeCft: Math.round(deductionVolumeCft * 100) / 100,
     netMasonryCft: Math.round(netMasonryCft * 100) / 100,

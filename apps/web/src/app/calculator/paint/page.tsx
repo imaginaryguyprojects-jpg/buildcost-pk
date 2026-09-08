@@ -17,17 +17,20 @@ export default function PaintCalculatorPage() {
   const [puttyPerKg, setPuttyPerKg] = useState<number>(45);
   const [labourPerSqft, setLabourPerSqft] = useState<number>(20);
 
+  const safeArea = Math.max(1, paintAreaSqft || 1);
+  const safeCoats = Math.max(1, coats || 1);
+
   const result = calculatePaint(
-    paintAreaSqft || 1,
-    coats,
+    safeArea,
+    safeCoats,
     includePrimer,
     includePutty,
     5,
     {
-      paintPerLitre,
-      primerPerLitre,
-      puttyPerKg,
-      labourPerSqft
+      paintPerLitre: Math.max(0, paintPerLitre || 0),
+      primerPerLitre: Math.max(0, primerPerLitre || 0),
+      puttyPerKg: Math.max(0, puttyPerKg || 0),
+      labourPerSqft: Math.max(0, labourPerSqft || 0)
     }
   );
 

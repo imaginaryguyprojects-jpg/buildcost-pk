@@ -2,6 +2,8 @@
 
 import React from "react";
 import { useAuthStore } from "@/stores/authStore";
+import { useSystemSettingsStore } from "@/stores/systemSettingsStore";
+import { formatCurrency } from "@/lib/formatters";
 import {
   Sparkles,
   CheckCircle2,
@@ -14,6 +16,7 @@ import {
 
 export function ProUpgradeModal() {
   const { upgradeModalOpen, closeUpgradeModal, openCheckoutModal, activeFeaturePrompt } = useAuthStore();
+  const { proMonthlyRate, proAnnualRate, pricingCurrency, launchPriceConfig } = useSystemSettingsStore();
 
   if (!upgradeModalOpen) return null;
 
@@ -77,17 +80,24 @@ export function ProUpgradeModal() {
         {/* Pricing Box */}
         <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 rounded-2xl p-4 mb-5 flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-              Professional Membership
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                Professional Membership
+              </span>
+              {launchPriceConfig?.enabled && (
+                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950">
+                  Launch Price 🎉
+                </span>
+              )}
+            </div>
             <div className="flex items-baseline gap-1 mt-0.5">
               <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">
-                Rs. 1,999
+                {formatCurrency(proMonthlyRate, pricingCurrency)}
               </span>
               <span className="text-xs text-slate-500">/ month</span>
             </div>
-            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
-              Or Rs. 19,990 / year (save 2 months)
+            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold block">
+              Or {formatCurrency(proAnnualRate, pricingCurrency)} / year (Best Value: save 79%)
             </span>
           </div>
 

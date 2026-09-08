@@ -2,6 +2,8 @@
 
 import React from "react";
 import { useAuthStore } from "@/stores/authStore";
+import { useSystemSettingsStore } from "@/stores/systemSettingsStore";
+import { formatCurrency } from "@/lib/formatters";
 import {
   FolderKanban,
   CheckCircle2,
@@ -18,6 +20,7 @@ import {
 
 export function ProjectUpgradeModal() {
   const { projectUpgradeModalOpen, closeProjectUpgradeModal, openCheckoutModal } = useAuthStore();
+  const { proMonthlyRate, pricingCurrency } = useSystemSettingsStore();
 
   if (!projectUpgradeModalOpen) return null;
 
@@ -91,7 +94,7 @@ export function ProjectUpgradeModal() {
             onClick={openCheckoutModal}
             className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
           >
-            <span>Upgrade to PRO</span>
+            <span>Upgrade to PRO ({formatCurrency(proMonthlyRate, pricingCurrency)} / mo)</span>
             <ArrowRight className="w-4 h-4" />
           </button>
 

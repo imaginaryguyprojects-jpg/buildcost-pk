@@ -25,7 +25,10 @@ import {
   BarChart3,
   Box,
   Palette,
-  Grid
+  Grid,
+  FileText,
+  Printer,
+  ShieldCheck
 } from "lucide-react";
 import {
   calculateColumns,
@@ -41,7 +44,7 @@ import {
   DEFAULT_TRADE_RATES,
   DEFAULT_PRODUCTIVITY
 } from "@buildcost/calculations";
-import { formatPKR, formatNumber } from "@/lib/formatters";
+import { formatPKR, formatNumber, formatCurrency } from "@/lib/formatters";
 import { PAKISTANI_CITIES } from "@buildcost/config";
 import { useProjectStore } from "@/stores/projectStore";
 
@@ -140,6 +143,40 @@ export default function CalculatorHubPage() {
     (fullEstimate.summary.labourCost * labourAdj) / 100 +
     (fullEstimate.greyStructure.materials.bricks.totalCost * bricksAdj) / 100;
   const whatIfTotal = Math.round(baseTotal + whatIfDelta);
+
+  // Derived metrics for sticky takeoff & 2-column layout
+  const activeModeCost =
+    activeMode === "grey"
+      ? greyEstimate.costs.grandTotal
+      : activeMode === "finishing"
+      ? finishingEstimate.grandTotal
+      : activeMode === "labour"
+      ? fullEstimate.summary.labourCost
+      : activeMode === "full"
+      ? fullEstimate.summary.totalProjectEstimate
+      : activeMode === "scenario"
+      ? whatIfTotal
+      : fullEstimate.summary.totalProjectEstimate;
+
+  const activeModeRate =
+    activeMode === "grey"
+      ? greyEstimate.costs.costPerSqft
+      : activeMode === "finishing"
+      ? finishingEstimate.costPerSqft
+      : activeMode === "labour"
+      ? Math.round(fullEstimate.summary.labourCost / coveredAreaSqft)
+      : activeMode === "full"
+      ? fullEstimate.summary.costPerSqft
+      : activeMode === "scenario"
+      ? Math.round(whatIfTotal / coveredAreaSqft)
+      : fullEstimate.summary.costPerSqft;
+
+  const totalEstimateCost = fullEstimate.summary.totalProjectEstimate || 1;
+  const greyCostPct = Math.round((fullEstimate.summary.greyStructureCost / totalEstimateCost) * 100);
+  const finishingCostPct = Math.round((fullEstimate.summary.finishingCost / totalEstimateCost) * 100);
+  const labourCostPct = Math.round((fullEstimate.summary.labourCost / totalEstimateCost) * 100);
+  const contingencyCostPct = Math.max(0, 100 - greyCostPct - finishingCostPct - labourCostPct);
+  const currentCityName = PAKISTANI_CITIES.find((c) => c.id === selectedCityId)?.name || "Islamabad";
 
   return (
     <div className="space-y-6">
@@ -269,8 +306,12 @@ export default function CalculatorHubPage() {
         </div>
       )}
 
-      {/* 6 PRIMARY ESTIMATION MODES (Sections 1, 34, 68) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+      {/* 2-COLUMN RESPONSIVE LAYOUT (Left 7 cols: Inputs & Modes, Right 5 cols: Sticky Live Takeoff) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* LEFT 7 COLS: Primary Modes & Parameter Inputs */}
+        <div className="lg:col-span-7 space-y-4">
+          {/* 6 PRIMARY ESTIMATION MODES (Sections 1, 34, 68) */}
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
         <button
           onClick={() => setActiveMode("grey")}
           className={`p-3 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1.5 ${
@@ -1296,6 +1337,203 @@ export default function CalculatorHubPage() {
           </div>
         </div>
       )}
+        </div>
+
+        {/* RIGHT 5 COLS: Sticky Live Calculation Results */}
+        <div className="lg:col-span-5 space-y-4">
+          <div className="sticky top-20 space-y-4">
+            {/* 1. Live Takeoff Hero Card */}
+            <div className="bg-slate-900 dark:bg-slate-950 border border-slate-800 text-white rounded-2xl p-4 sm:p-5 shadow-lg relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
+              
+              <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-3 mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <span className="text-[11px] font-black uppercase tracking-wider text-slate-300">
+                    Live Takeoff Summary
+                  </span>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 capitalize">
+                  {activeMode} View
+                </span>
+              </div>
+
+              <div>
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
+                  {activeMode === "full"
+                    ? "Turnkey House Estimate"
+                    : activeMode === "grey"
+                    ? "Grey Structure Shell"
+                    : activeMode === "finishing"
+                    ? "Finishing Shell Cost"
+                    : activeMode === "labour"
+                    ? "Labour Cost Estimate"
+                    : activeMode === "scenario"
+                    ? "Scenario Adjusted Cost"
+                    : "Project Total Cost"}
+                </span>
+                <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-white mt-0.5">
+                  Rs. {formatNumber(activeModeCost)}
+                </div>
+                <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-slate-400">
+                  <span className="font-mono text-emerald-400 font-bold">
+                    Rs. {formatNumber(activeModeRate)}/sqft
+                  </span>
+                  <span>•</span>
+                  <span>{coveredAreaSqft.toLocaleString()} sqft ({numberOfFloors} Flr)</span>
+                  <span>•</span>
+                  <span className="capitalize text-slate-300">{qualityLevel}</span>
+                </div>
+              </div>
+
+              {/* Stacked Phase Mini-Bar */}
+              <div className="mt-4 pt-3 border-t border-slate-800/80">
+                <div className="flex items-center justify-between text-[10px] text-slate-400 font-semibold mb-1.5">
+                  <span>Phase Allocation</span>
+                  <span>Turnkey: Rs. {formatNumber(totalEstimateCost)}</span>
+                </div>
+                <div className="h-2 w-full rounded-full bg-slate-800 overflow-hidden flex">
+                  <div style={{ width: `${greyCostPct}%` }} className="bg-emerald-500 h-full" title={`Grey Structure: ${greyCostPct}%`} />
+                  <div style={{ width: `${finishingCostPct}%` }} className="bg-teal-400 h-full" title={`Finishing: ${finishingCostPct}%`} />
+                  <div style={{ width: `${labourCostPct}%` }} className="bg-cyan-400 h-full" title={`Labour: ${labourCostPct}%`} />
+                  <div style={{ width: `${contingencyCostPct}%` }} className="bg-amber-400 h-full" title={`Contingency: ${contingencyCostPct}%`} />
+                </div>
+                <div className="grid grid-cols-4 gap-1 mt-2 text-[9px] text-slate-400">
+                  <div className="flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span>Grey {greyCostPct}%</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-teal-400"></span>
+                    <span>Fin {finishingCostPct}%</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                    <span>Lab {labourCostPct}%</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                    <span>Cont {contingencyCostPct}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Key Material Quantities Card */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-1.5">
+                  <Box className="w-4 h-4 text-emerald-600" />
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                    Key Material Bill (Grey Shell)
+                  </h4>
+                </div>
+                <span className="text-[10px] text-slate-400 font-semibold">{currentCityName}</span>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 text-xs">
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">Cement (OPC/SRC)</span>
+                  <div className="text-right">
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">
+                      {greyEstimate.materials.cement.finalQuantity.toLocaleString()} bags
+                    </span>
+                    <span className="block text-[10px] text-slate-400 font-mono">
+                      Rs. {formatNumber(greyEstimate.materials.cement.totalCost)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 text-xs">
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">Steel Rebar (Grade 60)</span>
+                  <div className="text-right">
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">
+                      {(greyEstimate.materials.steel.finalQuantity / 1000).toFixed(2)} tons
+                    </span>
+                    <span className="block text-[10px] text-slate-400 font-mono">
+                      Rs. {formatNumber(greyEstimate.materials.steel.totalCost)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 text-xs">
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">Clay Bricks (Awwal)</span>
+                  <div className="text-right">
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">
+                      {greyEstimate.materials.bricks.finalQuantity.toLocaleString()} pcs
+                    </span>
+                    <span className="block text-[10px] text-slate-400 font-mono">
+                      Rs. {formatNumber(greyEstimate.materials.bricks.totalCost)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60">
+                    <span className="text-[10px] text-slate-400 uppercase font-semibold block">Sand (Chenab)</span>
+                    <span className="font-mono font-bold text-slate-900 dark:text-white text-xs mt-0.5 block">
+                      {greyEstimate.materials.sand.finalQuantity.toLocaleString()} CFT
+                    </span>
+                  </div>
+                  <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60">
+                    <span className="text-[10px] text-slate-400 uppercase font-semibold block">Crush (Margalla)</span>
+                    <span className="font-mono font-bold text-slate-900 dark:text-white text-xs mt-0.5 block">
+                      {greyEstimate.materials.crush.finalQuantity.toLocaleString()} CFT
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Project Schedule & Execution Speed */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs mb-2">
+                <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
+                  <Clock className="w-3.5 h-3.5 text-cyan-600" />
+                  <span>Estimated Timeline</span>
+                </div>
+                <span className="font-mono font-bold text-cyan-600 dark:text-cyan-400">
+                  ~{(durationResult.estimatedCalendarDays / 30).toFixed(1)} Months
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500">
+                Based on {workingDaysPerWeek} days/week work schedule with {labourTeam.mistriCount} masons &amp; {labourTeam.labourCount} helpers.
+              </p>
+            </div>
+
+            {/* 4. Action Buttons */}
+            <div className="space-y-2">
+              <Link
+                href="/reports"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all"
+              >
+                <FileText className="w-4 h-4" />
+                <span>Generate Official BOQ / PDF</span>
+              </Link>
+
+              <button
+                type="button"
+                onClick={() => typeof window !== "undefined" && window.print()}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold shadow-xs transition-all"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Print Fast Estimate</span>
+              </button>
+            </div>
+
+            {/* 5. PBC Disclaimer Card */}
+            <div className="p-3 rounded-2xl bg-amber-500/5 border border-amber-500/20 text-[10px] text-amber-700 dark:text-amber-300/80 flex items-start gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              <span>
+                All estimates follow Pakistan Building Code standards (PBC-2021). Actual structural drawings from a licensed PEC civil engineer supersede generic estimates.
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

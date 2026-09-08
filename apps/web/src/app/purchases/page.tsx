@@ -351,7 +351,6 @@ export default function PurchasesPage() {
             </div>
             <div className="p-4 flex items-center justify-center bg-slate-50 dark:bg-slate-950">
               {viewBillOrder.billUrl && (
-                /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={viewBillOrder.billUrl}
                   alt="Supplier Invoice"

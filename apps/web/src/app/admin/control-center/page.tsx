@@ -42,7 +42,10 @@ import {
   Compass,
   FileSpreadsheet,
   Activity,
-  MessageCircle
+  MessageCircle,
+  Smartphone,
+  Download,
+  Sparkles
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useProjectStore } from "@/stores/projectStore";
@@ -78,6 +81,7 @@ type ControlTab =
   | "vendors"
   | "ai"
   | "audit"
+  | "app_updates"
   | "emergency";
 
 export default function SuperAdminControlCenterPage() {
@@ -123,7 +127,11 @@ export default function SuperAdminControlCenterPage() {
     emergencyStatus,
     updateEmergencyStatus,
     superAdminAuditLogs,
-    addSuperAdminAuditLog
+    addSuperAdminAuditLog,
+    saveProPricing,
+    fetchSubscriptionPlans,
+    launchPriceConfig,
+    updateLaunchPriceConfig
   } = useSystemSettingsStore();
 
   const [activeTab, setActiveTab] = useState<ControlTab>("overview");
@@ -149,6 +157,84 @@ export default function SuperAdminControlCenterPage() {
   const [planFreePdf, setPlanFreePdf] = useState(freePdfLimit);
   const [planDiscount, setPlanDiscount] = useState(promotionalDiscountPct);
   const [promoTitle, setPromoTitle] = useState(promotionalHeadline);
+
+  // App Releases & OTA Control
+  const [releasePlatform, setReleasePlatform] = useState<string>("android");
+  const [releaseLatestVer, setReleaseLatestVer] = useState<string>("1.2.0");
+  const [releaseLatestCode, setReleaseLatestCode] = useState<number>(12);
+  const [releaseMinCode, setReleaseMinCode] = useState<number>(10);
+  const [releaseMandatory, setReleaseMandatory] = useState<boolean>(false);
+  const [releaseOtaAvailable, setReleaseOtaAvailable] = useState<boolean>(true);
+  const [releaseOtaChannel, setReleaseOtaChannel] = useState<string>("production");
+  const [releaseApkUrl, setReleaseApkUrl] = useState<string>("https://buildcostconnect.pk/releases/buildcost-v1.2.0.apk");
+  const [releaseNotesText, setReleaseNotesText] = useState<string>(
+    "BuildCost Connect 2.0: Instant civil engineering estimators, real-time live PBS material rates, BOQ generator, and vendor Khata."
+  );
+  const [savingRelease, setSavingRelease] = useState<boolean>(false);
+
+  const fetchAppReleaseConfig = async () => {
+    try {
+      const res = await fetch("/api/app-update?platform=android");
+      if (res.ok) {
+        const data = await res.json();
+        setReleaseLatestVer(data.latestVersion || "1.2.0");
+        setReleaseLatestCode(data.latestVersionCode || 12);
+        setReleaseMinCode(data.minimumVersionCode || 10);
+        setReleaseMandatory(Boolean(data.mandatoryUpdate));
+        setReleaseOtaAvailable(Boolean(data.otaAvailable));
+        setReleaseOtaChannel(data.otaChannel || "production");
+        setReleaseApkUrl(data.downloadUrl || "");
+        setReleaseNotesText(data.releaseNotes || "");
+      }
+    } catch (e) {
+      console.error("Failed to fetch release config:", e);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchAppReleaseConfig();
+  }, []);
+
+  const handleSaveAppRelease = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingRelease(true);
+    try {
+      const res = await fetch("/api/admin/app-update", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          platform: releasePlatform,
+          latestVersion: releaseLatestVer,
+          latestVersionCode: releaseLatestCode,
+          minimumVersionCode: releaseMinCode,
+          mandatoryUpdate: releaseMandatory,
+          otaAvailable: releaseOtaAvailable,
+          otaChannel: releaseOtaChannel,
+          apkDownloadUrl: releaseApkUrl,
+          releaseNotes: releaseNotesText
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast("App release configuration & OTA parameters published successfully!", "success");
+      } else {
+        showToast(data.error || "Failed to publish app release", "error");
+      }
+    } catch (err: any) {
+      showToast(err.message || "Network error updating release", "error");
+    } finally {
+      setSavingRelease(false);
+    }
+  };
+
+  // Launch Pricing local form
+  const [launchEnabled, setLaunchEnabled] = useState(launchPriceConfig?.enabled ?? true);
+  const [launchMonthly, setLaunchMonthly] = useState(launchPriceConfig?.monthlyPrice ?? 200);
+  const [launchAnnual, setLaunchAnnual] = useState(launchPriceConfig?.annualPrice ?? 500);
+  const [regularMonthly, setRegularMonthly] = useState(launchPriceConfig?.regularMonthlyPrice ?? 399);
+  const [regularAnnual, setRegularAnnual] = useState(launchPriceConfig?.regularAnnualPrice ?? 3999);
+  const [launchUrduMsg, setLaunchUrduMsg] = useState(launchPriceConfig?.messageUrdu ?? "");
+  const [launchEngMsg, setLaunchEngMsg] = useState(launchPriceConfig?.messageEnglish ?? "");
 
   // Users Directory mock/live state
   const [platformUsers, setPlatformUsers] = useState([
@@ -180,7 +266,29 @@ export default function SuperAdminControlCenterPage() {
     );
   };
 
-  const handleSavePlanLimits = (e: React.FormEvent) => {
+  // Sync plan state when store updates
+  React.useEffect(() => {
+    setPlanMonthly(proMonthlyRate);
+    setPlanAnnual(proAnnualRate);
+  }, [proMonthlyRate, proAnnualRate]);
+
+  React.useEffect(() => {
+    if (launchPriceConfig) {
+      setLaunchEnabled(launchPriceConfig.enabled);
+      setLaunchMonthly(launchPriceConfig.monthlyPrice);
+      setLaunchAnnual(launchPriceConfig.annualPrice);
+      setRegularMonthly(launchPriceConfig.regularMonthlyPrice);
+      setRegularAnnual(launchPriceConfig.regularAnnualPrice);
+      setLaunchUrduMsg(launchPriceConfig.messageUrdu || "");
+      setLaunchEngMsg(launchPriceConfig.messageEnglish || "");
+    }
+  }, [launchPriceConfig]);
+
+  React.useEffect(() => {
+    fetchSubscriptionPlans();
+  }, [fetchSubscriptionPlans]);
+
+  const handleSavePlanLimits = async (e: React.FormEvent) => {
     e.preventDefault();
     updateSubscriptionLimits({
       proMonthlyRate: planMonthly,
@@ -190,14 +298,66 @@ export default function SuperAdminControlCenterPage() {
       promotionalDiscountPct: planDiscount,
       promotionalHeadline: promoTitle
     });
+
+    const res = await saveProPricing({
+      monthlyPrice: planMonthly,
+      annualPrice: planAnnual,
+      currency: "PKR",
+      reason: `Super Admin updated Pro subscription price to PKR ${planMonthly}/mo in Control Center`
+    });
+
     addSuperAdminAuditLog({
       adminEmail: user?.email || "super_admin",
       action: "PRICING_AND_LIMITS_UPDATED",
-      entityType: "system_settings",
+      entityType: "subscription_plans",
       newValue: { planMonthly, planAnnual, planFreeProj, planFreePdf, planDiscount },
-      reason: "Admin updated platform pricing & limits"
+      reason: "Super Admin updated platform pricing & limits (persisted to Supabase)"
     });
-    showToast("Plans & Access limits successfully saved!", "success");
+
+    if (res.success) {
+      showToast("Plans & Access limits successfully saved and synchronized across the platform!", "success");
+    } else {
+      showToast(`Price updated locally, but server sync reported: ${res.error || "notice"}`, "info");
+    }
+  };
+
+  const handleSaveLaunchPricing = async (e: React.FormEvent) => {
+    e.preventDefault();
+    updateLaunchPriceConfig({
+      enabled: launchEnabled,
+      monthlyPrice: launchMonthly,
+      annualPrice: launchAnnual,
+      regularMonthlyPrice: regularMonthly,
+      regularAnnualPrice: regularAnnual,
+      messageUrdu: launchUrduMsg,
+      messageEnglish: launchEngMsg
+    });
+
+    // Also persist pro price if launch price is active
+    const activeMonthly = launchEnabled ? launchMonthly : regularMonthly;
+    const activeAnnual = launchEnabled ? launchAnnual : regularAnnual;
+    await saveProPricing({
+      monthlyPrice: activeMonthly,
+      annualPrice: activeAnnual,
+      currency: "PKR",
+      reason: `Super Admin updated Launch Celebration Pricing (${launchEnabled ? "Active" : "Disabled"}: PKR ${activeMonthly}/mo, PKR ${activeAnnual}/yr)`
+    });
+
+    addSuperAdminAuditLog({
+      adminEmail: user?.email || "super_admin",
+      action: "LAUNCH_PRICING_CONFIG_UPDATED",
+      entityType: "subscription_launch_pricing",
+      newValue: {
+        enabled: launchEnabled,
+        monthlyPrice: launchMonthly,
+        annualPrice: launchAnnual,
+        regularMonthlyPrice: regularMonthly,
+        regularAnnualPrice: regularAnnual
+      },
+      reason: `Super Admin configured launch celebration rates (PKR ${launchMonthly}/mo, PKR ${launchAnnual}/yr)`
+    });
+
+    showToast("Launch Celebration Pricing and bilingual announcement updated live!", "success");
   };
 
   const handleToggleEmergency = () => {
@@ -363,6 +523,7 @@ export default function SuperAdminControlCenterPage() {
               { id: "content", label: "Content CMS Management", icon: FileText, count: platformContent.length },
               { id: "media", label: "Media & Asset Manager", icon: ImageIcon, count: platformMedia.length },
               { id: "sections", label: "Section Manager (16)", icon: Layers, count: null },
+                            { id: "app_updates", label: "App Releases & OTA Updates", icon: Smartphone, count: `v${releaseLatestVer}` },
               { id: "pricing", label: "Pricing & Limits", icon: DollarSign, count: null },
               { id: "payments", label: "Payment Gateways & Slips", icon: CreditCard, count: payments.filter(p => p.status === "pending").length || null },
               { id: "users", label: "User Directory & Roles", icon: Users, count: platformUsers.length },
@@ -414,6 +575,169 @@ export default function SuperAdminControlCenterPage() {
         </aside>
 
         {/* Dynamic Tab Body */}
+
+          {/* TAB: APP RELEASES & OTA UPDATES */}
+          {activeTab === "app_updates" && (
+            <div className="space-y-6 max-w-5xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
+                    <Smartphone className="w-6 h-6 text-emerald-400" />
+                    <span>App Releases, OTA Updates &amp; Remote Config</span>
+                  </h1>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Control live APK versioning, enforce mandatory native updates, push instant OTA patches, and manage release notes without redeploying.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold px-3 py-1 rounded-xl bg-emerald-950/80 border border-emerald-800 text-emerald-300">
+                    Active Release: v{releaseLatestVer} (Build {releaseLatestCode})
+                  </span>
+                </div>
+              </div>
+
+              <form onSubmit={handleSaveAppRelease} className="space-y-6">
+                {/* Version Codes & Mandatory Policy */}
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-6">
+                  <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-amber-400" />
+                    <span>Version Targets &amp; Upgrade Enforcement</span>
+                  </h2>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                    <div>
+                      <label className="text-slate-300 font-semibold block mb-1.5">Target Platform</label>
+                      <select
+                        value={releasePlatform}
+                        onChange={(e) => setReleasePlatform(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500"
+                      >
+                        <option value="android">Android (APK / Play Store)</option>
+                        <option value="web">Web Application (PWA)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-slate-300 font-semibold block mb-1.5">Latest Version Name</label>
+                      <input
+                        type="text"
+                        value={releaseLatestVer}
+                        onChange={(e) => setReleaseLatestVer(e.target.value)}
+                        placeholder="e.g. 1.2.0"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-slate-300 font-semibold block mb-1.5">Latest Version Code (Integer)</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={releaseLatestCode}
+                        onChange={(e) => setReleaseLatestCode(parseInt(e.target.value) || 1)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-3 border-t border-slate-800/80">
+                    <div>
+                      <label className="text-slate-300 font-semibold block mb-1.5">
+                        Minimum Required Version Code
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={releaseMinCode}
+                        onChange={(e) => setReleaseMinCode(parseInt(e.target.value) || 1)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500"
+                      />
+                      <span className="text-[10px] text-slate-500 mt-1 block">
+                        Clients below this build code will be strictly blocked from using the app until they update.
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col justify-center space-y-2 pt-2 sm:pt-0">
+                      <label className="flex items-center gap-3 p-3 rounded-2xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={releaseMandatory}
+                          onChange={(e) => setReleaseMandatory(e.target.checked)}
+                          className="w-4 h-4 rounded text-rose-600 bg-slate-900 border-slate-700 focus:ring-0"
+                        />
+                        <div>
+                          <span className="font-bold text-white text-xs block">Enforce Mandatory APK Update</span>
+                          <span className="text-[10px] text-slate-400">
+                            When enabled, modal dismiss and "Remind Later" are disabled for all users.
+                          </span>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* OTA Updates & EAS Configuration */}
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-6">
+                  <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-emerald-400" />
+                    <span>Over-The-Air (OTA) &amp; Direct Downloads</span>
+                  </h2>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div>
+                      <label className="text-slate-300 font-semibold block mb-1.5">Direct APK Download URL</label>
+                      <input
+                        type="url"
+                        value={releaseApkUrl}
+                        onChange={(e) => setReleaseApkUrl(e.target.value)}
+                        placeholder="https://buildcostconnect.pk/releases/buildcost.apk"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-slate-300 font-semibold block mb-1.5">OTA Release Channel</label>
+                      <select
+                        value={releaseOtaChannel}
+                        onChange={(e) => setReleaseOtaChannel(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500"
+                      >
+                        <option value="production">production (Live Users)</option>
+                        <option value="preview">preview (Internal QA &amp; Staging)</option>
+                        <option value="beta">beta (Field Testers)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 text-xs">
+                    <label className="text-slate-300 font-semibold block">Public Release Notes (English / Urdu)</label>
+                    <textarea
+                      rows={3}
+                      value={releaseNotesText}
+                      onChange={(e) => setReleaseNotesText(e.target.value)}
+                      placeholder="List changes, new calculators, updated material rates..."
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-emerald-500 leading-relaxed"
+                    />
+                  </div>
+                </div>
+
+                {/* Save & Publish Button */}
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button
+                    type="submit"
+                    disabled={savingRelease}
+                    className="px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs shadow-lg shadow-emerald-950/50 flex items-center gap-2 transition-all"
+                  >
+                    <Zap className="w-4 h-4" />
+                    <span>{savingRelease ? "Publishing Release..." : "Publish Live App Release & OTA Update"}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto max-h-[calc(100vh-4rem)]">
           {/* TAB 1: OVERVIEW & REAL-TIME METRICS */}
           {activeTab === "overview" && (
@@ -601,6 +925,128 @@ export default function SuperAdminControlCenterPage() {
                   Configure numerical quotas and feature entitlement tiers without changing application code.
                 </p>
               </div>
+
+              {/* Launch Celebration Pricing & Bilingual Announcement */}
+              <form onSubmit={handleSaveLaunchPricing} className="p-5 rounded-3xl bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/40 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-500/20 pb-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black uppercase tracking-wider text-emerald-400">
+                        🎉 Special Launch Celebration Pricing
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        {launchEnabled ? "Active & Live (PKR 200/mo, PKR 500/yr)" : "Disabled (Using Regular Rates)"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-300 mt-1">
+                      Control introductory promotional prices and the bilingual Urdu &amp; English celebration banner shown to all public visitors.
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={launchEnabled}
+                      onChange={(e) => setLaunchEnabled(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-800 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                    <span className="ml-2 text-xs font-bold text-slate-200">
+                      {launchEnabled ? "Launch Pricing ON" : "Launch Pricing OFF"}
+                    </span>
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                  <div>
+                    <label className="text-emerald-300 font-bold block mb-1">
+                      Launch Monthly Price (PKR)
+                    </label>
+                    <input
+                      type="number"
+                      value={launchMonthly}
+                      onChange={(e) => setLaunchMonthly(Number(e.target.value))}
+                      className="w-full bg-slate-950 border border-emerald-500/30 focus:border-emerald-400 rounded-xl px-3 py-2 text-white font-mono font-bold"
+                    />
+                    <span className="text-[10px] text-slate-400 mt-0.5 block">Configured: PKR 200</span>
+                  </div>
+                  <div>
+                    <label className="text-emerald-300 font-bold block mb-1">
+                      Launch Annual Price (PKR)
+                    </label>
+                    <input
+                      type="number"
+                      value={launchAnnual}
+                      onChange={(e) => setLaunchAnnual(Number(e.target.value))}
+                      className="w-full bg-slate-950 border border-emerald-500/30 focus:border-emerald-400 rounded-xl px-3 py-2 text-white font-mono font-bold"
+                    />
+                    <span className="text-[10px] text-slate-400 mt-0.5 block">Configured: PKR 500</span>
+                  </div>
+                  <div>
+                    <label className="text-slate-400 block mb-1">
+                      Regular Baseline Monthly (PKR)
+                    </label>
+                    <input
+                      type="number"
+                      value={regularMonthly}
+                      onChange={(e) => setRegularMonthly(Number(e.target.value))}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
+                    />
+                    <span className="text-[10px] text-slate-500 mt-0.5 block">Baseline: PKR 399</span>
+                  </div>
+                  <div>
+                    <label className="text-slate-400 block mb-1">
+                      Regular Baseline Annual (PKR)
+                    </label>
+                    <input
+                      type="number"
+                      value={regularAnnual}
+                      onChange={(e) => setRegularAnnual(Number(e.target.value))}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
+                    />
+                    <span className="text-[10px] text-slate-500 mt-0.5 block">Baseline: PKR 3,999</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <label className="text-slate-300 font-bold block mb-1">
+                      Urdu Announcement Message (اردو پیغام)
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={launchUrduMsg}
+                      onChange={(e) => setLaunchUrduMsg(e.target.value)}
+                      dir="rtl"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-urdu text-sm leading-relaxed"
+                      placeholder="یہ خصوصی قیمت ہماری launching کی خوشی میں رکھی گئی ہے..."
+                    />
+                  </div>
+                  <div>
+                    <label className="text-slate-300 font-bold block mb-1">
+                      English Announcement Message
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={launchEngMsg}
+                      onChange={(e) => setLaunchEngMsg(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs leading-relaxed"
+                      placeholder="These special prices are being offered as part of our launch celebration..."
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-1 flex items-center justify-between">
+                  <div className="text-[11px] text-emerald-400/80 font-medium">
+                    ⚡ Real-time sync: Changes immediately reflect on /pricing, checkout modal, and dashboard upgrade pills.
+                  </div>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-md shadow-emerald-500/20 transition-all cursor-pointer"
+                  >
+                    Save Launch Celebration Rates
+                  </button>
+                </div>
+              </form>
 
               {/* Numerical Quota Limits Form */}
               <form onSubmit={handleSavePlanLimits} className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">

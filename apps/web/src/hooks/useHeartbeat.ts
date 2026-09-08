@@ -7,8 +7,6 @@ export function useHeartbeat() {
   const { user } = useAuthStore();
 
   useEffect(() => {
-    let intervalId: NodeJS.Timeout;
-
     const sendHeartbeat = async () => {
       try {
         await fetch("/api/analytics/heartbeat", {
@@ -30,7 +28,7 @@ export function useHeartbeat() {
     sendHeartbeat();
 
     // Ping every 60 seconds
-    intervalId = setInterval(sendHeartbeat, 60000);
+    const intervalId = setInterval(sendHeartbeat, 60000);
 
     return () => clearInterval(intervalId);
   }, [user?.id, user?.plan]);

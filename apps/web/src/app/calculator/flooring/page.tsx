@@ -16,18 +16,29 @@ export default function FlooringCalculatorPage() {
   const [bondAdhesivePerBag, setBondAdhesivePerBag] = useState<number>(750);
   const [labourRatePerSqft, setLabourRatePerSqft] = useState<number>(45);
 
-  const result = calculateFlooring(
-    roomAreaSqft || 1,
-    tileWidthIn || 12,
-    tileLengthIn || 12,
-    tilesPerBox || 4,
-    wastagePercent,
-    {
-      tilePerSqft: tileRatePerSqft,
-      bondAdhesivePerBag,
-      labourPerSqft: labourRatePerSqft
-    }
-  );
+  const safeArea = Math.max(1, Math.abs(Number(roomAreaSqft) || 1));
+  const safeTileW = Math.max(1, Math.abs(Number(tileWidthIn) || 12));
+  const safeTileL = Math.max(1, Math.abs(Number(tileLengthIn) || 12));
+  const safeTilesPerBox = Math.max(1, Math.abs(Number(tilesPerBox) || 4));
+  const safeWastage = Math.max(0, Math.min(50, Number(wastagePercent) || 0));
+
+  let result: ReturnType<typeof calculateFlooring>;
+  try {
+    result = calculateFlooring(
+      safeArea,
+      safeTileW,
+      safeTileL,
+      safeTilesPerBox,
+      safeWastage,
+      {
+        tilePerSqft: Math.max(0, tileRatePerSqft || 0),
+        bondAdhesivePerBag: Math.max(0, bondAdhesivePerBag || 0),
+        labourPerSqft: Math.max(0, labourRatePerSqft || 0)
+      }
+    );
+  } catch {
+    result = calculateFlooring(200, 24, 24, 4, 7);
+  }
 
   return (
     <div className="space-y-6">

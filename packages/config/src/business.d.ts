@@ -172,6 +172,37 @@ export interface PlatformUsageMetrics {
     shares: number;
     conversions: number;
 }
+export interface SubscriptionPlan {
+    id: string;
+    name: string;
+    slug: string;
+    tier: "free" | "pro" | "business";
+    description: string;
+    price: number;
+    priceMonthlyPkr: number;
+    priceAnnualPkr: number;
+    currency: string;
+    billingPeriod: "monthly" | "annual";
+    maxProjects: number;
+    maxSavedEstimates?: number;
+    maxVendors?: number;
+    maxStorageMb?: number;
+    features: Record<string, boolean>;
+    isActive: boolean;
+    updatedAt?: string;
+    createdAt?: string;
+}
+export interface LaunchPriceConfig {
+    enabled: boolean;
+    monthlyPrice: number;
+    annualPrice: number;
+    regularMonthlyPrice: number;
+    regularAnnualPrice: number;
+    currency: string;
+    messageUrdu: string;
+    messageEnglish: string;
+}
+export declare const DEFAULT_LAUNCH_PRICE_CONFIG: LaunchPriceConfig;
 /**
  * Official Project Owner & Admin Configuration
  * Sections 106–109 & 114–120

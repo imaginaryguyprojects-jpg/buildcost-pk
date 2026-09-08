@@ -21,3 +21,4 @@ __exportStar(require("./units"), exports);
 __exportStar(require("./defaults"), exports);
 __exportStar(require("./features"), exports);
 __exportStar(require("./business"), exports);
+__exportStar(require("./mobile-ota-template"), exports);

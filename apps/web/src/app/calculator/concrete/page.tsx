@@ -19,13 +19,22 @@ export default function ConcreteCalculatorPage() {
   const [crushPerCft, setCrushPerCft] = useState<number>(65);
   const [labourPerCft, setLabourPerCft] = useState<number>(35);
 
-  const depthFt = depthInches / 12;
-  const result = calculateConcrete(lengthFt || 1, widthFt || 1, depthFt || 0.1, mixRatio, wastagePercent, {
-    cementPerBag,
-    sandPerCft,
-    crushPerCft,
-    labourPerCft
-  });
+  const safeLength = Math.max(0.1, Math.abs(Number(lengthFt) || 1));
+  const safeWidth = Math.max(0.1, Math.abs(Number(widthFt) || 1));
+  const safeDepth = Math.max(0.01, Math.abs(Number(depthInches) || 1) / 12);
+  const safeWastage = Math.max(0, Math.min(50, Number(wastagePercent) || 0));
+
+  let result: ReturnType<typeof calculateConcrete>;
+  try {
+    result = calculateConcrete(safeLength, safeWidth, safeDepth, mixRatio, safeWastage, {
+      cementPerBag: Math.max(0, cementPerBag || 0),
+      sandPerCft: Math.max(0, sandPerCft || 0),
+      crushPerCft: Math.max(0, crushPerCft || 0),
+      labourPerCft: Math.max(0, labourPerCft || 0)
+    });
+  } catch {
+    result = calculateConcrete(30, 20, 0.5, "1:2:4", 5);
+  }
 
   return (
     <div className="space-y-6">

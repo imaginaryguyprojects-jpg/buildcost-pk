@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BUSINESS_CONFIG = exports.hasRolePermission = exports.ROLE_HIERARCHY = exports.isSuperAdminEmail = exports.SUPER_ADMIN_EMAILS = void 0;
+exports.BUSINESS_CONFIG = exports.DEFAULT_LAUNCH_PRICE_CONFIG = exports.hasRolePermission = exports.ROLE_HIERARCHY = exports.isSuperAdminEmail = exports.SUPER_ADMIN_EMAILS = void 0;
 /**
  * Super Admin Identity Matrix (Dual God-Mode Emails)
  */
@@ -31,6 +31,16 @@ const hasRolePermission = (role, requiredRole) => {
     return userLevel >= requiredLevel;
 };
 exports.hasRolePermission = hasRolePermission;
+exports.DEFAULT_LAUNCH_PRICE_CONFIG = {
+    enabled: true,
+    monthlyPrice: 200,
+    annualPrice: 500,
+    regularMonthlyPrice: 399,
+    regularAnnualPrice: 3999,
+    currency: "PKR",
+    messageUrdu: "Introducing Launch Price 🎉\n\nیہ خصوصی قیمت ہماری launching کی خوشی میں رکھی گئی ہے۔\n\nPro subscription ابھی صرف:\n\nPKR 200/month\nPKR 500/year\n\nپر دستیاب ہے۔\n\nیہ Introducing / Launching Price ہے۔\nمستقبل میں subscription price بڑھ سکتی ہے۔",
+    messageEnglish: "Introducing Launch Price 🎉\n\nThese special prices are being offered as part of our launch celebration.\n\nPro is currently available for:\n\nPKR 200/month\nPKR 500/year\n\nThis is an introductory launch price.\nThe Pro subscription price may increase in the future."
+};
 /**
  * Official Project Owner & Admin Configuration
  * Sections 106–109 & 114–120

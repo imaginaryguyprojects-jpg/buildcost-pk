@@ -20,20 +20,36 @@ export default function SteelCalculatorPage() {
   const [concreteVolumeCft, setConcreteVolumeCft] = useState<number>(1000);
   const [memberType, setMemberType] = useState<StructuralMemberType>("slab");
 
-  const directResult = calculateSteelWeight(
-    diameterMm || 8,
-    lengthMeters || 1,
-    numberOfBars || 1,
-    4,
-    ratePerKg
-  );
+  const safeDiameter = Math.max(1, Math.abs(Number(diameterMm) || 8));
+  const safeLength = Math.max(0.1, Math.abs(Number(lengthMeters) || 1));
+  const safeBars = Math.max(1, Math.abs(Number(numberOfBars) || 1));
+  const safeRate = Math.max(0, Number(ratePerKg) || 260);
 
-  const empiricalResult = estimateStructuralSteel(
-    concreteVolumeCft || 10,
-    memberType,
-    4,
-    ratePerKg
-  );
+  let directResult: ReturnType<typeof calculateSteelWeight>;
+  try {
+    directResult = calculateSteelWeight(
+      safeDiameter,
+      safeLength,
+      safeBars,
+      4,
+      safeRate
+    );
+  } catch {
+    directResult = calculateSteelWeight(12, 12, 10, 4, 260);
+  }
+
+  const safeVolume = Math.max(0.1, Math.abs(Number(concreteVolumeCft) || 10));
+  let empiricalResult: ReturnType<typeof estimateStructuralSteel>;
+  try {
+    empiricalResult = estimateStructuralSteel(
+      safeVolume,
+      memberType,
+      4,
+      safeRate
+    );
+  } catch {
+    empiricalResult = estimateStructuralSteel(1000, "slab", 4, 260);
+  }
 
   const activeResult = calcMode === "direct" ? directResult : empiricalResult;
 

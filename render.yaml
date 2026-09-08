@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: buildcost-connect
+    runtime: node
+    plan: starter
+    region: oregon
+    buildCommand: npm install -g pnpm && pnpm install --frozen-lockfile && pnpm build
+    startCommand: pnpm --filter web start -- -H 0.0.0.0
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: HOSTNAME
+        value: 0.0.0.0
+      - key: NEXT_PUBLIC_APP_NAME
+        value: "BuildCost Connect - Property Calculator 2.0"
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: NEXT_PUBLIC_SUPPORT_EMAIL
+        sync: false
+      - key: NEXT_PUBLIC_SUPPORT_WHATSAPP
+        sync: false
+      - key: NEXT_PUBLIC_EASYPAISA_ACCOUNT_NAME
+        sync: false
+      - key: NEXT_PUBLIC_EASYPAISA_NUMBER
+        sync: false
+      - key: NEXT_PUBLIC_JAZZCASH_ACCOUNT_NAME
+        sync: false
+      - key: NEXT_PUBLIC_JAZZCASH_NUMBER
+        sync: false
+      - key: SUPER_ADMIN_EMAILS
+        sync: false
+      - key: ADMIN_JWT_SECRET
+        generateValue: true

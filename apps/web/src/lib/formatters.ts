@@ -1,4 +1,15 @@
 /**
+ * Formats a currency amount with standard prefix (e.g. "PKR 2,999")
+ */
+export function formatCurrency(amount: number, currency: string = "PKR"): string {
+  if (isNaN(amount) || amount === null || amount === undefined) {
+    return `${currency} 0`;
+  }
+  const rounded = Math.round(amount);
+  return `${currency} ${rounded.toLocaleString("en-PK")}`;
+}
+
+/**
  * Formats a number as Pakistani Rupees (Rs. X,XXX,XXX)
  */
 export function formatPKR(amount: number): string {

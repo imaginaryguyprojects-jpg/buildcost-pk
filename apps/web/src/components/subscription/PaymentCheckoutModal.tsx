@@ -3,6 +3,7 @@
 import React, { useState, useRef } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { useSystemSettingsStore } from "@/stores/systemSettingsStore";
+import { formatCurrency } from "@/lib/formatters";
 import {
   CreditCard,
   Building2,
@@ -42,7 +43,8 @@ export function PaymentCheckoutModal() {
     submitPaymentVerification,
     getWhatsAppPaymentUrl,
     proMonthlyRate,
-    proAnnualRate
+    proAnnualRate,
+    pricingCurrency
   } = useSystemSettingsStore();
 
   const [provider, setProvider] = useState<PaymentProvider>("easypaisa");
@@ -378,7 +380,6 @@ export function PaymentCheckoutModal() {
                   {slipPreview && (
                     <div className="mt-2">
                       <span className="block text-[10px] text-slate-500 uppercase font-bold mb-1">Uploaded Receipt Preview:</span>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={slipPreview} alt="Receipt preview" className="max-h-36 rounded-lg border border-slate-300 dark:border-slate-700 object-contain mx-auto" />
                     </div>
                   )}
@@ -400,7 +401,7 @@ export function PaymentCheckoutModal() {
                     : "text-slate-500 hover:text-slate-800"
                 }`}
               >
-                Monthly Plan (Rs. {proMonthlyRate.toLocaleString()})
+                Monthly Plan ({formatCurrency(proMonthlyRate, pricingCurrency)})
               </button>
               <button
                 type="button"
@@ -411,8 +412,12 @@ export function PaymentCheckoutModal() {
                     : "text-slate-500 hover:text-slate-800"
                 }`}
               >
-                Annual Plan (Rs. {proAnnualRate.toLocaleString()})
-                <span className="text-[9px] block text-emerald-600 dark:text-emerald-400 font-normal">Save Rs. 4,000</span>
+                Annual Plan ({formatCurrency(proAnnualRate, pricingCurrency)})
+                {proMonthlyRate * 12 > proAnnualRate && (
+                  <span className="text-[9px] block text-emerald-600 dark:text-emerald-400 font-normal">
+                    Save {formatCurrency((proMonthlyRate * 12) - proAnnualRate, pricingCurrency)}
+                  </span>
+                )}
               </button>
             </div>
 
@@ -748,7 +753,6 @@ export function PaymentCheckoutModal() {
                   <div className="p-3 bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-700 rounded-2xl flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 overflow-hidden">
                       {slipPreview ? (
-                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={slipPreview} alt="Receipt preview" className="w-12 h-12 rounded-lg object-cover border border-emerald-400 shadow-xs" />
                       ) : (
                         <div className="w-12 h-12 rounded-lg bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center text-emerald-600">

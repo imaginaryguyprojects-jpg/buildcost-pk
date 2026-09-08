@@ -5,11 +5,11 @@ import Link from "next/link";
 import { Sparkles, Check, ArrowRight, ShieldCheck } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useSystemSettingsStore } from "@/stores/systemSettingsStore";
-import { formatNumber } from "@/lib/formatters";
+import { formatNumber, formatCurrency } from "@/lib/formatters";
 
 export function DashboardProCard() {
   const { user, openUpgradeModal } = useAuthStore();
-  const { proMonthlyRate, upgradeBannerVisible, promotionalHeadline } = useSystemSettingsStore();
+  const { proMonthlyRate, pricingCurrency, upgradeBannerVisible, promotionalHeadline } = useSystemSettingsStore();
 
   const isPro =
     user?.plan === "pro" ||
@@ -80,7 +80,7 @@ export function DashboardProCard() {
           <div className="hidden sm:block text-right">
             <div className="text-[11px] text-slate-400">Starting from</div>
             <div className="text-sm font-black text-emerald-600 dark:text-emerald-400">
-              PKR {formatNumber(proMonthlyRate)}{" "}
+              {formatCurrency(proMonthlyRate, pricingCurrency)}{" "}
               <span className="text-[10px] text-slate-400 font-normal">/ month</span>
             </div>
           </div>
@@ -141,7 +141,7 @@ export function DashboardProCard() {
           <div className="text-xs text-slate-500 dark:text-slate-400 text-center sm:text-right">
             Starting from{" "}
             <span className="font-extrabold text-slate-900 dark:text-white">
-              PKR {formatNumber(proMonthlyRate)}
+              {formatCurrency(proMonthlyRate, pricingCurrency)}
             </span>{" "}
             / month
           </div>

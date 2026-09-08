@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     // Check user profile and subscription tier
     let userTier = "free";
-    let userId = user?.id;
+    const userId = user?.id;
 
     if (user) {
       if (user.email && isSuperAdminEmail(user.email)) {

@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useSystemSettingsStore } from "@/stores/systemSettingsStore";
-import { formatPKR, formatNumber } from "@/lib/formatters";
+import { formatPKR, formatNumber, formatCurrency } from "@/lib/formatters";
 import { ProBadge } from "@/components/pro/ProBadge";
 
 export default function PricingComparisonPage() {
@@ -27,6 +27,7 @@ export default function PricingComparisonPage() {
   const {
     proMonthlyRate,
     proAnnualRate,
+    pricingCurrency,
     freeProjectLimit,
     freePdfLimit,
     paymentAccounts,
@@ -34,8 +35,14 @@ export default function PricingComparisonPage() {
     jazzcash,
     bankTransfer,
     adminWhatsApp,
-    promotionalDiscountPct
+    promotionalDiscountPct,
+    launchPriceConfig,
+    fetchSubscriptionPlans
   } = useSystemSettingsStore();
+
+  React.useEffect(() => {
+    fetchSubscriptionPlans();
+  }, [fetchSubscriptionPlans]);
 
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -141,6 +148,55 @@ export default function PricingComparisonPage() {
         </div>
       </div>
 
+      {/* LAUNCH PRICING CELEBRATION BANNER (Section 13) */}
+      {launchPriceConfig?.enabled && (
+        <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-emerald-950/70 via-slate-900 to-teal-950/70 border-2 border-emerald-500/50 text-slate-100 shadow-2xl relative overflow-hidden space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-500/20 pb-4">
+            <div className="flex items-center gap-2.5">
+              <span className="text-3xl">🎉</span>
+              <div>
+                <h3 className="text-lg sm:text-xl font-black text-white tracking-tight">
+                  Introducing Launch Price Special
+                </h3>
+                <span className="text-[11px] text-emerald-400 font-bold uppercase tracking-wider">
+                  Limited Time Launching Celebration
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
+                Monthly: {formatCurrency(launchPriceConfig.monthlyPrice, pricingCurrency)}/mo
+              </span>
+              <span className="text-xs px-3.5 py-1 rounded-full bg-emerald-500 text-slate-950 font-black shadow-md shadow-emerald-500/25">
+                Yearly: {formatCurrency(launchPriceConfig.annualPrice, pricingCurrency)}/yr (Best Value)
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs sm:text-sm">
+            {/* Urdu Version */}
+            <div dir="rtl" className="p-4 rounded-2xl bg-slate-950/70 border border-emerald-500/25 space-y-2 text-right">
+              <div className="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
+                <span>خصوصی تعارفی قیمت 🎉</span>
+              </div>
+              <p className="text-slate-200 leading-relaxed whitespace-pre-line font-medium text-xs sm:text-sm">
+                {launchPriceConfig.messageUrdu || "یہ خصوصی قیمت ہماری launching کی خوشی میں رکھی گئی ہے۔\n\nPro subscription ابھی صرف:\nPKR 200/month\nPKR 500/year\nپر دستیاب ہے۔\n\nیہ Introducing / Launching Price ہے۔\nمستقبل میں subscription price بڑھ سکتی ہے۔"}
+              </p>
+            </div>
+
+            {/* English Version */}
+            <div className="p-4 rounded-2xl bg-slate-950/70 border border-emerald-500/25 space-y-2">
+              <div className="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
+                <span>Introductory Launch Celebration 🎉</span>
+              </div>
+              <p className="text-slate-200 leading-relaxed whitespace-pre-line font-medium text-xs sm:text-sm">
+                {launchPriceConfig.messageEnglish || "These special prices are being offered as part of our launch celebration.\n\nPro is currently available for:\nPKR 200/month\nPKR 500/year\n\nThis is an introductory launch price.\nThe Pro subscription price may increase in the future."}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Side-by-Side Pricing Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
         {/* FREE PLAN */}
@@ -218,17 +274,36 @@ export default function PricingComparisonPage() {
             </div>
 
             <div>
+              {launchPriceConfig?.enabled && (
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-400 text-slate-950 shadow-xs">
+                    Launch Price 🎉
+                  </span>
+                  <span className="text-xs text-slate-400 line-through font-mono">
+                    {billingCycle === "annual"
+                      ? formatCurrency(launchPriceConfig.regularAnnualPrice, pricingCurrency) + " / yr"
+                      : formatCurrency(launchPriceConfig.regularMonthlyPrice, pricingCurrency) + " / mo"}
+                  </span>
+                </div>
+              )}
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-black font-mono text-emerald-400">
-                  Rs. {formatNumber(effectiveMonthlyRate)}
+                <span className="text-4xl sm:text-5xl font-black font-mono text-emerald-400">
+                  {billingCycle === "annual"
+                    ? formatCurrency(proAnnualRate, pricingCurrency)
+                    : formatCurrency(proMonthlyRate, pricingCurrency)}
                 </span>
-                <span className="text-xs text-slate-400">/ month</span>
+                <span className="text-xs text-slate-400">
+                  {billingCycle === "annual" ? "/ year" : "/ month"}
+                </span>
               </div>
-              <span className="text-[11px] text-emerald-300 font-semibold block mt-0.5">
+              <span className="text-[11px] text-emerald-300 font-semibold block mt-1">
                 {billingCycle === "annual"
-                  ? `Billed annually as Rs. ${formatNumber(proAnnualRate)} / year`
-                  : `Or Rs. ${formatNumber(proAnnualRate)} / year (Save ${promotionalDiscountPct}%)`}
+                  ? `Launch Special: ${formatCurrency(proAnnualRate, pricingCurrency)} / year (Less than ${formatCurrency(Math.round(proAnnualRate / 12), pricingCurrency)} / mo)`
+                  : `Or ${formatCurrency(proAnnualRate, pricingCurrency)} / year (Save 79% with Yearly Launch Price)`}
               </span>
+              <p className="text-[10px] text-slate-400 mt-1 italic">
+                Price may increase after the introductory launch period.
+              </p>
             </div>
 
             <div className="space-y-2 pt-4 border-t border-slate-800 text-xs">
