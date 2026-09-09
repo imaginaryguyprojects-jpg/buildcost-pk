@@ -2,7 +2,14 @@ packages:
   - 'apps/*'
   - 'packages/*'
 
+onlyBuiltDependencies:
+  - core-js
+  - esbuild
+
+ignoredBuiltDependencies:
+  - unrs-resolver
+
 allowBuilds:
   core-js: true
   esbuild: true
-  unrs-resolver: true
+  unrs-resolver: false

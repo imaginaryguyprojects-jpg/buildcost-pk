@@ -15,5 +15,17 @@
     "typescript": "^5.7.3",
     "prettier": "^3.5.2"
   },
-  "packageManager": "pnpm@11.25.0"
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=20.18.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "core-js",
+      "esbuild"
+    ],
+    "ignoredBuiltDependencies": [
+      "unrs-resolver"
+    ]
+  }
 }
