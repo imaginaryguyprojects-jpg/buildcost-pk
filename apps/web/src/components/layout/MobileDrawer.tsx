@@ -89,50 +89,36 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
 
   const navSections: NavSection[] = [
     {
-      id: "dashboard",
-      title: "Dashboard",
+      id: "main",
+      title: "Main",
       icon: LayoutGrid,
-      directHref: "/dashboard"
+      items: [
+        { label: "Dashboard", href: "/dashboard", icon: LayoutGrid },
+        { label: "Property Calculator", href: "/calculator", icon: Calculator }
+      ]
+    },
+    {
+      id: "estimation",
+      title: "Estimation",
+      icon: Calculator,
+      items: [
+        { label: "Grey Structure", href: "/calculator/concrete", icon: Layers, badge: "PRO" },
+        { label: "Finishing", href: "/calculator/paint", icon: Paintbrush, badge: "PRO" },
+        { label: "BOQ Studio", href: "/boq", icon: FileSpreadsheet, badge: "PRO" },
+        { label: "Labour & Mistri", href: "/labour", icon: Hammer },
+        { label: "Materials Takeoff", href: "/materials", icon: Boxes }
+      ]
     },
     {
       id: "project",
       title: "Project",
       icon: FolderArchive,
       items: [
-        { label: "Active Projects", href: "/projects", icon: FolderArchive, badge: "PRO" },
-        { label: "Create Project", href: "/projects/new", icon: Plus },
-        { label: "Floor Plan Analysis", href: "/layouts", icon: Compass, badge: "PRO" }
-      ]
-    },
-    {
-      id: "calculators",
-      title: "Calculators",
-      icon: Calculator,
-      items: [
-        { label: "Civil Estimator", href: "/calculator", icon: Calculator },
-        { label: "Grey Structure", href: "/calculator?step=grey", icon: Layers, badge: "PRO" },
-        { label: "Finishing Works", href: "/calculator?step=finishing", icon: Paintbrush, badge: "PRO" },
-        { label: "Labour Productivity", href: "/labour", icon: Hammer }
-      ]
-    },
-    {
-      id: "materials",
-      title: "Materials",
-      icon: Boxes,
-      items: [
-        { label: "Material Takeoffs", href: "/materials", icon: Boxes },
-        { label: "Market Rates & Alerts", href: "/rates/materials", icon: TrendingUp, badge: "PRO" },
-        { label: "Stock Inventory", href: "/inventory", icon: Boxes }
-      ]
-    },
-    {
-      id: "vendors",
-      title: "Vendors",
-      icon: Building2,
-      items: [
-        { label: "Vendors & Khata", href: "/vendors", icon: Building2, badge: "PRO" },
+        { label: "My Projects", href: "/projects", icon: FolderArchive, badge: "PRO" },
+        { label: "Budget & Cash Flow", href: "/budget", icon: Wallet, badge: "PRO" },
         { label: "Purchases & Slips", href: "/purchases", icon: ShoppingCart, badge: "PRO" },
-        { label: "Transport & Logistics", href: "/transport", icon: Truck, badge: "PRO" }
+        { label: "Vendors & Khata", href: "/vendors", icon: Building2, badge: "PRO" },
+        { label: "Progress Tracking", href: "/progress", icon: Activity }
       ]
     },
     {
@@ -141,27 +127,23 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
       icon: BarChart3,
       items: [
         { label: "Reports & PDF Export", href: "/reports", icon: BarChart3 },
-        { label: "Advanced BOQ Studio", href: "/boq", icon: FileSpreadsheet, badge: "PRO" },
-        { label: "Daily Site Diary", href: "/diary", icon: BookOpen },
-        { label: "Budget & Cash Flow", href: "/budget", icon: Wallet, badge: "PRO" },
-        { label: "Progress Tracking", href: "/progress", icon: Activity }
+        { label: "Saved Calculations", href: "/history", icon: BookOpen }
       ]
     },
     {
-      id: "more",
-      title: "More",
+      id: "admin",
+      title: "Admin",
       icon: Settings,
       items: [
-        { label: "Plans & Pricing", href: "/pricing", icon: CreditCard, badge: "PRO" },
-        { label: "Reminders & Alerts", href: "/reminders", icon: CalendarClock },
-        { label: "AI Advisor", href: "/advisor", icon: Bot, badge: "PRO" },
-        { label: "Settings", href: "/settings", icon: Settings },
         {
-          label: isSuper ? "God-Mode Admin" : "Admin Panel",
+          label: isSuper ? "God-Mode Admin" : "Admin Dashboard",
           href: "/admin",
           icon: ShieldAlert,
           badge: isSuper ? "⚡ GOD" : "ADMIN"
-        }
+        },
+        { label: "Market Rates", href: "/rates/materials", icon: TrendingUp, badge: "PRO" },
+        { label: "Users & Subscriptions", href: "/admin?tab=users", icon: CreditCard },
+        { label: "Settings", href: "/settings", icon: Settings }
       ]
     }
   ];

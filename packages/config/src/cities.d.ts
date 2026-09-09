@@ -2,7 +2,7 @@ export interface CityDefinition {
     id: string;
     name: string;
     urduName: string;
-    province: "Federal" | "Punjab" | "Sindh" | "KPK" | "Balochistan" | "AJK";
+    province: "Federal" | "Punjab" | "Sindh" | "KPK" | "Balochistan" | "AJK" | "Gilgit-Baltistan";
     defaultMarlaSqft: number;
     isActive: boolean;
 }
