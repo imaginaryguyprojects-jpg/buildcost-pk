@@ -25,13 +25,14 @@ export function AppShell({ children }: AppShellProps) {
   const { lastToast, clearToast } = useAuthStore();
 
   const isFullPageLayout =
-    pathname === "/" ||
     pathname.startsWith("/share/") ||
     pathname === "/login" ||
     pathname === "/signup";
 
+  const isTopNavLayout = pathname === "/" || pathname === "/dashboard";
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col antialiased selection:bg-emerald-500/30 selection:text-emerald-700 dark:selection:text-emerald-200 transition-colors duration-200">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0a0f1d] text-slate-900 dark:text-slate-100 flex flex-col antialiased selection:bg-emerald-500/30 selection:text-emerald-700 dark:selection:text-emerald-200 transition-colors duration-200">
       {/* Global Toast Notification */}
       {lastToast && (
         <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 duration-300">
@@ -63,6 +64,13 @@ export function AppShell({ children }: AppShellProps) {
 
       {isFullPageLayout ? (
         <main className="flex-1 w-full">{children}</main>
+      ) : isTopNavLayout ? (
+        <div className="flex-1 flex flex-col min-w-0 w-full">
+          <Topbar />
+          <main className="flex-1 w-full bg-[#0a0f1d] text-slate-100">
+            {children}
+          </main>
+        </div>
       ) : (
         <div className="flex flex-1 w-full">
           {/* Desktop Sidebar */}

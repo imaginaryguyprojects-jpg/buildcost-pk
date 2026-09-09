@@ -136,7 +136,7 @@ export default function DashboardPage() {
           {/* 1. Material Rates */}
           <Link
             href="/rates/materials"
-            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
+            className="p-3.5 rounded-2xl bg-white dark:bg-[#0d1629] border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
           >
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Market Feeds</span>
@@ -157,7 +157,7 @@ export default function DashboardPage() {
           {/* 2. Labour Rates */}
           <Link
             href="/labour"
-            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
+            className="p-3.5 rounded-2xl bg-white dark:bg-[#0d1629] border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
           >
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Daily Wages</span>
@@ -178,7 +178,7 @@ export default function DashboardPage() {
           {/* 3. Grey Structure Estimator */}
           <Link
             href="/calculator/concrete"
-            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
+            className="p-3.5 rounded-2xl bg-white dark:bg-[#0d1629] border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
           >
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Civil Shell</span>
@@ -199,7 +199,7 @@ export default function DashboardPage() {
           {/* 4. Finishing Works */}
           <Link
             href="/calculator/paint"
-            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
+            className="p-3.5 rounded-2xl bg-white dark:bg-[#0d1629] border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
           >
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">17 Categories</span>
@@ -220,7 +220,7 @@ export default function DashboardPage() {
           {/* 5. BOQ Studio */}
           <Link
             href="/boq"
-            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
+            className="p-3.5 rounded-2xl bg-white dark:bg-[#0d1629] border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
           >
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
@@ -244,7 +244,7 @@ export default function DashboardPage() {
           {/* 6. Vendor Khata */}
           <Link
             href="/vendors"
-            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
+            className="p-3.5 rounded-2xl bg-white dark:bg-[#0d1629] border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
           >
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
@@ -268,7 +268,7 @@ export default function DashboardPage() {
           {/* 7. Transport & Freight */}
           <Link
             href="/transport"
-            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
+            className="p-3.5 rounded-2xl bg-white dark:bg-[#0d1629] border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
           >
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Logistics</span>
@@ -289,7 +289,7 @@ export default function DashboardPage() {
           {/* 8. AI Advisor */}
           <Link
             href="/advisor"
-            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
+            className="p-3.5 rounded-2xl bg-white dark:bg-[#0d1629] border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
           >
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
@@ -317,7 +317,7 @@ export default function DashboardPage() {
       {/* ======================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 text-xs pt-2">
         {/* Active Project Card */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-3">
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#0d1629] border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Active Workspace</span>
             <Link href="/projects" className="text-emerald-500 text-[11px] font-semibold hover:underline">
@@ -344,7 +344,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Site Reminders Card */}
-        <div className="lg:col-span-2 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-2.5">
+        <div className="lg:col-span-2 p-4 rounded-2xl bg-white dark:bg-[#0d1629] border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-2.5">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-amber-500" />
@@ -357,7 +357,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {upcomingReminders.length > 0 ? (
               upcomingReminders.map((rem) => (
-                <div key={rem.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800/80 space-y-1">
+                <div key={rem.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#090f1d] border border-slate-100 dark:border-slate-800/80 space-y-1">
                   <span className="font-semibold text-slate-800 dark:text-slate-200 block truncate text-[11px]">
                     {rem.title}
                   </span>
