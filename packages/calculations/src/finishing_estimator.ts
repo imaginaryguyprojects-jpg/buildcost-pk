@@ -36,6 +36,7 @@ export interface CompleteFinishingSummary {
     flooring: FinishingCategoryItem;
     tiles: FinishingCategoryItem;
     marble: FinishingCategoryItem;
+    chips?: FinishingCategoryItem;
     paint: FinishingCategoryItem;
     doors: FinishingCategoryItem;
     windows: FinishingCategoryItem;
@@ -179,6 +180,16 @@ export function calculateCompleteFinishing(input: FinishingInput): CompleteFinis
       labourCost: marbleLabCost,
       totalCost: marbleMatCost + marbleLabCost,
       details: "Stairs treads, vanity tops, and borders with polishing"
+    },
+    chips: {
+      id: "chips",
+      name: "Terrazzo Marble Chips (چپس)",
+      unit: "sqft",
+      quantity: Math.round(area * 0.20),
+      materialCost: Math.round(area * 0.20 * 65 * qMultiplier),
+      labourCost: Math.round(area * 0.20 * 35),
+      totalCost: Math.round(area * 0.20 * (65 * qMultiplier + 35)),
+      details: "Water-proof marble chips on terrace/garage with mechanical grinding & polish"
     },
     paint: {
       id: "paint",

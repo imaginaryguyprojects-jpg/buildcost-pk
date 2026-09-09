@@ -59,6 +59,43 @@ export interface GreyStructureSummary {
     plinthAndDpcCost: number;
     staircaseCost: number;
   };
+  phaseSpecificBreakdown?: {
+    brickMasonry: {
+      titleEn: string;
+      titleUr: string;
+      totalCost: number;
+      brickCount: number;
+      mortarCementBags: number;
+      mortarSandCft: number;
+      inclusions: string[];
+    };
+    plastering: {
+      titleEn: string;
+      titleUr: string;
+      totalCost: number;
+      plasterAreaSqft: number;
+      cementBags: number;
+      sandCft: number;
+      inclusions: string[];
+    };
+    roofSlabCasting: {
+      titleEn: string;
+      titleUr: string;
+      totalCost: number;
+      slabConcreteCft: number;
+      steelKg: number;
+      cementBags: number;
+      crushCft: number;
+      sandCft: number;
+      inclusions: string[];
+    };
+    foundationAndDpc: {
+      titleEn: string;
+      titleUr: string;
+      totalCost: number;
+      inclusions: string[];
+    };
+  };
   disclaimer: string;
 }
 
@@ -217,6 +254,68 @@ export function calculateGreyStructureEstimate(input: GreyStructureInput): GreyS
       brickMasonryCost,
       plinthAndDpcCost,
       staircaseCost
+    },
+    phaseSpecificBreakdown: {
+      brickMasonry: {
+        titleEn: "Brick Masonry (Walls)",
+        titleUr: "دیواریں چڑھانا",
+        totalCost: brickMasonryCost,
+        brickCount: finBricks,
+        mortarCementBags: brickworkCementBags,
+        mortarSandCft: brickworkSandCft,
+        inclusions: [
+          "Awwal red clay kiln-fired bricks (اول اینٹیں)",
+          "1:6 & 1:4 cement-sand mortar mixing (سیمنٹ ریت کا مسالہ)",
+          "9-inch load-bearing exterior perimeter walls",
+          "4.5-inch interior room partition walls",
+          "Roof parapet walls & boundary wall construction",
+          "Mason (Mistry) & labour laying with vertical plumb check"
+        ]
+      },
+      plastering: {
+        titleEn: "Cement Plastering",
+        titleUr: "پلستر کرنا",
+        totalCost: Math.round(grandTotal * 0.12),
+        plasterAreaSqft: Math.round(area * 3.4),
+        cementBags: Math.ceil((area * 3.4 * (0.5 / 12) / 1.25) * 0.25),
+        sandCft: Math.round(area * 3.4 * (0.5 / 12) * 0.75 * 1.54),
+        inclusions: [
+          "Internal 0.5-inch 1:4 cement-sand smooth plaster (اندرونی پلستر)",
+          "External 0.75-inch 1:3 weather-resistant plaster (بیرونی پلستر)",
+          "Ceiling underside chip-free plastering (چھت کا پلستر)",
+          "Chicken wire mesh (مرغی جالی) on RCC-brick joints to prevent cracks",
+          "Scaffolding (بانس پہاڑ) and 7-day water curing (ترائی)"
+        ]
+      },
+      roofSlabCasting: {
+        titleEn: "RCC Roof Slab Casting & Framing",
+        titleUr: "چھت ڈالنا اور لنٹر",
+        totalCost: roofSlabsCost + beamsAndLintelsCost,
+        slabConcreteCft: Math.round(slabConcreteCft),
+        steelKg: finSteelKg,
+        cementBags: Math.ceil(rawRccCementBags),
+        crushCft: finCrushCft,
+        sandCft: Math.round(rawRccSandCft),
+        inclusions: [
+          "Grade 60 deformed steel rebar bending and binding (سریے کی باندھائی)",
+          "1:2:4 ratio Margalla / Sargodha crushed stone concrete (1:2:4 لنٹر)",
+          "Steel/marine ply shuttering formwork with prop supports (شٹرنگ)",
+          "Electrical conduit pipe & fan box embedding before casting",
+          "Mechanical vibrator compaction & 14-day continuous pond curing (ترائی)"
+        ]
+      },
+      foundationAndDpc: {
+        titleEn: "Excavation, Foundation & DPC",
+        titleUr: "بنیادیں اور ڈی پی سی",
+        totalCost: foundationCost + plinthAndDpcCost,
+        inclusions: [
+          "Trench excavation up to solid soil depth (4–5 ft)",
+          "Termite chemical treatment spray (دیمک سپرے)",
+          "Lean concrete (1:4:8) soling base",
+          "Stepped brick foundation with reinforced plinth beam",
+          "Double layer bitumen DPC with polythene sheet (نمی سے بچاؤ)"
+        ]
+      }
     },
     disclaimer:
       "Construction Estimation only. Does NOT include finishing works. Structural engineering verification required."

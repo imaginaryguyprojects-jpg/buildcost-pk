@@ -30,7 +30,9 @@ import {
   Search,
   Building,
   Check,
-  Info
+  Info,
+  Ruler,
+  Maximize2
 } from "lucide-react";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 import { PAKISTANI_CITIES } from "@buildcost/config";
@@ -43,7 +45,17 @@ export type PlotUnit = "marla" | "kanal" | "sqft";
 export type ConstructionScope = "grey" | "complete" | "custom";
 export type QualityTier = "standard" | "economy" | "premium" | "luxury";
 
-// Marla standard presets matching prompt
+// Standard Pakistani Plot Presets with Typical Dimensions
+export const PAK_STANDARD_PLOTS = [
+  { size: 3, unit: "marla" as PlotUnit, dimensions: "20×35 ft", label: "3 Marla", sqft: 700, popular: true },
+  { size: 5, unit: "marla" as PlotUnit, dimensions: "25×50 ft", label: "5 Marla", sqft: 1250, popular: true },
+  { size: 7, unit: "marla" as PlotUnit, dimensions: "30×60 ft", label: "7 Marla", sqft: 1800, popular: true },
+  { size: 10, unit: "marla" as PlotUnit, dimensions: "35×70 ft", label: "10 Marla", sqft: 2450, popular: true },
+  { size: 1, unit: "kanal" as PlotUnit, dimensions: "50×90 ft", label: "1 Kanal", sqft: 4500, popular: true },
+  { size: 2, unit: "kanal" as PlotUnit, dimensions: "75×120 ft", label: "2 Kanal", sqft: 9000, popular: false }
+];
+
+// Marla standard presets
 export const MARLA_STANDARD_PRESETS = [
   { id: "272.25", label: "272.25 sq ft", region: "Islamabad, Rawalpindi, CDA standard", sqft: 272.25 },
   { id: "250", label: "250 sq ft", region: "Lahore standard", sqft: 250 },
@@ -85,7 +97,11 @@ export function PrimaryPropertyCalculator() {
   const [marlaStandardType, setMarlaStandardType] = useState<string>("272.25");
   const [customMarlaSqft, setCustomMarlaSqft] = useState<number>(272.25);
 
-  // 3. Property / Plot Size
+  // 3. Property / Plot Size Mode & Custom Dimensions
+  const [plotDimensionMode, setPlotDimensionMode] = useState<"standard" | "custom">("standard");
+  const [customWidthFt, setCustomWidthFt] = useState<number>(25);
+  const [customLengthFt, setCustomLengthFt] = useState<number>(50);
+
   const [plotUnit, setPlotUnit] = useState<PlotUnit>("marla");
   const [plotSize, setPlotSize] = useState<number>(5);
 
@@ -104,6 +120,11 @@ export function PrimaryPropertyCalculator() {
 
   // Derived plot area in square feet
   const plotAreaSqft = useMemo(() => {
+    if (plotDimensionMode === "custom") {
+      const w = Math.max(1, customWidthFt || 1);
+      const l = Math.max(1, customLengthFt || 1);
+      return Math.round(w * l);
+    }
     const size = Math.max(0.01, plotSize || 1);
     if (plotUnit === "marla") {
       return size * activeMarlaSqft;
@@ -112,7 +133,7 @@ export function PrimaryPropertyCalculator() {
     } else {
       return size;
     }
-  }, [plotSize, plotUnit, activeMarlaSqft]);
+  }, [plotDimensionMode, customWidthFt, customLengthFt, plotSize, plotUnit, activeMarlaSqft]);
 
   // Derived plot area in Marlas and Kanals
   const plotAreaInMarlas = plotAreaSqft / activeMarlaSqft;
@@ -147,7 +168,7 @@ export function PrimaryPropertyCalculator() {
     return CITY_BENCHMARKS[selectedCityId] || CITY_BENCHMARKS.default;
   }, [selectedCityId]);
 
-  // 6. Custom Rates Panel State
+  // 6. Custom / Editable Rates State
   const [showRatesPanel, setShowRatesPanel] = useState<boolean>(false);
   const [useCustomRates, setUseCustomRates] = useState<boolean>(false);
   const [customRates, setCustomRates] = useState({
@@ -202,7 +223,7 @@ export function PrimaryPropertyCalculator() {
     showToast(`Rates reset to official ${selectedCity.name} market benchmarks`, "info");
   };
 
-  // 7. Core Calculations
+  // Active Rates
   const activeRates = useMemo(() => {
     if (useCustomRates) {
       return {
@@ -226,6 +247,7 @@ export function PrimaryPropertyCalculator() {
     };
   }, [useCustomRates, customRates, cityRates, coveredAreaSqft]);
 
+  // 7. Core Calculations
   const calculationResult = useMemo(() => {
     const safeCovered = Math.max(50, coveredAreaSqft || autoSuggestedCoveredArea);
     const safeFloors = Math.max(1, effectiveFloors);
@@ -261,23 +283,29 @@ export function PrimaryPropertyCalculator() {
     const wastageCost = Math.round((cementCost + steelCost + bricksCost + sandCost + crushCost) * 0.045);
     const finishingCost = isGreyOnly ? 0 : Math.round(totalCost - greyEst.costs.grandTotal);
 
+    // Specific Grey Breakdown Elements
+    const brickMasonryCost = greyEst.elementsBreakdown.brickMasonryCost;
+    const plasterCost = Math.round(greyEst.costs.grandTotal * 0.12);
+    const roofSlabCost = greyEst.elementsBreakdown.roofSlabsCost + greyEst.elementsBreakdown.beamsAndLintelsCost;
+    const foundationCost = greyEst.elementsBreakdown.foundationCost + greyEst.elementsBreakdown.plinthAndDpcCost;
+
     // Timeline in months
     const estimatedDurationMonths =
       safeFloors === 1 ? "4 - 5" : safeFloors === 2 ? "7 - 9" : safeFloors === 3 ? "10 - 12" : "13 - 16";
 
-    // Dynamic Chart Data with real calculated percentages (not hardcoded)
+    // Dynamic Chart Data with real calculated percentages
     const chartItems = [
-      { name: "Cement", cost: cementCost, color: "#059669" },      // Emerald
-      { name: "Steel (Saria)", cost: steelCost, color: "#2563eb" }, // Blue
-      { name: "Bricks", cost: bricksCost, color: "#d97706" },      // Amber
-      { name: "Sand & Crush", cost: sandCost + crushCost, color: "#0891b2" }, // Cyan
-      { name: "Labour & Shuttering", cost: labourCost, color: "#7c3aed" },    // Purple
-      { name: "Transport & Logistics", cost: transportCost, color: "#ea580c" },// Orange
-      { name: "Wastage Allowance", cost: wastageCost, color: "#64748b" }     // Slate
+      { name: "Cement", cost: cementCost, color: "#059669" },
+      { name: "Steel (Saria)", cost: steelCost, color: "#2563eb" },
+      { name: "Bricks", cost: bricksCost, color: "#d97706" },
+      { name: "Sand & Crush", cost: sandCost + crushCost, color: "#0891b2" },
+      { name: "Labour & Shuttering", cost: labourCost, color: "#7c3aed" },
+      { name: "Transport & Logistics", cost: transportCost, color: "#ea580c" },
+      { name: "Wastage Allowance", cost: wastageCost, color: "#64748b" }
     ];
 
     if (!isGreyOnly) {
-      chartItems.push({ name: "Finishing Package", cost: finishingCost, color: "#ec4899" }); // Pink
+      chartItems.push({ name: "Finishing Package", cost: finishingCost, color: "#ec4899" });
     }
 
     const chartTotal = chartItems.reduce((acc, i) => acc + i.cost, 0);
@@ -309,7 +337,13 @@ export function PrimaryPropertyCalculator() {
       transportCost,
       wastageCost,
       chartData,
-      activeRates
+      activeRates,
+      greyEst,
+      fullEst,
+      brickMasonryCost,
+      plasterCost,
+      roofSlabCost,
+      foundationCost
     };
   }, [
     coveredAreaSqft,
@@ -317,146 +351,240 @@ export function PrimaryPropertyCalculator() {
     effectiveFloors,
     activeRates,
     qualityTier,
-    constructionScope
+    constructionScope,
+    plotAreaInMarlas
   ]);
 
-  // CTA Submit
-  const handleCalculateSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    showToast("Calculated successfully! Real Pakistani civil benchmarks applied.", "success");
-    const el = document.getElementById("calculation-results-anchor");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth" });
-    }
-  };
+  // Breakdown Sub-tab state
+  const [breakdownView, setBreakdownView] = useState<"grey" | "finishing">("grey");
 
-  // Pro features gate
-  const handleProFeature = (name: string) => {
-    if (!isAuthenticated) {
-      showToast(`${name} is a Pro feature. Please sign in or upgrade.`, "info");
-      openLoginModal();
-    } else {
-      openProjectUpgradeModal();
-    }
+  const scrollToResults = () => {
+    const el = document.getElementById("calculation-results-anchor");
+    if (el) el.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
-    <div className="w-full space-y-4 font-sans text-slate-900 dark:text-slate-100">
-      {/* ======================================================== */}
-      {/* 100% FREE BADGE BANNER */}
-      {/* ======================================================== */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-950/90 via-slate-900 to-slate-900 border border-emerald-500/40 text-xs shadow-md">
-        <div className="flex items-center gap-2 text-slate-200 font-medium">
-          <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>
-            <strong className="text-white">100% Free Pakistan Property Construction Calculator:</strong> Real-time civil engineering calculations, material quantities, custom rate overrides, and area conversions.
-          </span>
+    <div id="calculator-section" className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-4 sm:p-7 shadow-lg shadow-slate-200/40 dark:shadow-none transition-colors duration-200">
+      {/* Header Banner */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200/80 dark:border-slate-800">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 flex items-center justify-center text-[#059669] dark:text-emerald-400 shrink-0 shadow-sm">
+            <Calculator className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                Pakistan Property Construction Cost Calculator
+              </h2>
+              <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-[#059669] dark:bg-emerald-950/80 dark:text-emerald-300">
+                Live Engine
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Empirical civil estimates calibrated for Pakistani housing societies (CDA, LDA, DHA, Bahria).
+            </p>
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={() => openCheckoutModal()}
-          className="shrink-0 self-start sm:self-auto px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-[11px] flex items-center gap-1.5 shadow-md transition-all"
-        >
-          <span>Upgrade to Pro</span>
-          <ArrowRight className="w-3 h-3" />
-        </button>
+
+        {/* Live City Badge & Edit Rates Button */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200">
+            <Building className="w-3.5 h-3.5 text-[#059669]" />
+            <span>{selectedCity.name}</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowRatesPanel(!showRatesPanel)}
+            className={cn(
+              "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5",
+              useCustomRates
+                ? "bg-amber-500/15 border-amber-400 text-amber-700 dark:text-amber-300"
+                : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-[#059669]"
+            )}
+          >
+            <Sliders className="w-3.5 h-3.5 text-[#059669]" />
+            <span>{useCustomRates ? "Rates: Custom" : "Live Rates"}</span>
+            {showRatesPanel ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </button>
+        </div>
       </div>
 
-      {/* ======================================================== */}
-      {/* HERO PROPERTY CALCULATOR CARD */}
-      {/* ======================================================== */}
-      <div className="bg-slate-950 border-2 border-emerald-500/40 rounded-3xl p-4 sm:p-6 lg:p-7 shadow-2xl text-slate-100 relative overflow-hidden">
-        {/* Subtle Ambient Glow */}
-        <div className="absolute -top-28 -right-28 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        {/* Header Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-800/80">
-          <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-emerald-950/60 shrink-0">
-              <Home className="w-6 h-6" />
-            </div>
+      {/* LIVE & EDITABLE MATERIAL RATES DRAWER */}
+      {showRatesPanel && (
+        <div className="mt-4 p-4 rounded-2xl bg-[#F8FAFC] dark:bg-slate-950 border border-emerald-200 dark:border-emerald-800/60 space-y-3 animate-in fade-in duration-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                  Property Construction Calculator
-                </h1>
-                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-black text-[10px] uppercase tracking-wider">
-                  100% Free
-                </span>
-                {useCustomRates && (
-                  <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold text-[10px] uppercase tracking-wider">
-                    Custom Rates Active
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Calculate exact house construction costs across 28 Pakistani cities with live material benchmarks.
+              <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-[#059669]" />
+                <span>Live Material Rates (Current Market Feeds)</span>
+              </span>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                You can directly edit any material rate below. All calculations will update in real time.
               </p>
             </div>
+
+            <div className="flex items-center gap-2">
+              {useCustomRates && (
+                <button
+                  type="button"
+                  onClick={handleResetToCityRates}
+                  className="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-bold hover:bg-slate-300 flex items-center gap-1"
+                >
+                  <RotateCcw className="w-3 h-3 text-slate-500" />
+                  <span>Reset to Benchmark</span>
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Pro Action Buttons in Header */}
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={() => handleProFeature("Save Project")}
-              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white font-semibold text-xs flex items-center gap-1.5 transition-colors border border-slate-800 shadow-xs"
-              title="Save calculation into your project Khata"
-            >
-              <span>Save Project</span>
-              <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[9px] font-bold flex items-center gap-0.5">
-                <Lock className="w-2.5 h-2.5" /> PRO
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleProFeature("PDF Export")}
-              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white font-semibold text-xs flex items-center gap-1.5 transition-colors border border-slate-800 shadow-xs"
-              title="Export contractor-ready PDF estimate"
-            >
-              <Download className="w-3.5 h-3.5 text-slate-400" />
-              <span>PDF Report</span>
-              <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[9px] font-bold flex items-center gap-0.5">
-                <Lock className="w-2.5 h-2.5" /> PRO
-              </span>
-            </button>
-          </div>
-        </div>
-
-        {/* ======================================================== */}
-        {/* INPUTS FORM */}
-        {/* ======================================================== */}
-        <form onSubmit={handleCalculateSubmit} className="pt-5 space-y-5">
-          {/* 1. CITY SELECTION */}
-          <div className="space-y-2">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-              <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px]">
-                  1
-                </span>
-                <span>Select City / Market Location</span>
-                <span className="text-emerald-400 text-[11px] font-medium">
-                  ({selectedCity.name} — {selectedCity.urduName})
-                </span>
-              </label>
-              <span className="text-[11px] text-slate-400">
-                Default Marla: <strong className="text-emerald-400">{selectedCity.defaultMarlaSqft} sq ft</strong>
-              </span>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-xs">
+            {/* Cement */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 space-y-1">
+              <span className="text-[10px] font-bold uppercase text-slate-500 block">Cement (Bag)</span>
+              <div className="relative">
+                <span className="absolute left-2.5 top-1.5 text-xs text-slate-400">Rs</span>
+                <input
+                  type="number"
+                  value={customRates.cement}
+                  onChange={(e) => {
+                    setCustomRates((prev) => ({ ...prev, cement: parseFloat(e.target.value) || 0 }));
+                    setUseCustomRates(true);
+                  }}
+                  className="w-full bg-[#F8FAFC] dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-[#059669] rounded-lg pl-7 pr-2 py-1 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
+                />
+              </div>
+              <span className="text-[10px] text-slate-400">City: Rs {cityRates.cement}</span>
             </div>
 
+            {/* Steel */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 space-y-1">
+              <span className="text-[10px] font-bold uppercase text-slate-500 block">Steel / Sariya (Kg)</span>
+              <div className="relative">
+                <span className="absolute left-2.5 top-1.5 text-xs text-slate-400">Rs</span>
+                <input
+                  type="number"
+                  value={customRates.steel}
+                  onChange={(e) => {
+                    setCustomRates((prev) => ({ ...prev, steel: parseFloat(e.target.value) || 0 }));
+                    setUseCustomRates(true);
+                  }}
+                  className="w-full bg-[#F8FAFC] dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-[#059669] rounded-lg pl-7 pr-2 py-1 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
+                />
+              </div>
+              <span className="text-[10px] text-slate-400">City: Rs {cityRates.steel}</span>
+            </div>
+
+            {/* Bricks */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 space-y-1">
+              <span className="text-[10px] font-bold uppercase text-slate-500 block">Bricks (Per Piece)</span>
+              <div className="relative">
+                <span className="absolute left-2.5 top-1.5 text-xs text-slate-400">Rs</span>
+                <input
+                  type="number"
+                  step="0.5"
+                  value={customRates.brick}
+                  onChange={(e) => {
+                    setCustomRates((prev) => ({ ...prev, brick: parseFloat(e.target.value) || 0 }));
+                    setUseCustomRates(true);
+                  }}
+                  className="w-full bg-[#F8FAFC] dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-[#059669] rounded-lg pl-7 pr-2 py-1 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
+                />
+              </div>
+              <span className="text-[10px] text-slate-400">City: Rs {cityRates.brick}</span>
+            </div>
+
+            {/* Sand */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 space-y-1">
+              <span className="text-[10px] font-bold uppercase text-slate-500 block">Sand / Rait (CFT)</span>
+              <div className="relative">
+                <span className="absolute left-2.5 top-1.5 text-xs text-slate-400">Rs</span>
+                <input
+                  type="number"
+                  value={customRates.sand}
+                  onChange={(e) => {
+                    setCustomRates((prev) => ({ ...prev, sand: parseFloat(e.target.value) || 0 }));
+                    setUseCustomRates(true);
+                  }}
+                  className="w-full bg-[#F8FAFC] dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-[#059669] rounded-lg pl-7 pr-2 py-1 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
+                />
+              </div>
+              <span className="text-[10px] text-slate-400">City: Rs {cityRates.sand}</span>
+            </div>
+
+            {/* Crush */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 space-y-1">
+              <span className="text-[10px] font-bold uppercase text-slate-500 block">Crush / Bajri (CFT)</span>
+              <div className="relative">
+                <span className="absolute left-2.5 top-1.5 text-xs text-slate-400">Rs</span>
+                <input
+                  type="number"
+                  value={customRates.crush}
+                  onChange={(e) => {
+                    setCustomRates((prev) => ({ ...prev, crush: parseFloat(e.target.value) || 0 }));
+                    setUseCustomRates(true);
+                  }}
+                  className="w-full bg-[#F8FAFC] dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-[#059669] rounded-lg pl-7 pr-2 py-1 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
+                />
+              </div>
+              <span className="text-[10px] text-slate-400">City: Rs {cityRates.crush}</span>
+            </div>
+
+            {/* Labour */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 space-y-1">
+              <span className="text-[10px] font-bold uppercase text-slate-500 block">Labour (Sqft)</span>
+              <div className="relative">
+                <span className="absolute left-2.5 top-1.5 text-xs text-slate-400">Rs</span>
+                <input
+                  type="number"
+                  value={customRates.labour}
+                  onChange={(e) => {
+                    setCustomRates((prev) => ({ ...prev, labour: parseFloat(e.target.value) || 0 }));
+                    setUseCustomRates(true);
+                  }}
+                  className="w-full bg-[#F8FAFC] dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-[#059669] rounded-lg pl-7 pr-2 py-1 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
+                />
+              </div>
+              <span className="text-[10px] text-slate-400">City: Rs {cityRates.labour}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* CALCULATOR INPUT GRID */}
+      {/* ======================================================== */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          scrollToResults();
+        }}
+        className="mt-6 space-y-6"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5">
+          {/* 1. CITY SELECTION (Col 4) */}
+          <div className="lg:col-span-4 space-y-2.5">
+            <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-md bg-emerald-100 text-[#059669] dark:bg-emerald-950/80 dark:text-emerald-400 flex items-center justify-center text-[10px] font-bold">
+                  1
+                </span>
+                <span>Select City (شہر کا انتخاب)</span>
+              </span>
+            </label>
+
             {/* Quick City Chips */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[11px] font-medium text-slate-400 mr-1">Quick Cities:</span>
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
               {QUICK_CITIES.map((c) => (
                 <button
                   key={c.id}
                   type="button"
                   onClick={() => handleCitySelect(c.id)}
                   className={cn(
-                    "px-3 py-1 rounded-xl text-xs font-semibold transition-all",
+                    "py-2 px-1 text-xs font-bold rounded-xl border transition-all text-center",
                     selectedCityId === c.id
-                      ? "bg-emerald-600 text-white shadow-md shadow-emerald-950 border border-emerald-400/40"
-                      : "bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800"
+                      ? "bg-[#059669] text-white border-[#059669] shadow-sm"
+                      : "bg-[#F8FAFC] dark:bg-slate-950 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-[#059669]"
                   )}
                 >
                   {c.name}
@@ -464,964 +592,813 @@ export function PrimaryPropertyCalculator() {
               ))}
             </div>
 
-            {/* Searchable Dropdown for all 28 cities */}
-            <div className="relative">
-              <select
-                value={selectedCityId}
-                onChange={(e) => handleCitySelect(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 font-medium focus:outline-none transition-colors appearance-none cursor-pointer pr-10"
-              >
-                {PAKISTANI_CITIES.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} ({c.urduName}) — {c.province} • {c.defaultMarlaSqft} sqft/Marla
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
-            </div>
+            {/* Dropdown for other Pakistani cities */}
+            <select
+              value={selectedCityId}
+              onChange={(e) => handleCitySelect(e.target.value)}
+              className="w-full bg-[#F8FAFC] dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#059669]"
+            >
+              {PAKISTANI_CITIES.map((city) => (
+                <option key={city.id} value={city.id}>
+                  {city.name} ({city.province}) — Marla: {city.defaultMarlaSqft} sqft
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* 2 & 3. PROPERTY / PLOT SIZE & MARLA STANDARDS */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* 2. Marla Standards Selector */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px]">
+          {/* 2. PLOT DIMENSIONS & MEASUREMENT (Col 5) */}
+          <div className="lg:col-span-5 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-md bg-emerald-100 text-[#059669] dark:bg-emerald-950/80 dark:text-emerald-400 flex items-center justify-center text-[10px] font-bold">
                   2
                 </span>
-                <span>Marla Standard (Conversion Benchmark)</span>
+                <span>Plot Dimensions (پلاٹ سائز)</span>
               </label>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                {MARLA_STANDARD_PRESETS.map((preset) => (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    onClick={() => {
-                      setMarlaStandardType(preset.id);
-                      if (preset.id !== "custom") {
-                        setCustomMarlaSqft(preset.sqft);
-                      }
-                    }}
-                    className={cn(
-                      "p-2 rounded-xl text-center border transition-all flex flex-col items-center justify-center min-h-[54px]",
-                      marlaStandardType === preset.id
-                        ? "bg-emerald-600 text-white border-emerald-400 shadow-md"
-                        : "bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-700"
-                    )}
-                  >
-                    <span className="text-xs font-black">{preset.label}</span>
-                    <span className="text-[9px] opacity-80 truncate max-w-full px-1">{preset.region}</span>
-                  </button>
-                ))}
-              </div>
-
-              {/* Custom Marla Input (revealed when custom chosen) */}
-              {marlaStandardType === "custom" && (
-                <div className="p-2.5 rounded-xl bg-slate-900/90 border border-emerald-500/40 flex items-center gap-2 animate-in fade-in duration-200">
-                  <span className="text-xs text-slate-300 font-semibold shrink-0">1 Marla =</span>
-                  <input
-                    type="number"
-                    min="50"
-                    max="1000"
-                    value={customMarlaSqft}
-                    onChange={(e) => setCustomMarlaSqft(parseFloat(e.target.value) || 272.25)}
-                    className="w-28 bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-lg px-2.5 py-1 text-xs text-white font-bold focus:outline-none"
-                  />
-                  <span className="text-xs text-slate-400">sq ft</span>
-                  <span className="text-[10px] text-emerald-400 ml-auto">Custom Unit Active</span>
-                </div>
-              )}
-            </div>
-
-            {/* 3. Plot Size & Unit */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px]">
-                    3
-                  </span>
-                  <span>Plot Size &amp; Measurement Unit</span>
-                </label>
-                {/* Segmented Unit Selector */}
-                <div className="flex bg-slate-900 p-0.5 rounded-xl border border-slate-800 text-[11px] font-bold">
-                  {(['marla', 'kanal', 'sqft'] as PlotUnit[]).map((u) => (
-                    <button
-                      key={u}
-                      type="button"
-                      onClick={() => setPlotUnit(u)}
-                      className={cn(
-                        "px-2.5 py-1 rounded-lg transition-all capitalize",
-                        plotUnit === u
-                          ? "bg-emerald-600 text-white shadow-xs"
-                          : "text-slate-400 hover:text-slate-200"
-                      )}
-                    >
-                      {u === 'sqft' ? 'Sq Ft' : u}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Quick Size Chips */}
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-[11px] font-medium text-slate-400 mr-1">Popular:</span>
-                {plotUnit === "marla" && (
-                  <>
-                    {[3, 5, 7, 10, 20].map((sz) => (
-                      <button
-                        key={sz}
-                        type="button"
-                        onClick={() => setPlotSize(sz)}
-                        className={cn(
-                          "px-2.5 py-1 rounded-lg text-xs font-bold transition-all border",
-                          plotSize === sz
-                            ? "bg-emerald-600 text-white border-emerald-400"
-                            : "bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800"
-                        )}
-                      >
-                        {sz === 20 ? "20 Marla (1 Kanal)" : `${sz} Marla`}
-                      </button>
-                    ))}
-                  </>
-                )}
-                {plotUnit === "kanal" && (
-                  <>
-                    {[0.5, 1, 2, 4].map((sz) => (
-                      <button
-                        key={sz}
-                        type="button"
-                        onClick={() => setPlotSize(sz)}
-                        className={cn(
-                          "px-2.5 py-1 rounded-lg text-xs font-bold transition-all border",
-                          plotSize === sz
-                            ? "bg-emerald-600 text-white border-emerald-400"
-                            : "bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800"
-                        )}
-                      >
-                        {sz === 0.5 ? "0.5 Kanal (10 Marla)" : `${sz} Kanal`}
-                      </button>
-                    ))}
-                  </>
-                )}
-                {plotUnit === "sqft" && (
-                  <>
-                    {[1125, 1361, 2250, 2722.5, 5445].map((sz) => (
-                      <button
-                        key={sz}
-                        type="button"
-                        onClick={() => setPlotSize(sz)}
-                        className={cn(
-                          "px-2.5 py-1 rounded-lg text-xs font-bold transition-all border",
-                          plotSize === sz
-                            ? "bg-emerald-600 text-white border-emerald-400"
-                            : "bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800"
-                        )}
-                      >
-                        {formatNumber(sz)} sqft
-                      </button>
-                    ))}
-                  </>
-                )}
-              </div>
-
-              {/* Number Input allowing decimals */}
-              <div className="relative">
-                <input
-                  type="number"
-                  step="any"
-                  min="0.01"
-                  value={plotSize}
-                  onChange={(e) => setPlotSize(parseFloat(e.target.value) || 0)}
-                  className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-xs text-white font-bold focus:outline-none transition-colors pr-20"
-                  placeholder="5"
-                  required
-                />
-                <span className="absolute right-3.5 top-2.5 text-xs font-bold text-emerald-400 uppercase">
-                  {plotUnit === "sqft" ? "Sq Ft" : plotUnit}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* ======================================================== */}
-          {/* 4. AREA CONVERSION SUMMARY CARD (CORE REQUIREMENT) */}
-          {/* ======================================================== */}
-          <div className="p-3 sm:p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900/90 to-slate-900 border border-emerald-500/30 text-xs shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
-                <Calculator className="w-4 h-4" />
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Area Conversion Summary
-                </span>
-                <div className="text-sm font-black text-emerald-400 tracking-tight flex flex-wrap items-center gap-1.5">
-                  <span>
-                    {plotUnit === "marla" && `${plotSize} Marla`}
-                    {plotUnit === "kanal" && `${plotSize} Kanal`}
-                    {plotUnit === "sqft" && `${formatNumber(plotSize)} Sq Ft`}
-                  </span>
-                  <span className="text-slate-500">=</span>
-                  <span className="text-white">{formatNumber(plotAreaSqft, 2)} Sq Ft</span>
-                  <span className="text-slate-500">=</span>
-                  <span className="text-cyan-400">{plotAreaInKanals.toFixed(2)} Kanal</span>
-                  <span className="text-slate-400 font-normal text-xs">
-                    ({plotAreaInMarlas.toFixed(2)} Marla)
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="text-right shrink-0 sm:border-l sm:border-slate-800 sm:pl-4">
-              <span className="text-[10px] text-slate-400 block">Active Benchmark</span>
-              <span className="font-bold text-xs text-slate-200">
-                1 Marla = <strong className="text-emerald-400">{activeMarlaSqft} sq ft</strong>
-              </span>
-            </div>
-          </div>
-
-          {/* 5. FLOORS, COVERED AREA & SCOPE */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
-            {/* Number of Floors */}
-            <div className="space-y-1.5">
-              <label className="font-bold text-slate-200 block">Number of Floors</label>
-              <div className="grid grid-cols-4 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-[11px] font-bold">
-                {[
-                  { id: 1, label: "1 Floor" },
-                  { id: 2, label: "2 Floors" },
-                  { id: 3, label: "3 Floors" },
-                  { id: "custom", label: "Custom" }
-                ].map((fl) => (
-                  <button
-                    key={fl.id}
-                    type="button"
-                    onClick={() => setFloorsSelection(fl.id as any)}
-                    className={cn(
-                      "py-2 px-1 text-center rounded-lg transition-all",
-                      floorsSelection === fl.id
-                        ? "bg-emerald-600 text-white shadow-xs"
-                        : "text-slate-400 hover:text-white"
-                    )}
-                  >
-                    {fl.label}
-                  </button>
-                ))}
-              </div>
-
-              {floorsSelection === "custom" && (
-                <div className="flex items-center gap-2 pt-1">
-                  <span className="text-[11px] text-slate-400">Total Storeys:</span>
-                  <input
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={customFloors}
-                    onChange={(e) => setCustomFloors(parseInt(e.target.value) || 1)}
-                    className="w-20 bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-lg px-2.5 py-1 text-xs text-white font-bold"
-                  />
-                  <span className="text-[10px] text-slate-500">Plaza / Mid-Rise</span>
-                </div>
-              )}
-            </div>
-
-            {/* Covered Area */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="font-bold text-slate-200">Covered Area (Sq Ft)</label>
+              {/* Mode Toggle: Standard vs Custom Dimensions */}
+              <div className="flex bg-[#F8FAFC] dark:bg-slate-950 p-0.5 rounded-xl border border-slate-200 dark:border-slate-800 text-[11px] font-bold">
                 <button
                   type="button"
-                  onClick={() => {
-                    setCoveredAreaSqft(autoSuggestedCoveredArea);
-                    setIsCoveredAreaManuallyModified(false);
-                  }}
-                  className="text-[10px] text-emerald-400 hover:underline font-semibold"
-                  title="Reset to civil standard recommended coverage"
-                >
-                  Auto: {formatNumber(autoSuggestedCoveredArea)} sqft
-                </button>
-              </div>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="50"
-                  value={coveredAreaSqft}
-                  onChange={(e) => {
-                    setCoveredAreaSqft(parseInt(e.target.value) || 50);
-                    setIsCoveredAreaManuallyModified(true);
-                  }}
-                  className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-xs text-white font-bold focus:outline-none transition-colors pr-14"
-                  placeholder="2200"
-                  required
-                />
-                <span className="absolute right-3.5 top-2.5 text-xs font-bold text-slate-500">
-                  Sq Ft
-                </span>
-              </div>
-              <span className="text-[10px] text-slate-500 block">
-                Suggested ~70% footprint per floor
-              </span>
-            </div>
-
-            {/* Construction Scope */}
-            <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
-              <label className="font-bold text-slate-200 block">Construction Scope</label>
-              <div className="grid grid-cols-3 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-[11px] font-bold">
-                {[
-                  { id: "grey", label: "Grey Structure" },
-                  { id: "complete", label: "Complete House" },
-                  { id: "custom", label: "Custom Scope" }
-                ].map((sc) => (
-                  <button
-                    key={sc.id}
-                    type="button"
-                    onClick={() => setConstructionScope(sc.id as ConstructionScope)}
-                    className={cn(
-                      "py-2 px-1 text-center rounded-lg transition-all",
-                      constructionScope === sc.id
-                        ? "bg-emerald-600 text-white shadow-xs"
-                        : "text-slate-400 hover:text-white"
-                    )}
-                  >
-                    {sc.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Quality Tier if complete or custom */}
-              {constructionScope !== "grey" && (
-                <div className="pt-1 animate-in fade-in duration-200">
-                  <select
-                    value={qualityTier}
-                    onChange={(e) => setQualityTier(e.target.value as QualityTier)}
-                    className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 font-medium focus:outline-none"
-                  >
-                    <option value="standard">Standard (A-Class Pakistani Specs)</option>
-                    <option value="economy">Economy (Essential Local Materials)</option>
-                    <option value="premium">Premium (Imported Tiles &amp; Fixtures)</option>
-                    <option value="luxury">Luxury (Designer Architectural Build)</option>
-                  </select>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* ======================================================== */}
-          {/* CUSTOM / MANUAL RATES DRAWER PANEL */}
-          {/* ======================================================== */}
-          <div className="rounded-2xl border border-slate-800/90 bg-slate-950/80 overflow-hidden transition-all">
-            <div
-              className="flex items-center justify-between p-3.5 sm:px-4 cursor-pointer hover:bg-slate-900/60 transition-colors select-none"
-              onClick={() => setShowRatesPanel(!showRatesPanel)}
-            >
-              <div className="flex items-center gap-2.5">
-                <div
+                  onClick={() => setPlotDimensionMode("standard")}
                   className={cn(
-                    "w-8 h-8 rounded-xl flex items-center justify-center text-xs transition-colors shrink-0",
-                    useCustomRates
-                      ? "bg-amber-500/20 text-amber-400 border border-amber-500/40"
-                      : "bg-slate-900 text-slate-400 border border-slate-800"
+                    "px-2.5 py-1 rounded-lg transition-all",
+                    plotDimensionMode === "standard"
+                      ? "bg-white dark:bg-slate-900 text-[#059669] shadow-xs"
+                      : "text-slate-500 hover:text-slate-900"
                   )}
                 >
-                  <Sliders className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-bold text-white">
-                      Material Rates (Cement, Steel, Bricks, Sand, Crush, Labour)
-                    </span>
-                    <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-bold text-[9px] uppercase tracking-wider">
-                      Free Live Recalculation
-                    </span>
-                    {useCustomRates ? (
-                      <span className="px-1.5 py-0.2 rounded bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold text-[9px] uppercase tracking-wider">
-                        Custom Rates Active
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-slate-500 hidden sm:inline">
-                        {selectedCity.name} Official Benchmarks
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    Override city benchmarks with your local mandi or supplier quotes. Instant recalculation.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-xs font-semibold text-emerald-400 hidden sm:inline">
-                  {showRatesPanel ? "Hide Rates" : "Edit Rates"}
-                </span>
-                {showRatesPanel ? (
-                  <ChevronUp className="w-4 h-4 text-slate-400" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-slate-400" />
-                )}
+                  Standard Plots
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPlotDimensionMode("custom")}
+                  className={cn(
+                    "px-2.5 py-1 rounded-lg transition-all flex items-center gap-1",
+                    plotDimensionMode === "custom"
+                      ? "bg-white dark:bg-slate-900 text-[#059669] shadow-xs"
+                      : "text-slate-500 hover:text-slate-900"
+                  )}
+                >
+                  <Ruler className="w-3 h-3 text-[#059669]" />
+                  <span>Custom Dimensions</span>
+                </button>
               </div>
             </div>
 
-            {/* Expandable Rates Content */}
-            {showRatesPanel && (
-              <div className="p-4 pt-3 border-t border-slate-800/80 bg-slate-950 space-y-4 animate-in fade-in duration-200 text-xs">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-slate-400 pb-1">
-                  <span>Edit any rate below to see the calculation update instantly:</span>
-                  <span className="text-emerald-400 font-bold">Currency: Pakistani Rupee (PKR)</span>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                  {/* Cement */}
-                  <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-bold text-slate-300">Cement (Bag)</label>
-                      <span className="text-[9px] font-semibold text-slate-500">50kg</span>
-                    </div>
-                    <div className="relative">
-                      <span className="absolute left-2.5 top-2 text-[11px] text-slate-500">Rs</span>
-                      <input
-                        type="number"
-                        min="1"
-                        value={customRates.cement}
-                        onChange={(e) => {
-                          setCustomRates((prev) => ({ ...prev, cement: parseFloat(e.target.value) || 0 }));
-                          setUseCustomRates(true);
-                        }}
-                        className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-lg pl-7 pr-2 py-1.5 text-xs text-white font-bold focus:outline-none"
-                      />
-                    </div>
-                    <span className="text-[9px] text-slate-500 block">
-                      City: Rs {cityRates.cement}
-                    </span>
-                  </div>
-
-                  {/* Steel */}
-                  <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-bold text-slate-300">Steel (Kg)</label>
-                      <span className="text-[9px] font-semibold text-slate-500">Grade 60</span>
-                    </div>
-                    <div className="relative">
-                      <span className="absolute left-2.5 top-2 text-[11px] text-slate-500">Rs</span>
-                      <input
-                        type="number"
-                        min="1"
-                        value={customRates.steel}
-                        onChange={(e) => {
-                          setCustomRates((prev) => ({ ...prev, steel: parseFloat(e.target.value) || 0 }));
-                          setUseCustomRates(true);
-                        }}
-                        className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-lg pl-7 pr-2 py-1.5 text-xs text-white font-bold focus:outline-none"
-                      />
-                    </div>
-                    <span className="text-[9px] text-slate-500 block">
-                      City: Rs {cityRates.steel}
-                    </span>
-                  </div>
-
-                  {/* Bricks */}
-                  <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-bold text-slate-300">Bricks (Pc)</label>
-                      <span className="text-[9px] font-semibold text-slate-500">Awwal</span>
-                    </div>
-                    <div className="relative">
-                      <span className="absolute left-2.5 top-2 text-[11px] text-slate-500">Rs</span>
-                      <input
-                        type="number"
-                        step="0.5"
-                        min="0.1"
-                        value={customRates.brick}
-                        onChange={(e) => {
-                          setCustomRates((prev) => ({ ...prev, brick: parseFloat(e.target.value) || 0 }));
-                          setUseCustomRates(true);
-                        }}
-                        className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-lg pl-7 pr-2 py-1.5 text-xs text-white font-bold focus:outline-none"
-                      />
-                    </div>
-                    <span className="text-[9px] text-slate-500 block">
-                      City: Rs {cityRates.brick}
-                    </span>
-                  </div>
-
-                  {/* Sand */}
-                  <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-bold text-slate-300">Sand (Cft)</label>
-                      <span className="text-[9px] font-semibold text-slate-500">Chenab/Ravi</span>
-                    </div>
-                    <div className="relative">
-                      <span className="absolute left-2.5 top-2 text-[11px] text-slate-500">Rs</span>
-                      <input
-                        type="number"
-                        min="1"
-                        value={customRates.sand}
-                        onChange={(e) => {
-                          setCustomRates((prev) => ({ ...prev, sand: parseFloat(e.target.value) || 0 }));
-                          setUseCustomRates(true);
-                        }}
-                        className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-lg pl-7 pr-2 py-1.5 text-xs text-white font-bold focus:outline-none"
-                      />
-                    </div>
-                    <span className="text-[9px] text-slate-500 block">
-                      City: Rs {cityRates.sand}
-                    </span>
-                  </div>
-
-                  {/* Crush */}
-                  <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-bold text-slate-300">Crush (Cft)</label>
-                      <span className="text-[9px] font-semibold text-slate-500">Margalla</span>
-                    </div>
-                    <div className="relative">
-                      <span className="absolute left-2.5 top-2 text-[11px] text-slate-500">Rs</span>
-                      <input
-                        type="number"
-                        min="1"
-                        value={customRates.crush}
-                        onChange={(e) => {
-                          setCustomRates((prev) => ({ ...prev, crush: parseFloat(e.target.value) || 0 }));
-                          setUseCustomRates(true);
-                        }}
-                        className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-lg pl-7 pr-2 py-1.5 text-xs text-white font-bold focus:outline-none"
-                      />
-                    </div>
-                    <span className="text-[9px] text-slate-500 block">
-                      City: Rs {cityRates.crush}
-                    </span>
-                  </div>
-
-                  {/* Labour */}
-                  <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-bold text-slate-300">Labour (Sqft)</label>
-                      <span className="text-[9px] font-semibold text-slate-500">Civil Shell</span>
-                    </div>
-                    <div className="relative">
-                      <span className="absolute left-2.5 top-2 text-[11px] text-slate-500">Rs</span>
-                      <input
-                        type="number"
-                        min="1"
-                        value={customRates.labour}
-                        onChange={(e) => {
-                          setCustomRates((prev) => ({ ...prev, labour: parseFloat(e.target.value) || 0 }));
-                          setUseCustomRates(true);
-                        }}
-                        className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-lg pl-7 pr-2 py-1.5 text-xs text-white font-bold focus:outline-none"
-                      />
-                    </div>
-                    <span className="text-[9px] text-slate-500 block">
-                      City: Rs {cityRates.labour}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Rates Action Buttons */}
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800">
-                  <div className="flex items-center gap-2">
+            {plotDimensionMode === "standard" ? (
+              /* STANDARD PLOT CARDS */
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                {PAK_STANDARD_PLOTS.map((p) => {
+                  const isSelected = plotSize === p.size && plotUnit === p.unit;
+                  return (
                     <button
+                      key={p.label}
                       type="button"
-                      onClick={() => setUseCustomRates(!useCustomRates)}
+                      onClick={() => {
+                        setPlotSize(p.size);
+                        setPlotUnit(p.unit);
+                      }}
                       className={cn(
-                        "px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all",
-                        useCustomRates
-                          ? "bg-emerald-600 text-white shadow-md shadow-emerald-950"
-                          : "bg-slate-800 text-slate-300 hover:text-white"
+                        "p-2 rounded-xl text-center border transition-all flex flex-col items-center justify-center",
+                        isSelected
+                          ? "bg-[#059669] text-white border-[#059669] shadow-sm"
+                          : "bg-[#F8FAFC] dark:bg-slate-950 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-[#059669]"
                       )}
                     >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>{useCustomRates ? "Custom Rates Applied (Active)" : "Apply Custom Rates"}</span>
+                      <span className="text-xs font-black">{p.label}</span>
+                      <span className="text-[10px] opacity-80">{p.dimensions}</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={handleResetToCityRates}
-                      className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs flex items-center gap-1.5 transition-all border border-slate-700/60"
-                    >
-                      <RotateCcw className="w-3 h-3 text-slate-400" />
-                      <span>Reset to City Rates</span>
-                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              /* CUSTOM PLOT DIMENSIONS INPUT */
+              <div className="p-3 rounded-2xl bg-[#F8FAFC] dark:bg-slate-950 border border-emerald-200 dark:border-emerald-800/60 space-y-2">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">
+                      Plot Width (چوڑائی / فرنٹ)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="5"
+                        max="500"
+                        value={customWidthFt}
+                        onChange={(e) => setCustomWidthFt(parseFloat(e.target.value) || 25)}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-[#059669] rounded-xl px-3 py-1.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
+                      />
+                      <span className="absolute right-2.5 top-1.5 text-[11px] text-slate-400 font-semibold">ft</span>
+                    </div>
                   </div>
 
-                  <span className="text-[11px] text-slate-400">
-                    💡 Free instant calculation. Upgrade to Pro to save customized rate profiles.
-                  </span>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">
+                      Plot Length (لمبائی / گہرائی)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="5"
+                        max="500"
+                        value={customLengthFt}
+                        onChange={(e) => setCustomLengthFt(parseFloat(e.target.value) || 50)}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-[#059669] rounded-xl px-3 py-1.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
+                      />
+                      <span className="absolute right-2.5 top-1.5 text-[11px] text-slate-400 font-semibold">ft</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-[#059669] dark:text-emerald-400 font-semibold flex items-center justify-between pt-1">
+                  <span>Calculated Area: <strong>{formatNumber(plotAreaSqft)} sq ft</strong></span>
+                  <span>≈ {(plotAreaSqft / activeMarlaSqft).toFixed(2)} Marlas</span>
                 </div>
               </div>
             )}
           </div>
 
-          {/* ======================================================== */}
-          {/* CALCULATE CTA BUTTON */}
-          {/* ======================================================== */}
-          <div className="pt-2">
-            <button
-              type="submit"
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-base shadow-xl shadow-emerald-950/80 flex items-center justify-center gap-2.5 transition-all transform active:scale-98 cursor-pointer tracking-wide"
-            >
-              <Calculator className="w-5 h-5" />
-              <span>CALCULATE FREE</span>
-            </button>
-          </div>
-        </form>
+          {/* 3. FLOORS & SCOPE (Col 3) */}
+          <div className="lg:col-span-3 space-y-2.5">
+            <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <span className="w-5 h-5 rounded-md bg-emerald-100 text-[#059669] dark:bg-emerald-950/80 dark:text-emerald-400 flex items-center justify-center text-[10px] font-bold">
+                3
+              </span>
+              <span>Floors &amp; Scope (منزلیں اور قسم)</span>
+            </label>
 
-        {/* ======================================================== */}
-        {/* RESULTS HERO SECTION (ANCHOR) */}
-        {/* ======================================================== */}
-        <div id="calculation-results-anchor" className="mt-8 pt-6 border-t border-slate-800/90 space-y-6 animate-in fade-in duration-300">
-          {/* 7. ESTIMATED COST RESULT (HERO CARD) */}
-          <div>
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-              <div className="flex items-center gap-2">
-                <h2 className="text-xs font-black text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span>
-                    {constructionScope === "grey"
-                      ? "ESTIMATED GREY STRUCTURE COST"
-                      : "ESTIMATED COMPLETE HOUSE COST"}{' '}
-                    • {selectedCity.name}
-                  </span>
-                </h2>
-                {useCustomRates && (
-                  <span className="px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/30 text-amber-300 font-bold text-[10px]">
-                    Custom Rates Active
-                  </span>
+            {/* Floors Selector */}
+            <div className="grid grid-cols-3 gap-1.5">
+              {[
+                { val: 1, label: "Single (G)" },
+                { val: 2, label: "Double (G+1)" },
+                { val: 3, label: "Triple (G+2)" }
+              ].map((f) => (
+                <button
+                  key={f.val}
+                  type="button"
+                  onClick={() => setFloorsSelection(f.val)}
+                  className={cn(
+                    "py-2 px-1 text-xs font-bold rounded-xl border text-center transition-all",
+                    floorsSelection === f.val
+                      ? "bg-[#059669] text-white border-[#059669] shadow-sm"
+                      : "bg-[#F8FAFC] dark:bg-slate-950 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-[#059669]"
+                  )}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Scope Selection: Grey vs Complete */}
+            <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+              <button
+                type="button"
+                onClick={() => setConstructionScope("grey")}
+                className={cn(
+                  "p-2 rounded-xl text-center border transition-all",
+                  constructionScope === "grey"
+                    ? "bg-slate-900 text-white dark:bg-slate-800 border-slate-700 shadow-sm"
+                    : "bg-[#F8FAFC] dark:bg-slate-950 text-slate-700 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-slate-400"
                 )}
-              </div>
-              <span className="text-xs font-bold text-slate-300">
-                {formatLakhCrore(calculationResult.totalCost)}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 text-xs">
-              {/* Grand Total */}
-              <div className="col-span-2 sm:col-span-2 lg:col-span-2 bg-gradient-to-br from-emerald-950/90 via-slate-900 to-slate-900 border-2 border-emerald-500/60 rounded-2xl p-4 sm:p-5 shadow-xl relative overflow-hidden">
-                <span className="text-[11px] text-emerald-400 font-black uppercase tracking-wider block mb-1">
-                  {constructionScope === "grey" ? "Grey Structure Estimate" : "Complete Turnkey Estimate"}
-                </span>
-                <div className="text-3xl sm:text-4xl font-black text-white tracking-tight py-0.5">
-                  {formatPKR(calculationResult.totalCost)}
-                </div>
-                <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs text-slate-300 font-semibold">
-                  <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    {formatLakhCrore(calculationResult.totalCost)}
-                  </span>
-                  <span className="text-slate-400 font-normal">
-                    • Rs {formatNumber(calculationResult.costPerSqft)} / sq ft
-                  </span>
-                </div>
-              </div>
-
-              {/* Cost / Sq Ft & Construction Area */}
-              <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
-                <div>
-                  <span className="text-[11px] text-slate-400 font-semibold block mb-1">
-                    Cost / Sq Ft &amp; Area
-                  </span>
-                  <div className="text-xl sm:text-2xl font-black text-emerald-400">
-                    Rs {formatNumber(calculationResult.costPerSqft)}
-                  </div>
-                </div>
-                <div className="text-[11px] text-slate-400 mt-2 pt-2 border-t border-slate-800/80">
-                  Construction Area: <strong className="text-white">{formatNumber(coveredAreaSqft)} sq ft</strong>
-                </div>
-              </div>
-
-              {/* Timeline Duration */}
-              <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
-                <div>
-                  <span className="text-[11px] text-slate-400 font-semibold block mb-1">
-                    Estimated Duration
-                  </span>
-                  <div className="text-xl sm:text-2xl font-black text-amber-400 flex items-center gap-1.5">
-                    <Clock className="w-5 h-5 text-amber-400 shrink-0" />
-                    <span>{calculationResult.estimatedDurationMonths} Months</span>
-                  </div>
-                </div>
-                <div className="text-[11px] text-slate-400 mt-2 pt-2 border-t border-slate-800/80">
-                  Standard Pakistani civil schedule
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ======================================================== */}
-          {/* 8. MATERIAL COST GRAPH: DONUT CHART WITH REAL PERCENTAGES */}
-          {/* ======================================================== */}
-          <div className="bg-slate-900/80 border border-slate-800/90 rounded-2xl p-4 sm:p-5 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-              <div>
-                <h3 className="text-xs font-black text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-emerald-400" />
-                  <span>
-                    {constructionScope === "grey"
-                      ? "GREY STRUCTURE COST BREAKDOWN"
-                      : "CONSTRUCTION COST BREAKDOWN"}
-                  </span>
-                </h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  Calculated dynamic percentage shares for materials, civil labour, transport, and wastage.
-                </p>
-              </div>
-              <span className="text-xs text-emerald-400 font-semibold">
-                Total: {formatPKR(calculationResult.totalCost)}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-              {/* Donut Chart Canvas */}
-              <div className="lg:col-span-5 flex flex-col items-center justify-center relative min-h-[220px]">
-                {isMounted ? (
-                  <div className="w-52 h-52 relative">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Tooltip
-                          formatter={(value: any, name: any) => [formatPKR(Number(value)), name]}
-                          contentStyle={{
-                            backgroundColor: "#020617",
-                            borderColor: "#334155",
-                            borderRadius: "0.75rem",
-                            fontSize: "12px",
-                            color: "#f8fafc",
-                            boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.5)"
-                          }}
-                        />
-                        <Pie
-                          data={calculationResult.chartData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={54}
-                          outerRadius={80}
-                          paddingAngle={3}
-                          dataKey="value"
-                        >
-                          {calculationResult.chartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                      </PieChart>
-                    </ResponsiveContainer>
-
-                    {/* Centered Donut Label */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
-                      <span className="text-[10px] text-slate-400 font-medium uppercase">Cost / Sqft</span>
-                      <span className="text-base font-black text-white">
-                        Rs {formatNumber(calculationResult.costPerSqft)}
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-52 h-52 flex items-center justify-center text-xs text-slate-500">
-                    Loading chart...
-                  </div>
-                )}
-              </div>
-
-              {/* Dynamic Legend List with Real Percentages & Amounts */}
-              <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                {calculationResult.chartData.map((item) => (
-                  <div
-                    key={item.name}
-                    className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center justify-between gap-2"
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span
-                        className="w-3 h-3 rounded-full shrink-0"
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <span className="text-slate-200 font-semibold truncate text-[11px]">
-                        {item.name}
-                      </span>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <span className="text-white font-bold block text-xs">
-                        {formatPKR(item.value)}
-                      </span>
-                      <span className="text-[10px] text-emerald-400 font-medium block">
-                        {item.percentage}%
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* ======================================================== */}
-          {/* 9. MATERIAL COST CARDS (ITEMIZED QUANTITIES & COSTS) */}
-          {/* ======================================================== */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-black text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Boxes className="w-4 h-4 text-emerald-400" />
-                <span>Itemized Material Quantities &amp; Civil Estimates</span>
-              </h3>
-              <span className="text-[11px] text-slate-400">
-                Calibrated to Pakistan Engineering Council standards
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
-              {/* Cement */}
-              <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800/90 space-y-1.5">
-                <div className="flex items-center justify-between text-slate-400">
-                  <span className="text-[10px] font-bold uppercase">Cement</span>
-                  <span className="text-[9px] text-emerald-400">50kg Bags</span>
-                </div>
-                <div className="text-lg font-black text-white">
-                  {formatNumber(calculationResult.cementBags)} Bags
-                </div>
-                <div className="text-[10px] text-slate-400">
-                  @ Rs {formatNumber(calculationResult.activeRates.cementBagRate)} / bag
-                </div>
-                <div className="pt-1 border-t border-slate-800 text-xs font-bold text-emerald-400">
-                  {formatPKR(calculationResult.cementCost)}
-                </div>
-              </div>
-
-              {/* Steel */}
-              <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800/90 space-y-1.5">
-                <div className="flex items-center justify-between text-slate-400">
-                  <span className="text-[10px] font-bold uppercase">Steel</span>
-                  <span className="text-[9px] text-emerald-400">Grade 60</span>
-                </div>
-                <div className="text-lg font-black text-white">
-                  {calculationResult.steelTons} Tons
-                </div>
-                <div className="text-[10px] text-slate-400">
-                  ({formatNumber(calculationResult.steelKg)} kg @ Rs {calculationResult.activeRates.steelKgRate}/kg)
-                </div>
-                <div className="pt-1 border-t border-slate-800 text-xs font-bold text-emerald-400">
-                  {formatPKR(calculationResult.steelCost)}
-                </div>
-              </div>
-
-              {/* Bricks */}
-              <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800/90 space-y-1.5">
-                <div className="flex items-center justify-between text-slate-400">
-                  <span className="text-[10px] font-bold uppercase">Bricks</span>
-                  <span className="text-[9px] text-emerald-400">Awwal 1st</span>
-                </div>
-                <div className="text-lg font-black text-white">
-                  {formatNumber(calculationResult.bricksCount)} Pcs
-                </div>
-                <div className="text-[10px] text-slate-400">
-                  @ Rs {calculationResult.activeRates.brickRate} / pc
-                </div>
-                <div className="pt-1 border-t border-slate-800 text-xs font-bold text-emerald-400">
-                  {formatPKR(calculationResult.bricksCost)}
-                </div>
-              </div>
-
-              {/* Sand */}
-              <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800/90 space-y-1.5">
-                <div className="flex items-center justify-between text-slate-400">
-                  <span className="text-[10px] font-bold uppercase">Sand</span>
-                  <span className="text-[9px] text-emerald-400">Chenab/Ravi</span>
-                </div>
-                <div className="text-lg font-black text-white">
-                  {formatNumber(calculationResult.sandCft)} CFT
-                </div>
-                <div className="text-[10px] text-slate-400">
-                  @ Rs {calculationResult.activeRates.sandCftRate} / cft
-                </div>
-                <div className="pt-1 border-t border-slate-800 text-xs font-bold text-emerald-400">
-                  {formatPKR(calculationResult.sandCost)}
-                </div>
-              </div>
-
-              {/* Crush */}
-              <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800/90 space-y-1.5">
-                <div className="flex items-center justify-between text-slate-400">
-                  <span className="text-[10px] font-bold uppercase">Crush (Bajri)</span>
-                  <span className="text-[9px] text-emerald-400">Margalla</span>
-                </div>
-                <div className="text-lg font-black text-white">
-                  {formatNumber(calculationResult.crushCft)} CFT
-                </div>
-                <div className="text-[10px] text-slate-400">
-                  @ Rs {calculationResult.activeRates.crushCftRate} / cft
-                </div>
-                <div className="pt-1 border-t border-slate-800 text-xs font-bold text-emerald-400">
-                  {formatPKR(calculationResult.crushCost)}
-                </div>
-              </div>
-
-              {/* Labour */}
-              <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800/90 space-y-1.5">
-                <div className="flex items-center justify-between text-slate-400">
-                  <span className="text-[10px] font-bold uppercase">Labour</span>
-                  <span className="text-[9px] text-emerald-400">Mason &amp; Fixers</span>
-                </div>
-                <div className="text-lg font-black text-white">
-                  {formatNumber(coveredAreaSqft)} Sqft
-                </div>
-                <div className="text-[10px] text-slate-400">
-                  @ Rs {calculationResult.activeRates.labourSqftRate} / sqft
-                </div>
-                <div className="pt-1 border-t border-slate-800 text-xs font-bold text-emerald-400">
-                  {formatPKR(calculationResult.labourCost)}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ======================================================== */}
-          {/* PRO ACTION BAR (NON-INTRUSIVE UPSELLS) */}
-          {/* ======================================================== */}
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-amber-500/30 space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
-                  <Lock className="w-3.5 h-3.5" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white">Unlock Pro Management Tools for this Project</h4>
-                  <p className="text-[11px] text-slate-400">
-                    Save this estimate to your Khata, export branded client BOQ PDFs, and track site expenses.
-                  </p>
-                </div>
-              </div>
+              >
+                <div className="text-xs font-bold">Grey Structure</div>
+                <div className="text-[10px] opacity-80">گرے اسٹرکچر</div>
+              </button>
 
               <button
                 type="button"
-                onClick={() => openCheckoutModal()}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs shadow-md transition-all self-start sm:self-auto flex items-center gap-1.5"
+                onClick={() => setConstructionScope("complete")}
+                className={cn(
+                  "p-2 rounded-xl text-center border transition-all",
+                  constructionScope === "complete"
+                    ? "bg-[#059669] text-white border-[#059669] shadow-sm"
+                    : "bg-[#F8FAFC] dark:bg-slate-950 text-slate-700 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-[#059669]"
+                )}
               >
-                <Sparkles className="w-3.5 h-3.5 text-slate-950" />
-                <span>Activate Pro Access</span>
+                <div className="text-xs font-bold">Full Finishing</div>
+                <div className="text-[10px] opacity-80">مکمل فنشنگ</div>
               </button>
             </div>
+          </div>
+        </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs pt-1">
-              {[
-                { name: "Save Project", icon: Home, feature: "Save Project" },
-                { name: "PDF BOQ Report", icon: Download, feature: "PDF Export" },
-                { name: "Save Rate Profile", icon: Sliders, feature: "Rate Profile" },
-                { name: "Vendor Khata", icon: Building2, feature: "Vendor Management" },
-                { name: "Shareable Link", icon: Share2, feature: "Share Link" },
-                { name: "Budget Track", icon: DollarSign, feature: "Budget Tracking" }
-              ].map((act) => {
-                const Icon = act.icon;
-                return (
-                  <button
-                    key={act.name}
-                    type="button"
-                    onClick={() => handleProFeature(act.feature)}
-                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/40 text-left transition-all flex flex-col justify-between h-16 group"
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <Icon className="w-4 h-4 text-slate-400 group-hover:text-amber-400 transition-colors" />
-                      <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold text-[9px] flex items-center gap-0.5">
-                        <Lock className="w-2.5 h-2.5" /> PRO
-                      </span>
-                    </div>
-                    <span className="font-semibold text-slate-200 text-[11px] group-hover:text-white transition-colors">
-                      {act.name}
-                    </span>
-                  </button>
-                );
-              })}
+        {/* CALCULATE BUTTON */}
+        <div className="pt-2">
+          <button
+            type="submit"
+            className="w-full py-4 rounded-2xl bg-[#059669] hover:bg-emerald-700 text-white font-extrabold text-base shadow-lg shadow-emerald-700/20 flex items-center justify-center gap-2.5 transition-all cursor-pointer tracking-wide"
+          >
+            <Calculator className="w-5 h-5" />
+            <span>CALCULATE CONSTRUCTION ESTIMATE</span>
+          </button>
+        </div>
+      </form>
+
+      {/* ======================================================== */}
+      {/* RESULTS HERO SECTION */}
+      {/* ======================================================== */}
+      <div id="calculation-results-anchor" className="mt-8 pt-6 border-t border-slate-200/80 dark:border-slate-800 space-y-6">
+        {/* Estimated Cost Result Cards */}
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-xs font-black text-[#059669] dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-[#059669]" />
+              <span>
+                {constructionScope === "grey"
+                  ? "ESTIMATED GREY STRUCTURE COST"
+                  : "ESTIMATED COMPLETE HOUSE COST"}{' '}
+                • {selectedCity.name}
+              </span>
+            </h3>
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
+              {formatLakhCrore(calculationResult.totalCost)}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 text-xs">
+            {/* Grand Total */}
+            <div className="col-span-2 sm:col-span-2 lg:col-span-2 bg-gradient-to-br from-emerald-50 via-white to-emerald-50/50 dark:from-emerald-950/40 dark:via-slate-900 dark:to-slate-900 border-2 border-emerald-500/50 dark:border-emerald-500/40 rounded-3xl p-5 shadow-sm">
+              <span className="text-[11px] text-[#059669] dark:text-emerald-400 font-extrabold uppercase tracking-wider block mb-1">
+                {constructionScope === "grey" ? "Grey Structure Estimate" : "Complete Turnkey Estimate"}
+              </span>
+              <div className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight py-0.5">
+                {formatPKR(calculationResult.totalCost)}
+              </div>
+              <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-slate-700 dark:text-slate-300 font-semibold">
+                <span className="px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/80 text-[#059669] dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                  {formatLakhCrore(calculationResult.totalCost)}
+                </span>
+                <span className="text-slate-500">
+                  • Rs {formatNumber(calculationResult.costPerSqft)} / sq ft
+                </span>
+              </div>
             </div>
+
+            {/* Cost / Sq Ft & Construction Area */}
+            <div className="bg-[#F8FAFC] dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 flex flex-col justify-between">
+              <div>
+                <span className="text-[11px] text-slate-500 font-semibold block mb-1">
+                  Cost / Sq Ft &amp; Area
+                </span>
+                <div className="text-xl sm:text-2xl font-black text-[#059669] dark:text-emerald-400">
+                  Rs {formatNumber(calculationResult.costPerSqft)}
+                </div>
+              </div>
+              <div className="text-[11px] text-slate-500 mt-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                Covered Area: <strong className="text-slate-900 dark:text-white">{formatNumber(coveredAreaSqft)} sq ft</strong>
+              </div>
+            </div>
+
+            {/* Timeline Duration */}
+            <div className="bg-[#F8FAFC] dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 flex flex-col justify-between">
+              <div>
+                <span className="text-[11px] text-slate-500 font-semibold block mb-1">
+                  Estimated Schedule
+                </span>
+                <div className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                  <Clock className="w-5 h-5 shrink-0" />
+                  <span>{calculationResult.estimatedDurationMonths} Months</span>
+                </div>
+              </div>
+              <div className="text-[11px] text-slate-500 mt-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                Standard Pakistani civil timeline
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* MATERIAL COST GRAPH & BREAKDOWN DONUT */}
+        <div className="bg-[#F8FAFC] dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <div>
+              <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <Layers className="w-4 h-4 text-[#059669]" />
+                <span>Cost Distribution &amp; Material Proportions</span>
+              </h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                Calculated dynamic percentage shares based on empirical civil engineering formulas.
+              </p>
+            </div>
+            <span className="text-xs text-[#059669] font-bold">
+              Total: {formatPKR(calculationResult.totalCost)}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+            {/* Donut Chart */}
+            <div className="lg:col-span-5 flex flex-col items-center justify-center relative min-h-[220px]">
+              {isMounted ? (
+                <div className="w-52 h-52 relative">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Tooltip
+                        formatter={(value: any, name: any) => [formatPKR(Number(value)), name]}
+                        contentStyle={{
+                          backgroundColor: "#0f172a",
+                          borderColor: "#334155",
+                          borderRadius: "0.75rem",
+                          fontSize: "12px",
+                          color: "#f8fafc"
+                        }}
+                      />
+                      <Pie
+                        data={calculationResult.chartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={54}
+                        outerRadius={80}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {calculationResult.chartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                    <span className="text-[10px] text-slate-500 font-medium uppercase">Cost / Sqft</span>
+                    <span className="text-base font-black text-slate-900 dark:text-white">
+                      Rs {formatNumber(calculationResult.costPerSqft)}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-52 h-52 flex items-center justify-center text-xs text-slate-400">
+                  Loading chart...
+                </div>
+              )}
+            </div>
+
+            {/* Legend List */}
+            <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              {calculationResult.chartData.map((item) => (
+                <div
+                  key={item.name}
+                  className="p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 shadow-xs"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span
+                      className="w-3 h-3 rounded-full shrink-0"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="text-slate-800 dark:text-slate-200 font-semibold truncate text-[11px]">
+                      {item.name}
+                    </span>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-slate-900 dark:text-white font-bold block text-xs">
+                      {formatPKR(item.value)}
+                    </span>
+                    <span className="text-[10px] text-[#059669] font-medium block">
+                      {item.percentage}%
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ======================================================== */}
+        {/* DETAILED COST BREAKDOWN: GREY STRUCTURE VS FINISHING */}
+        {/* ======================================================== */}
+        <div className="space-y-4 pt-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <Boxes className="w-4 h-4 text-[#059669]" />
+                <span>Detailed Construction Phase Breakdown</span>
+              </h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                Exact civil work itemization explicitly showing quantities and what is included in each phase.
+              </p>
+            </div>
+
+            {/* Phase Sub-Tabs */}
+            <div className="flex bg-[#F8FAFC] dark:bg-slate-950 p-1 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs font-bold self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setBreakdownView("grey")}
+                className={cn(
+                  "px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5",
+                  breakdownView === "grey"
+                    ? "bg-[#059669] text-white shadow-xs"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+                )}
+              >
+                <span>Grey Structure Phase (گرے اسٹرکچر)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setBreakdownView("finishing")}
+                className={cn(
+                  "px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5",
+                  breakdownView === "finishing"
+                    ? "bg-[#059669] text-white shadow-xs"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+                )}
+              >
+                <span>Finishing &amp; Furnishing (فنشنگ)</span>
+              </button>
+            </div>
+          </div>
+
+          {/* TAB 1: GREY STRUCTURE PHASE CARDS */}
+          {breakdownView === "grey" ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* 1. Brick Masonry */}
+              <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center font-bold">
+                      🧱
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">
+                        Brick Masonry (دیواریں چڑھانا)
+                      </h4>
+                      <span className="text-[10px] text-slate-500">First Class Kiln Awwal Bricks</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs font-black text-slate-900 dark:text-white block">
+                      {formatPKR(calculationResult.brickMasonryCost)}
+                    </span>
+                    <span className="text-[10px] text-[#059669] font-bold">
+                      {formatLakhCrore(calculationResult.brickMasonryCost)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-2xl bg-[#F8FAFC] dark:bg-slate-950 text-[11px] text-slate-700 dark:text-slate-300 space-y-1">
+                  <div className="flex justify-between font-semibold">
+                    <span>Awwal Bricks Required:</span>
+                    <strong className="text-slate-900 dark:text-white">{formatNumber(calculationResult.bricksCount)} Pcs</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Mortar Cement:</span>
+                    <span>~{Math.ceil(calculationResult.bricksCount * 0.0018)} Bags</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Screening Sand (Rait):</span>
+                    <span>~{Math.round(calculationResult.bricksCount * 0.0095)} CFT</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1 text-[11px] text-slate-600 dark:text-slate-400">
+                  <span className="font-bold text-slate-900 dark:text-slate-200 block text-[10px] uppercase tracking-wider">
+                    What is Included (کیا شامل ہے):
+                  </span>
+                  <ul className="list-disc list-inside space-y-0.5 text-[10px] text-slate-500">
+                    <li>Awwal red kiln-fired bricks (اول کلاس پکی اینٹیں)</li>
+                    <li>1:6 &amp; 1:4 cement-sand mortar mixing (سیمنٹ ریت مسالہ)</li>
+                    <li>9-inch load-bearing exterior perimeter walls</li>
+                    <li>4.5-inch interior room partition walls</li>
+                    <li>Roof parapet walls &amp; boundary wall masonry</li>
+                    <li>Mason (Mistry) &amp; labour laying with plumb line check</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* 2. Plastering */}
+              <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-2xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 flex items-center justify-center font-bold">
+                      🪚
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">
+                        Plastering (پلستر کرنا)
+                      </h4>
+                      <span className="text-[10px] text-slate-500">Internal &amp; External Dual-Coat</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs font-black text-slate-900 dark:text-white block">
+                      {formatPKR(calculationResult.plasterCost)}
+                    </span>
+                    <span className="text-[10px] text-[#059669] font-bold">
+                      {formatLakhCrore(calculationResult.plasterCost)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-2xl bg-[#F8FAFC] dark:bg-slate-950 text-[11px] text-slate-700 dark:text-slate-300 space-y-1">
+                  <div className="flex justify-between font-semibold">
+                    <span>Plaster Surface Area:</span>
+                    <strong className="text-slate-900 dark:text-white">{formatNumber(Math.round(coveredAreaSqft * 3.4))} sq ft</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Cement for Plaster:</span>
+                    <span>~{Math.ceil(coveredAreaSqft * 0.12)} Bags</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Chenab Fine Sand:</span>
+                    <span>~{Math.round(coveredAreaSqft * 0.45)} CFT</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1 text-[11px] text-slate-600 dark:text-slate-400">
+                  <span className="font-bold text-slate-900 dark:text-slate-200 block text-[10px] uppercase tracking-wider">
+                    What is Included (کیا شامل ہے):
+                  </span>
+                  <ul className="list-disc list-inside space-y-0.5 text-[10px] text-slate-500">
+                    <li>0.5-inch internal 1:4 cement smooth trowel plaster</li>
+                    <li>0.75-inch external 1:3 weather-resistant sand plaster</li>
+                    <li>Ceiling underside chip-free neat plaster</li>
+                    <li>Chicken wire mesh (مرغی جالی) on brick-column joints</li>
+                    <li>Bamboo scaffolding (بانس پہاڑ) and 7-day water curing</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* 3. Roof Slab Casting & RCC */}
+              <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 flex items-center justify-center font-bold">
+                      🏗️
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">
+                        Roof Slab Casting (چھت ڈالنا اور لنٹر)
+                      </h4>
+                      <span className="text-[10px] text-slate-500">RCC Concrete &amp; Grade 60 Sariya</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs font-black text-slate-900 dark:text-white block">
+                      {formatPKR(calculationResult.roofSlabCost)}
+                    </span>
+                    <span className="text-[10px] text-[#059669] font-bold">
+                      {formatLakhCrore(calculationResult.roofSlabCost)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-2xl bg-[#F8FAFC] dark:bg-slate-950 text-[11px] text-slate-700 dark:text-slate-300 space-y-1">
+                  <div className="flex justify-between font-semibold">
+                    <span>Grade 60 Steel Rebar:</span>
+                    <strong className="text-slate-900 dark:text-white">{calculationResult.steelTons} Tons ({formatNumber(calculationResult.steelKg)} kg)</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Margalla Crush (Bajri):</span>
+                    <span>{formatNumber(calculationResult.crushCft)} CFT</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Slab Casting Cement:</span>
+                    <span>~{Math.ceil(calculationResult.cementBags * 0.65)} Bags</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1 text-[11px] text-slate-600 dark:text-slate-400">
+                  <span className="font-bold text-slate-900 dark:text-slate-200 block text-[10px] uppercase tracking-wider">
+                    What is Included (کیا شامل ہے):
+                  </span>
+                  <ul className="list-disc list-inside space-y-0.5 text-[10px] text-slate-500">
+                    <li>Grade 60 deformed steel rebar bending and binding (سریے کی باندھائی)</li>
+                    <li>1:2:4 ratio Margalla crushed stone concrete (لنٹر کنکریٹ)</li>
+                    <li>Steel / marine ply shuttering formwork with iron props (شٹرنگ)</li>
+                    <li>Electrical conduit piping &amp; fan boxes embedded prior to casting</li>
+                    <li>Mechanical vibrator compaction &amp; 14-day pond curing (ترائی)</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* 4. Excavation & Foundation */}
+              <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-[#059669] flex items-center justify-center font-bold">
+                      ⛏️
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">
+                        Foundation &amp; DPC (بنیادیں اور ڈی پی سی)
+                      </h4>
+                      <span className="text-[10px] text-slate-500">Excavation, Soling &amp; Damp Proofing</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs font-black text-slate-900 dark:text-white block">
+                      {formatPKR(calculationResult.foundationCost)}
+                    </span>
+                    <span className="text-[10px] text-[#059669] font-bold">
+                      {formatLakhCrore(calculationResult.foundationCost)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-2xl bg-[#F8FAFC] dark:bg-slate-950 text-[11px] text-slate-700 dark:text-slate-300 space-y-1">
+                  <div className="flex justify-between font-semibold">
+                    <span>Foundation Footings:</span>
+                    <strong className="text-slate-900 dark:text-white">4 to 5 ft solid depth</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Lean Concrete Soling:</span>
+                    <span>1:4:8 nominal mix</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Plinth Beam &amp; DPC:</span>
+                    <span>Reinforced concrete + bitumen</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1 text-[11px] text-slate-600 dark:text-slate-400">
+                  <span className="font-bold text-slate-900 dark:text-slate-200 block text-[10px] uppercase tracking-wider">
+                    What is Included (کیا شامل ہے):
+                  </span>
+                  <ul className="list-disc list-inside space-y-0.5 text-[10px] text-slate-500">
+                    <li>Machine/manual trench excavation up to solid strata</li>
+                    <li>Termite chemical treatment spray barrier (دیمک سپرے)</li>
+                    <li>Lean concrete soling base layer</li>
+                    <li>Stepped brick foundation with reinforced plinth beam</li>
+                    <li>Double coat bitumen DPC with heavy polythene sheet (نمی سے بچاؤ)</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* TAB 2: FINISHING & FURNISHING PHASE CARDS */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 text-xs">
+              {/* Tiles */}
+              <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 flex items-center justify-center font-bold">
+                    🔲
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">Floor &amp; Wall Tiles (ٹائلز)</h4>
+                    <span className="text-[10px] text-slate-400">Porcelain 60×60 / 60×120</span>
+                  </div>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Porcelain tiles in rooms, Chinese/Spanish glazed wall tiles in bathrooms up to 8ft height, polymer bond adhesive &amp; matching grout.
+                </p>
+              </div>
+
+              {/* Marble & Granite */}
+              <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 flex items-center justify-center font-bold">
+                    🏛️
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">Marble &amp; Granite (ماربل)</h4>
+                    <span className="text-[10px] text-slate-400">Staircase &amp; Counters</span>
+                  </div>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Badal / Ziarat white marble steps with bullnose edge, granite kitchen counter slabs, vanity tops, window sills &amp; threshold plates.
+                </p>
+              </div>
+
+              {/* Chips / Terrazzo */}
+              <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center font-bold">
+                    ✨
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">Chips &amp; Terrazzo (چپس)</h4>
+                    <span className="text-[10px] text-slate-400">Roof Terrace &amp; Garage</span>
+                  </div>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Waterproof marble chips on rooftop terrace and garage with multi-stage machine grinding, crystallization, and chemical polish.
+                </p>
+              </div>
+
+              {/* Windows */}
+              <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 flex items-center justify-center font-bold">
+                    🪟
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">Windows &amp; Glazing (کھڑکیاں)</h4>
+                    <span className="text-[10px] text-slate-400">1.6mm / 2mm Aluminium</span>
+                  </div>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Powder-coated architectural aluminium sections (or UPVC), 5mm/8mm tinted tempered safety glass, and stainless steel wire mesh.
+                </p>
+              </div>
+
+              {/* Doors */}
+              <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 flex items-center justify-center font-bold">
+                    🚪
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">Doors &amp; Chowkhats (دروازے)</h4>
+                    <span className="text-[10px] text-slate-400">Ash Wood &amp; Semi-Solid</span>
+                  </div>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Solid ash wood main door, semi-solid grooved bedroom doors, waterproof PVC bathroom doors, 16-gauge steel chowkhats, mortise locks &amp; handles.
+                </p>
+              </div>
+
+              {/* Complete Kitchen Setup */}
+              <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-orange-50 dark:bg-orange-950/60 text-orange-600 flex items-center justify-center font-bold">
+                    🍳
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">Kitchen Setup (کچن سیٹ اپ)</h4>
+                    <span className="text-[10px] text-slate-400">UV / Acrylic High Gloss</span>
+                  </div>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Modular UV/Acrylic cabinets with soft-close hydraulic fittings, quartz/granite countertop, double-bowl sink with swivel mixer, hood &amp; hob.
+                </p>
+              </div>
+
+              {/* Full Bathroom Construction */}
+              <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 flex items-center justify-center font-bold">
+                    🚿
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">Bathroom Setup (باتھ روم)</h4>
+                    <span className="text-[10px] text-slate-400">Sanitary &amp; Concealed PPRC</span>
+                  </div>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Master/Porta commodes, vanity basins, concealed PPRC pipes (pressure tested), Grohe/Faisal mixer taps, shower sets, and anti-fog mirrors.
+                </p>
+              </div>
+
+              {/* Electrical */}
+              <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-yellow-50 dark:bg-yellow-950/60 text-yellow-600 flex items-center justify-center font-bold">
+                    ⚡
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">Electrical &amp; Wiring (الیکٹریکل)</h4>
+                    <span className="text-[10px] text-slate-400">Pakistan Cables Copper</span>
+                  </div>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Pakistan Cables pure copper wiring, recessed LED panel lights, ceiling fans, distribution boards with Schneider/Hager breakers.
+                </p>
+              </div>
+
+              {/* Paint & False Ceiling */}
+              <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-[#059669] flex items-center justify-center font-bold">
+                    🎨
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">Paint &amp; False Ceiling (پینٹ)</h4>
+                    <span className="text-[10px] text-slate-400">Gypsum Cove &amp; Matt Paint</span>
+                  </div>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Gypsum board false ceiling with cove light troughs, acrylic wall putty, primer undercoat, and 3 coats of premium matt finish emulsion.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* PRO TOOLS BANNER */}
+        <div className="p-4 rounded-3xl bg-slate-900 text-white border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div>
+            <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block">
+              Professional Contractor Tools
+            </span>
+            <p className="text-[11px] text-slate-300 mt-0.5">
+              Export formal BOQ PDFs, track vendor purchases in Khata, and invite team members.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (!isAuthenticated) {
+                  openLoginModal();
+                } else {
+                  openCheckoutModal();
+                }
+              }}
+              className="px-4 py-2 rounded-xl bg-[#059669] hover:bg-emerald-600 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Export BOQ Summary</span>
+            </button>
           </div>
         </div>
       </div>
