@@ -28,8 +28,10 @@ import {
   Paintbrush,
   ChevronDown,
   ChevronRight,
-  Plus
+  Plus,
+  Sparkles
 } from "lucide-react";
+import { APP_VERSION } from "@buildcost/config";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -304,6 +306,20 @@ export function Sidebar() {
             </div>
           </div>
         </div>
+
+        {/* Version & What's New Link */}
+        <Link
+          href="/updates"
+          className="mt-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-900 text-[11px] text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center justify-between transition-colors group border border-transparent hover:border-slate-200 dark:hover:border-slate-800"
+        >
+          <span className="font-bold text-slate-400 dark:text-slate-500 group-hover:text-emerald-400">
+            v{APP_VERSION}
+          </span>
+          <span className="font-semibold flex items-center gap-1 text-slate-600 dark:text-slate-300 group-hover:text-emerald-400">
+            <span>What's New</span>
+            <Sparkles className="w-3 h-3 text-amber-500" />
+          </span>
+        </Link>
       </div>
     </aside>
   );

@@ -1,8 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BRAND_CONFIG = void 0;
+exports.BRAND_CONFIG = exports.APP_RELEASE_DATE = exports.APP_VERSION = void 0;
+exports.APP_VERSION = "1.2.0";
+exports.APP_RELEASE_DATE = "September 2026";
 exports.BRAND_CONFIG = {
     name: "BuildCost Connect",
+    version: exports.APP_VERSION,
+    releaseDate: exports.APP_RELEASE_DATE,
     tagline: "Plan. Calculate. Estimate. Build.",
     positioning: "Pakistan Construction Cost Intelligence Platform",
     currency: {

@@ -267,13 +267,16 @@ export default function LandingPage() {
               <li><Link href="/rooms" className="hover:text-emerald-400">Room-by-Room Estimator</Link></li>
               <li><Link href="/tools/converter" className="hover:text-emerald-400">Marla Variants & Lakh/Crore</Link></li>
               <li><Link href="/boq" className="hover:text-emerald-400">Contractor BOQ Generator</Link></li>
+              <li><Link href="/updates" className="text-emerald-400 font-semibold hover:underline flex items-center gap-1"><span>Project Updates &amp; What's New</span></Link></li>
             </ul>
           </div>
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-400">
-          <div>© {new Date().getFullYear()} BuildCost Connect (Pvt) Ltd. All rights reserved.</div>
+          <div>© {new Date().getFullYear()} BuildCost Connect (Pvt) Ltd. • <Link href="/updates" className="text-emerald-400 hover:underline font-semibold">v1.2.0</Link></div>
           <div className="flex items-center gap-6">
+            <Link href="/updates" className="hover:text-slate-200 transition-colors">Release Notes</Link>
+            <Link href="/changelog" className="hover:text-slate-200 transition-colors">Changelog</Link>
             <span>Pakistan Standard Specifications</span>
             <span>CDA / LDA / DHA Compatible</span>
           </div>

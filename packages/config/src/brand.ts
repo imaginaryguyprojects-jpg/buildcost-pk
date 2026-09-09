@@ -1,5 +1,10 @@
+export const APP_VERSION = "1.2.0";
+export const APP_RELEASE_DATE = "September 2026";
+
 export const BRAND_CONFIG = {
   name: "BuildCost Connect",
+  version: APP_VERSION,
+  releaseDate: APP_RELEASE_DATE,
   tagline: "Plan. Calculate. Estimate. Build.",
   positioning: "Pakistan Construction Cost Intelligence Platform",
   currency: {
