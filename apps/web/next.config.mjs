@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+const isMobile = process.env.BUILD_TARGET === "mobile";
+
 const nextConfig = {
   transpilePackages: [
     "@buildcost/config",
@@ -6,6 +8,11 @@ const nextConfig = {
     "@buildcost/calculations",
     "@buildcost/validation"
   ],
+  output: isMobile ? "export" : undefined,
+  images: {
+    unoptimized: isMobile ? true : undefined
+  },
+  trailingSlash: isMobile ? true : undefined,
   reactStrictMode: true
 };
 

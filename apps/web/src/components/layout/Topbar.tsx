@@ -19,11 +19,14 @@ import {
   CreditCard,
   Zap,
   Menu,
-  Crown
+  Crown,
+  WifiOff,
+  RefreshCw
 } from "lucide-react";
 import { PAKISTANI_CITIES } from "@buildcost/config";
 import { useProjectStore } from "@/stores/projectStore";
 import { useAuthStore } from "@/stores/authStore";
+import { useOfflineSync } from "@/lib/offline/OfflineSyncManager";
 import { MobileDrawer } from "./MobileDrawer";
 import { cn } from "@/lib/utils";
 
@@ -45,6 +48,7 @@ export function Topbar() {
     openUpgradeModal,
     isSuperAdmin
   } = useAuthStore();
+  const { isOnline, isSyncing, triggerManualSync } = useOfflineSync();
   
   const [cityMenuOpen, setCityMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -225,6 +229,25 @@ export function Topbar() {
               <span>Upgrade to PRO</span>
             </button>
           )}
+
+          {/* Offline / Synced Status Indicator */}
+          {!isOnline ? (
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 rounded-xl text-[11px] font-bold select-none"
+              title="Working completely offline. All changes are saved locally and will sync when internet reconnects."
+            >
+              <WifiOff className="w-3 h-3" />
+              <span className="hidden md:inline">Offline Mode</span>
+            </div>
+          ) : isSyncing ? (
+            <div
+              className="flex items-center gap-1 px-2 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl text-[10px] font-semibold animate-pulse"
+              title="Syncing latest data with Supabase..."
+            >
+              <RefreshCw className="w-3 h-3 animate-spin" />
+              <span className="hidden md:inline">Syncing...</span>
+            </div>
+          ) : null}
         </div>
 
         {/* Light / Dark Mode Toggle Button */}

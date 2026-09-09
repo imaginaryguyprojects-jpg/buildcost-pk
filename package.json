@@ -9,7 +9,9 @@
     "test": "turbo run test",
     "lint": "turbo run lint",
     "typecheck": "pnpm -r exec tsc --noEmit",
-    "format": "prettier --write \"**/*.{ts,tsx,md,json}\""
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "build:mobile-bundle": "node scripts/build-mobile-bundle.mjs",
+    "build:apk": "node scripts/build-standalone-apk.mjs"
   },
   "devDependencies": {
     "turbo": "^2.4.4",
