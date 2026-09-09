@@ -46,3 +46,9 @@ Thumbs.db
 
 # Supabase local
 .supabase/
+
+# Android build artifacts
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties

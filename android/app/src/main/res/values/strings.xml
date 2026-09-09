@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">BuildCost Connect</string>
+    <string name="offline_msg">No internet connection. Please check your network and try again.</string>
+    <string name="retry">Retry</string>
+</resources>
