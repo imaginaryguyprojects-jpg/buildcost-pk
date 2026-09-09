@@ -33,7 +33,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 public class MainActivity extends AppCompatActivity {
 
-    public static final String DEFAULT_URL = "https://buildcost-pk.vercel.app";
+    public static final String DEFAULT_URL = "https://buildcost-pk-web.vercel.app";
     private static final String PREFS_NAME = "BuildCostPrefs";
     private static final String KEY_CUSTOM_URL = "custom_url";
 
@@ -132,7 +132,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Append custom user agent identifier
         String defaultUA = settings.getUserAgentString();
-        settings.setUserAgentString(defaultUA + " BuildCostApp/1.2.1 (Android)");
+        settings.setUserAgentString(defaultUA + " BuildCostApp/1.2.2 (Android)");
 
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
@@ -228,6 +228,12 @@ public class MainActivity extends AppCompatActivity {
     private void loadTargetUrl() {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         String url = prefs.getString(KEY_CUSTOM_URL, DEFAULT_URL);
+
+        // Automatically upgrade any legacy cached domain that lacked '-web'
+        if (url != null && url.contains("buildcost-pk.vercel.app") && !url.contains("buildcost-pk-web.vercel.app")) {
+            url = DEFAULT_URL;
+            prefs.edit().putString(KEY_CUSTOM_URL, DEFAULT_URL).apply();
+        }
 
         if (!isNetworkAvailable()) {
             // Attempt to load offline cache, or show offline fallback
