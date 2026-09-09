@@ -67,7 +67,7 @@ export function AppShell({ children }: AppShellProps) {
       ) : isTopNavLayout ? (
         <div className="flex-1 flex flex-col min-w-0 w-full">
           <Topbar />
-          <main className="flex-1 w-full bg-[#0a0f1d] text-slate-100">
+          <main className="flex-1 w-full bg-[#F8FAFC] dark:bg-[#0a0f1d] text-slate-900 dark:text-slate-100">
             {children}
           </main>
         </div>
