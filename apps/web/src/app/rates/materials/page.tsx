@@ -19,12 +19,14 @@ import {
 import { PAKISTANI_CITIES } from "@buildcost/config";
 import { useProjectStore } from "@/stores/projectStore";
 import { useAuthStore } from "@/stores/authStore";
+import { useOfflineSync } from "@/lib/offline/OfflineSyncManager";
 import { ProPreviewCard } from "@/components/pro/ProPreviewCard";
 import { formatPKR, formatNumber } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 
 export default function MaterialRatesPage() {
   const { user } = useAuthStore();
+  const { isOnline, lastSyncTime, triggerManualSync } = useOfflineSync();
   const isPro =
     user?.plan === "pro" ||
     user?.plan === "business" ||
@@ -50,12 +52,15 @@ export default function MaterialRatesPage() {
     { id: "aluminium", label: "Aluminium & Glass" }
   ];
 
-  const handleSync = () => {
+  const handleSync = async () => {
     setIsSyncing(true);
+    if (isOnline) {
+      await triggerManualSync();
+    }
+    syncAuthenticRates();
     setTimeout(() => {
-      syncAuthenticRates();
       setIsSyncing(false);
-    }, 700);
+    }, 600);
   };
 
   const filteredRates = materialRates.filter((r) => {
@@ -77,12 +82,20 @@ export default function MaterialRatesPage() {
             <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Pakistan Material Rate Engine
             </h1>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">
-              Authentic Live Feeds
-            </span>
+            {isOnline ? (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">
+                Authentic Live Feeds
+              </span>
+            ) : (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-800">
+                Offline Cached Rates
+              </span>
+            )}
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Verified wholesale distributor, association indices & mandi rates for{" "}
+            {isOnline
+              ? "Verified wholesale distributor, association indices & mandi rates for "
+              : "Offline local storage benchmark rates calibrated for "}
             <span className="font-semibold text-emerald-600 dark:text-emerald-400">{selectedCity.name}</span>
           </p>
         </div>
@@ -91,10 +104,13 @@ export default function MaterialRatesPage() {
           <button
             onClick={handleSync}
             disabled={isSyncing}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-sm transition-all disabled:opacity-50"
+            className={cn(
+              "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold shadow-sm transition-all disabled:opacity-50 text-white",
+              isOnline ? "bg-emerald-600 hover:bg-emerald-500" : "bg-amber-600 hover:bg-amber-500"
+            )}
           >
             <RefreshCw className={cn("w-3.5 h-3.5", isSyncing && "animate-spin")} />
-            <span>{isSyncing ? "Syncing..." : "Refresh Live Feeds"}</span>
+            <span>{isSyncing ? "Syncing..." : isOnline ? "Refresh Live Feeds" : "Reload Cached Rates"}</span>
           </button>
 
           <Link
@@ -126,9 +142,11 @@ export default function MaterialRatesPage() {
 
           <div className="text-left md:text-right text-xs">
             <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-bold tracking-wider">
-              Last Verified
+              {isOnline ? "Last Verified" : "Offline Cached"}
             </span>
-            <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{lastSyncTimestamp}</span>
+            <span className={cn("font-mono font-bold", isOnline ? "text-emerald-600 dark:text-emerald-400" : "text-amber-500")}>
+              {isOnline ? lastSyncTimestamp : (lastSyncTime ? `Synced: ${lastSyncTime}` : "Local Cache")}
+            </span>
           </div>
         </div>
 
@@ -270,7 +288,9 @@ export default function MaterialRatesPage() {
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="text-slate-800 dark:text-slate-200 font-medium">{r.sourceName}</div>
-                      <div className="text-[10px] text-slate-400 dark:text-slate-500">Verified {r.verifiedAt}</div>
+                      <div className={cn("text-[10px]", isOnline ? "text-slate-400 dark:text-slate-500" : "text-amber-500 font-medium")}>
+                        {isOnline ? `Verified ${r.verifiedAt}` : `Offline Cached • ${r.verifiedAt}`}
+                      </div>
                     </td>
                     <td className="py-3.5 px-4 text-center">
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40">
@@ -286,7 +306,9 @@ export default function MaterialRatesPage() {
 
         <div className="p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>Rates include local carriage & unloading within municipal limits of {selectedCity.name}</span>
-          <span className="text-emerald-600 dark:text-emerald-400 font-medium">Source Status: Verified Authentic Feeds</span>
+          <span className={cn("font-medium", isOnline ? "text-emerald-600 dark:text-emerald-400" : "text-amber-500")}>
+            Source Status: {isOnline ? "Verified Authentic Feeds (Live)" : `Offline Cached Rate (${lastSyncTime ? 'Last Synced ' + lastSyncTime : 'Local Database Cache'})`}
+          </span>
         </div>
       </div>
     </div>

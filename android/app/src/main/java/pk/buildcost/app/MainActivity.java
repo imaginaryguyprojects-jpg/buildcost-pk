@@ -89,9 +89,12 @@ public class MainActivity extends AppCompatActivity {
             loadTargetUrl();
         });
 
-        // Developer URL config override by long-pressing retry
+        // Developer URL config override by long-pressing retry (Debug builds only)
         btnRetry.setOnLongClickListener(v -> {
-            showUrlConfigDialog();
+            boolean isDebug = (getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+            if (isDebug) {
+                showUrlConfigDialog();
+            }
             return true;
         });
     }

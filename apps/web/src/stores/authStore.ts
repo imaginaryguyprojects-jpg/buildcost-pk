@@ -48,6 +48,7 @@ interface AuthState {
   closeCheckoutModal: () => void;
   upgradeToPro: () => void;
   refreshSubscription: () => Promise<void>;
+  initializeAuth: () => Promise<void>;
 
   // Super Admin Operations
   isSuperAdmin: () => boolean;
@@ -130,26 +131,115 @@ export const useAuthStore = create<AuthState>()(
 
       refreshSubscription: async () => {
         try {
-          const res = await fetch("/api/user/subscription");
-          if (res.ok) {
-            const data = await res.json();
-            if (data.authenticated && data.isPro) {
-              set((state) => ({
-                user: state.user
-                  ? {
-                      ...state.user,
-                      is_pro: true,
-                      plan: (data.tier as any) || "pro",
-                      subscriptionTier: (data.tier as any) || "pro",
-                      subscriptionStatus: "PRO_ACTIVE",
-                    }
-                  : null,
-              }));
-              get().showToast("🎉 BuildCost PRO access verified from database!", "success");
-            }
+          const supabase = createClient();
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+          if (!user) return;
+
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", user.id)
+            .maybeSingle();
+
+          const normalizedEmail = (user.email || "").toLowerCase().trim();
+          const isAdmin =
+            isSuperAdminEmail(normalizedEmail) ||
+            profile?.role === "admin" ||
+            profile?.role === "superadmin";
+
+          let isPro = isAdmin;
+          if (!isPro && profile?.is_pro === true) {
+            const exp = profile.pro_expires_at;
+            isPro = !exp || new Date(exp).getTime() > Date.now();
           }
+
+          set((state) => ({
+            user: state.user
+              ? {
+                  ...state.user,
+                  is_pro: isPro,
+                  role: isAdmin ? "superadmin" : ((profile?.role as any) || state.user.role || "user"),
+                  plan: isPro ? "pro" : "free",
+                  subscriptionTier: isPro ? "pro" : "free",
+                  subscriptionStatus: isPro ? "PRO_ACTIVE" : "FREE",
+                }
+              : null,
+          }));
+          get().showToast("🎉 BuildCost PRO access verified from database!", "success");
         } catch {
-          // Network or server error
+          // Network or offline: preserve existing verified state
+        }
+      },
+
+      initializeAuth: async () => {
+        if (typeof window === "undefined") return;
+        try {
+          const supabase = createClient();
+          const {
+            data: { session },
+            error,
+          } = await supabase.auth.getSession();
+
+          if (error || !session?.user) {
+            // No valid session: purge any stale or tampered client storage
+            if (get().isAuthenticated) {
+              set({ user: null, isAuthenticated: false });
+            }
+            return;
+          }
+
+          // Strict email confirmation verification
+          const isConfirmed = !!(session.user.email_confirmed_at || session.user.confirmed_at);
+          if (!isConfirmed) {
+            await supabase.auth.signOut();
+            set({ user: null, isAuthenticated: false });
+            return;
+          }
+
+          // Fetch verified user profile directly from Supabase
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", session.user.id)
+            .maybeSingle();
+
+          const normalizedEmail = (session.user.email || "").toLowerCase().trim();
+          const isAdmin =
+            isSuperAdminEmail(normalizedEmail) ||
+            profile?.role === "admin" ||
+            profile?.role === "superadmin";
+
+          let isPro = isAdmin;
+          if (!isPro && profile?.is_pro === true) {
+            const exp = profile.pro_expires_at;
+            isPro = !exp || new Date(exp).getTime() > Date.now();
+          }
+
+          const verifiedUser: UserProfile = {
+            id: session.user.id,
+            email: normalizedEmail,
+            fullName:
+              profile?.full_name ||
+              session.user.user_metadata?.full_name ||
+              normalizedEmail.split("@")[0],
+            phone: profile?.phone || session.user.user_metadata?.phone,
+            companyName: profile?.company_name || session.user.user_metadata?.company,
+            cityId: profile?.city_id || "isb",
+            role: isAdmin ? "superadmin" : ((profile?.role as any) || "user"),
+            plan: isPro ? "pro" : "free",
+            subscriptionTier: isPro ? "pro" : "free",
+            subscriptionStatus: isPro ? "PRO_ACTIVE" : "FREE",
+            is_pro: isPro,
+            emailConfirmed: true,
+            createdAt: profile?.created_at || session.user.created_at,
+            updatedAt: profile?.updated_at || new Date().toISOString(),
+          };
+
+          set({ user: verifiedUser, isAuthenticated: true });
+        } catch {
+          // Offline network error: maintain local state
         }
       },
 
@@ -446,11 +536,23 @@ export const useAuthStore = create<AuthState>()(
         onboardingCompleted: state.onboardingCompleted,
       }),
       onRehydrateStorage: () => (state) => {
-        if (state?.user && (isSuperAdminEmail(state.user.email) || state.user.role === "admin")) {
-          state.user.role = "superadmin";
-          state.user.plan = "pro";
-          state.user.subscriptionTier = "pro";
-          state.user.subscriptionStatus = "PRO_ACTIVE";
+        if (state && typeof window !== "undefined") {
+          // Immediately trigger server-side Supabase session verification
+          state.initializeAuth();
+
+          // Set up listener for auth state changes (sign-in, token refresh, sign-out)
+          try {
+            const supabase = createClient();
+            supabase.auth.onAuthStateChange((event, session) => {
+              if (event === "SIGNED_OUT" || !session) {
+                useAuthStore.setState({ user: null, isAuthenticated: false });
+              } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+                state.initializeAuth();
+              }
+            });
+          } catch {
+            // Supabase client listener error (ignore offline)
+          }
         }
       },
     }

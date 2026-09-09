@@ -47,11 +47,13 @@ import {
 import { formatPKR, formatNumber, formatCurrency } from "@/lib/formatters";
 import { PAKISTANI_CITIES } from "@buildcost/config";
 import { useProjectStore } from "@/stores/projectStore";
+import { useOfflineSync } from "@/lib/offline/OfflineSyncManager";
 
 type CalcMode = "grey" | "finishing" | "labour" | "full" | "scenario" | "rates";
 
 export default function CalculatorHubPage() {
   const { selectedCityId, setSelectedCityId, materialRates } = useProjectStore();
+  const { isOnline, lastSyncTime } = useOfflineSync();
   const [activeMode, setActiveMode] = useState<CalcMode>("grey");
   const [showAssumptions, setShowAssumptions] = useState(false);
 
@@ -1326,9 +1328,15 @@ export default function CalculatorHubPage() {
                     <td className="py-3 px-4 text-right font-mono font-bold text-emerald-600">Rs. {formatNumber(r.deliveredRate)}</td>
                     <td className="py-3 px-4 text-slate-500">{r.sourceName}</td>
                     <td className="py-3 px-4">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        {r.status}
-                      </span>
+                      {isOnline ? (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                          {r.status || "Verified"}
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                          Offline Cached
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}
