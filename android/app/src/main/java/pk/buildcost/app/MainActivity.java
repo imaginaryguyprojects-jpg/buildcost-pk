@@ -132,7 +132,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Append custom user agent identifier
         String defaultUA = settings.getUserAgentString();
-        settings.setUserAgentString(defaultUA + " BuildCostApp/1.2.0 (Android)");
+        settings.setUserAgentString(defaultUA + " BuildCostApp/1.2.1 (Android)");
 
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
