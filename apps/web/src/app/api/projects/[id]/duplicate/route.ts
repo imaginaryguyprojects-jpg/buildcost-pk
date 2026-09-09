@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
-import { canUseFeature } from "@buildcost/config";
+import { verifyUserProAccess } from "@/lib/auth/subscriptionGuard";
 
 export async function POST(
   request: NextRequest,
@@ -8,14 +8,14 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const body = await request.json().catch(() => ({}));
-    const supabase = await createServerSupabase();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    const clientTierHeader = request.headers.get("x-user-plan") || "pro";
-    if (!canUseFeature(clientTierHeader, "project_management")) {
+    const proCheck = await verifyUserProAccess(request);
+    if (!proCheck.authorized || !proCheck.isPro) {
       return NextResponse.json({ error: "Project duplication is a PRO feature", upgradeRequired: true }, { status: 403 });
     }
+
+    const body = await request.json().catch(() => ({}));
+    const supabase = await createServerSupabase();
+    const user = proCheck.user;
 
     const { data: original, error } = await supabase
       .from("projects")

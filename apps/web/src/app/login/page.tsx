@@ -4,10 +4,12 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Calculator, Lock, Mail, ArrowRight } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { useAuthStore } from "@/stores/authStore";
+import { validateEmail } from "@/lib/auth/validation";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuthStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,26 +20,28 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    try {
-      const supabase = createClient();
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+    const emailCheck = validateEmail(email);
+    if (!emailCheck.valid) {
+      setError(emailCheck.error || "Please enter a valid email address.");
+      setLoading(false);
+      return;
+    }
 
-      if (authError) {
-        // Fallback for development if Supabase credentials are placeholder
-        if (authError.message.includes("fetch") || authError.message.includes("placeholder")) {
-          router.push("/dashboard");
-          return;
-        }
-        setError(authError.message);
-      } else {
+    if (!password) {
+      setError("Password is required.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await login(email, password);
+      if (res.success) {
         router.push("/dashboard");
+      } else {
+        setError(res.error || "Invalid credentials. Please verify your email and password.");
       }
     } catch (err: any) {
-      // Allow instant access in demo environment
-      router.push("/dashboard");
+      setError(err.message || "Failed to sign in. Please try again.");
     } finally {
       setLoading(false);
     }

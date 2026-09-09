@@ -14,7 +14,6 @@ export function LoginGatingModal() {
     clearPendingAction,
     login,
     signup,
-    loginAsSuperAdmin,
     showToast
   } = useAuthStore();
   const { saveCalculation, addProject } = useProjectStore();
@@ -38,9 +37,13 @@ export function LoginGatingModal() {
 
     try {
       if (mode === "login") {
-        await login(email, password);
+        const res = await login(email, password);
+        if (!res.success) {
+          setError(res.error || "Authentication failed. Please check your credentials.");
+          return;
+        }
       } else {
-        await signup({
+        const res = await signup({
           fullName: fullName || "Valued User",
           email,
           password,
@@ -48,6 +51,15 @@ export function LoginGatingModal() {
           companyName,
           cityId
         });
+        if (!res.success) {
+          setError(res.error || "Failed to create account.");
+          return;
+        }
+        if (res.needsVerification) {
+          showToast(res.message || "Please check your email to verify your account.", "info");
+          closeLoginModal();
+          return;
+        }
       }
 
       // EXECUTE PENDING ACTION (CRITICAL LOGIN GATING RULE: Preserves state without loss!)
@@ -68,22 +80,6 @@ export function LoginGatingModal() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSuperAdminLogin = (email: string) => {
-    loginAsSuperAdmin(email);
-    if (pendingAction) {
-      if (pendingAction.actionName === "save_calculation") {
-        saveCalculation(pendingAction.payload);
-        showToast("Calculation successfully saved to Super Admin account!", "success");
-      } else if (pendingAction.actionName === "save_project") {
-        addProject(pendingAction.payload);
-        showToast("Project successfully saved to Super Admin account!", "success");
-      }
-      clearPendingAction();
-    }
-    showToast(`Logged in as Super Admin (${email})`, "success");
-    closeLoginModal();
   };
 
   return (
@@ -246,27 +242,6 @@ export function LoginGatingModal() {
             )}
           </button>
         </form>
-
-        {/* Super Admin God-Mode Quick Login Access */}
-        <div className="mt-4 p-3 rounded-2xl bg-slate-950/90 border border-emerald-500/20">
-          <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-emerald-400 mb-2">
-            <Zap className="w-3 h-3 text-amber-400" />
-            <span>Super Admin Instant God-Mode Access</span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {SUPER_ADMIN_EMAILS.map((adminEmail) => (
-              <button
-                key={adminEmail}
-                type="button"
-                onClick={() => handleSuperAdminLogin(adminEmail)}
-                className="text-left px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-emerald-950/50 border border-slate-800 hover:border-emerald-500/40 transition-all text-[11px] text-slate-300 hover:text-white flex items-center justify-between group"
-              >
-                <span className="truncate">{adminEmail.split("@")[0]}</span>
-                <span className="text-[9px] font-bold text-emerald-400 group-hover:underline">Login &rarr;</span>
-              </button>
-            ))}
-          </div>
-        </div>
 
         <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
           <span>✓ Free Forever Tier</span>

@@ -22,6 +22,8 @@ export interface UserProfile {
   plan?: SubscriptionTier;
   subscriptionTier?: SubscriptionTier;
   subscriptionStatus?: SubscriptionStatus;
+  is_pro?: boolean;
+  emailConfirmed?: boolean;
   avatarUrl?: string;
   createdAt: string;
   updatedAt: string;

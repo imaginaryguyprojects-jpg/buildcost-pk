@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import { UserProfile, UserSettings } from "@buildcost/types";
 import { SUPER_ADMIN_EMAILS, isSuperAdminEmail } from "@buildcost/config";
 import { createClient } from "../lib/supabase/client";
+import { validateEmail, validatePassword } from "../lib/auth/validation";
 
 export { SUPER_ADMIN_EMAILS, isSuperAdminEmail };
 
@@ -46,8 +47,9 @@ interface AuthState {
   openCheckoutModal: () => void;
   closeCheckoutModal: () => void;
   upgradeToPro: () => void;
+  refreshSubscription: () => Promise<void>;
 
-  // Super Admin & God-Mode Operations
+  // Super Admin Operations
   isSuperAdmin: () => boolean;
   loginAsSuperAdmin: (email?: string) => void;
 
@@ -60,7 +62,7 @@ interface AuthState {
     phone?: string;
     companyName?: string;
     cityId?: string;
-  }) => Promise<{ success: boolean; error?: string }>;
+  }) => Promise<{ success: boolean; error?: string; needsVerification?: boolean; message?: string }>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<{ success: boolean; error?: string }>;
   updateProfile: (updates: Partial<UserProfile>) => void;
@@ -122,13 +124,33 @@ export const useAuthStore = create<AuthState>()(
       },
 
       upgradeToPro: () => {
-        set((state) => ({
-          checkoutModalOpen: false,
-          user: state.user
-            ? { ...state.user, plan: "pro" as any, subscriptionTier: "pro" as any, subscriptionStatus: "PRO_ACTIVE" }
-            : null,
-        }));
-        get().showToast("🎉 Congratulations! Your account has been upgraded to BuildCost Pro.", "success");
+        set({ checkoutModalOpen: false });
+        get().refreshSubscription();
+      },
+
+      refreshSubscription: async () => {
+        try {
+          const res = await fetch("/api/user/subscription");
+          if (res.ok) {
+            const data = await res.json();
+            if (data.authenticated && data.isPro) {
+              set((state) => ({
+                user: state.user
+                  ? {
+                      ...state.user,
+                      is_pro: true,
+                      plan: (data.tier as any) || "pro",
+                      subscriptionTier: (data.tier as any) || "pro",
+                      subscriptionStatus: "PRO_ACTIVE",
+                    }
+                  : null,
+              }));
+              get().showToast("🎉 BuildCost PRO access verified from database!", "success");
+            }
+          }
+        } catch {
+          // Network or server error
+        }
       },
 
       isSuperAdmin: () => {
@@ -141,33 +163,9 @@ export const useAuthStore = create<AuthState>()(
         );
       },
 
-      loginAsSuperAdmin: (email = "imaginary.guy.project@gmail.com") => {
-        const isUmer = email.toLowerCase().includes("umer");
-        const adminName = isUmer ? "Umer Shahzad (Super Admin)" : "Imaginary Guy (Super Admin)";
-        const superUser: UserProfile = {
-          id: isUmer ? "admin_umer_001" : "admin_imaginary_001",
-          email: email.trim(),
-          fullName: adminName,
-          phone: isUmer ? "0300-5155604" : "0345-50-74-541",
-          companyName: "BuildCost Technologies (Pvt) Ltd",
-          cityId: "isb",
-          role: "superadmin",
-          plan: "pro",
-          subscriptionTier: "pro",
-          subscriptionStatus: "PRO_ACTIVE",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-
-        set({
-          user: superUser,
-          isAuthenticated: true,
-          loginModalOpen: false,
-          onboardingCompleted: true,
-          onboardingModalOpen: false
-        });
-
-        get().showToast(`⚡ God-Mode Activated: Welcome Super Admin (${email})!`, "success");
+      loginAsSuperAdmin: () => {
+        get().showToast("Direct bypass disabled for security. Please sign in with admin credentials.", "warning");
+        get().openLoginModal();
       },
 
       openLoginModal: (pending?: PendingAction) => {
@@ -228,83 +226,140 @@ export const useAuthStore = create<AuthState>()(
       clearToast: () => set({ lastToast: null }),
 
       login: async (email, password) => {
-        const isAdmin = isSuperAdminEmail(email);
-        const isUmer = email.toLowerCase().includes("umer");
-        const defaultName = isAdmin
-          ? (isUmer ? "Umer Shahzad (Super Admin)" : "Imaginary Guy (Super Admin)")
-          : email.split("@")[0].toUpperCase();
+        const emailCheck = validateEmail(email);
+        if (!emailCheck.valid) {
+          return { success: false, error: emailCheck.error };
+        }
+
+        if (!password) {
+          return { success: false, error: "Password is required." };
+        }
 
         try {
           const supabase = createClient();
-          const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: email.trim().toLowerCase(),
+            password
+          });
 
-          const mockUser: UserProfile = {
-            id: data?.user?.id || (isAdmin ? (isUmer ? "admin_umer_001" : "admin_imaginary_001") : "usr-" + Math.random().toString(36).substring(2, 9)),
-            email: email,
-            fullName: data?.user?.user_metadata?.full_name || defaultName,
-            cityId: "isb",
-            role: isAdmin ? "superadmin" : "user",
-            plan: isAdmin ? "pro" : "free",
-            subscriptionTier: isAdmin ? "pro" : "free",
-            subscriptionStatus: isAdmin ? "PRO_ACTIVE" : "FREE",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+          if (error || !data?.user) {
+            return {
+              success: false,
+              error: error?.message || "Invalid email or password. Please try again."
+            };
+          }
+
+          // Strict Email Confirmation Check
+          const isConfirmed = !!(data.user.email_confirmed_at || data.user.confirmed_at);
+          if (!isConfirmed) {
+            await supabase.auth.signOut();
+            return {
+              success: false,
+              error:
+                "Your email address is not verified yet. Please check your inbox or spam folder to confirm your email before signing in."
+            };
+          }
+
+          // Fetch verified user profile from Supabase database
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", data.user.id)
+            .maybeSingle();
+
+          const normalizedEmail = (data.user.email || email).toLowerCase().trim();
+          const isAdmin = isSuperAdminEmail(normalizedEmail) || profile?.role === "admin" || profile?.role === "superadmin";
+
+          // Verify PRO subscription status directly from database
+          let isPro = isAdmin;
+          if (!isPro && profile?.is_pro === true) {
+            const exp = profile.pro_expires_at;
+            isPro = !exp || new Date(exp).getTime() > Date.now();
+          }
+
+          const verifiedUser: UserProfile = {
+            id: data.user.id,
+            email: normalizedEmail,
+            fullName: profile?.full_name || data.user.user_metadata?.full_name || normalizedEmail.split("@")[0],
+            phone: profile?.phone || data.user.user_metadata?.phone,
+            companyName: profile?.company_name || data.user.user_metadata?.company,
+            cityId: profile?.city_id || "isb",
+            role: isAdmin ? "superadmin" : ((profile?.role as any) || "user"),
+            plan: isPro ? "pro" : "free",
+            subscriptionTier: isPro ? "pro" : "free",
+            subscriptionStatus: isPro ? "PRO_ACTIVE" : "FREE",
+            is_pro: isPro,
+            emailConfirmed: true,
+            createdAt: profile?.created_at || data.user.created_at,
+            updatedAt: profile?.updated_at || new Date().toISOString()
           };
 
           set({
-            user: mockUser,
+            user: verifiedUser,
             isAuthenticated: true,
             loginModalOpen: false,
           });
 
-          get().showToast(isAdmin ? `⚡ Welcome Super Admin: ${mockUser.fullName}` : `Welcome back, ${mockUser.fullName}!`, "success");
+          get().showToast(isAdmin ? `⚡ Welcome Admin: ${verifiedUser.fullName}` : `Welcome back, ${verifiedUser.fullName}!`, "success");
           return { success: true };
         } catch (err: any) {
-          // If network / placeholder error, allow demo login
-          const mockUser: UserProfile = {
-            id: isAdmin ? (isUmer ? "admin_umer_001" : "admin_imaginary_001") : "usr-" + Math.random().toString(36).substring(2, 9),
-            email: email,
-            fullName: defaultName,
-            cityId: "isb",
-            role: isAdmin ? "superadmin" : "user",
-            plan: isAdmin ? "pro" : "free",
-            subscriptionTier: isAdmin ? "pro" : "free",
-            subscriptionStatus: isAdmin ? "PRO_ACTIVE" : "FREE",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+          return {
+            success: false,
+            error: err.message || "Authentication failed. Please check your network connection."
           };
-
-          set({
-            user: mockUser,
-            isAuthenticated: true,
-            loginModalOpen: false,
-          });
-          get().showToast(isAdmin ? `⚡ Welcome Super Admin: ${mockUser.fullName}` : `Welcome back, ${mockUser.fullName}!`, "success");
-          return { success: true };
         }
       },
 
       signup: async (data) => {
-        const isAdmin = isSuperAdminEmail(data.email);
+        const emailCheck = validateEmail(data.email);
+        if (!emailCheck.valid) {
+          return { success: false, error: emailCheck.error };
+        }
+
+        const passCheck = validatePassword(data.password);
+        if (!passCheck.valid) {
+          return { success: false, error: passCheck.error };
+        }
+
         try {
           const supabase = createClient();
+          const cleanEmail = data.email.trim().toLowerCase();
           const { data: resData, error } = await supabase.auth.signUp({
-            email: data.email,
+            email: cleanEmail,
             password: data.password,
             options: {
               data: {
-                full_name: data.fullName,
-                phone: data.phone,
-                company: data.companyName,
+                full_name: data.fullName?.trim() || "User",
+                phone: data.phone?.trim() || "",
+                company: data.companyName?.trim() || "",
                 city_id: data.cityId || "isb",
               },
             },
           });
 
+          if (error) {
+            return { success: false, error: error.message };
+          }
+
+          if (!resData?.user) {
+            return { success: false, error: "Signup could not be completed. Please try again." };
+          }
+
+          // Check if email confirmation is required
+          const isConfirmed = !!(resData.user.email_confirmed_at || resData.user.confirmed_at);
+          if (!isConfirmed) {
+            return {
+              success: true,
+              needsVerification: true,
+              message: `Account created successfully! We sent a confirmation link to ${cleanEmail}. Please verify your email before signing in.`
+            };
+          }
+
+          const isAdmin = isSuperAdminEmail(cleanEmail);
           const newUser: UserProfile = {
-            id: resData?.user?.id || (isAdmin ? "admin-" + Math.random().toString(36).substring(2, 7) : "usr-" + Math.random().toString(36).substring(2, 9)),
-            email: data.email,
-            fullName: data.fullName,
+            id: resData.user.id,
+            email: cleanEmail,
+            fullName: data.fullName || cleanEmail.split("@")[0],
             phone: data.phone,
             companyName: data.companyName,
             cityId: data.cityId || "isb",
@@ -312,31 +367,8 @@ export const useAuthStore = create<AuthState>()(
             plan: isAdmin ? "pro" : "free",
             subscriptionTier: isAdmin ? "pro" : "free",
             subscriptionStatus: isAdmin ? "PRO_ACTIVE" : "FREE",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
-
-          set({
-            user: newUser,
-            isAuthenticated: true,
-            loginModalOpen: false,
-            onboardingModalOpen: !isAdmin, // Skip onboarding for admin
-          });
-
-          get().showToast(isAdmin ? "Super Admin Account Ready!" : "Account created successfully! Let's personalize your experience.", "success");
-          return { success: true };
-        } catch (err: any) {
-          const newUser: UserProfile = {
-            id: isAdmin ? "admin-" + Math.random().toString(36).substring(2, 7) : "usr-" + Math.random().toString(36).substring(2, 9),
-            email: data.email,
-            fullName: data.fullName,
-            phone: data.phone,
-            companyName: data.companyName,
-            cityId: data.cityId || "isb",
-            role: isAdmin ? "superadmin" : "user",
-            plan: isAdmin ? "pro" : "free",
-            subscriptionTier: isAdmin ? "pro" : "free",
-            subscriptionStatus: isAdmin ? "PRO_ACTIVE" : "FREE",
+            is_pro: isAdmin,
+            emailConfirmed: true,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           };
@@ -350,6 +382,11 @@ export const useAuthStore = create<AuthState>()(
 
           get().showToast("Account created successfully!", "success");
           return { success: true };
+        } catch (err: any) {
+          return {
+            success: false,
+            error: err.message || "Failed to create account. Please check your connection."
+          };
         }
       },
 

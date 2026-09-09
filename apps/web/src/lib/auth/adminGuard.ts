@@ -29,11 +29,7 @@ export async function verifyAdminSession(
     const supabase = await createServerSupabase();
     const { data: { user } } = await supabase.auth.getUser();
 
-    // Check client request headers for fallback or server-to-server dev calls
-    const headerEmail = request.headers.get("x-admin-email") || request.headers.get("x-user-email");
-    const effectiveEmail = user?.email || headerEmail;
-
-    if (!effectiveEmail && !user) {
+    if (!user || !user.email) {
       return {
         authorized: false,
         error: "Authentication required. Please sign in with administrator credentials.",
@@ -41,14 +37,16 @@ export async function verifyAdminSession(
       };
     }
 
-    // 1. DUAL SUPER ADMIN GOD-MODE BYPASS (Highest legitimate permission)
+    const effectiveEmail = user.email;
+
+    // 1. Super Admin whitelist verification
     if (isSuperAdminEmail(effectiveEmail)) {
       return {
         authorized: true,
         role: "super_admin",
-        email: effectiveEmail || undefined,
+        email: effectiveEmail,
         isSuperAdmin: true,
-        user: user || { email: effectiveEmail, id: "super_admin_active" }
+        user
       };
     }
 

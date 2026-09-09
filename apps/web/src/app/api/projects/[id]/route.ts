@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { ProjectUpdateSchema } from "@buildcost/validation";
 import { canUseFeature, isSuperAdminEmail } from "@buildcost/config";
+import { verifyUserProAccess } from "@/lib/auth/subscriptionGuard";
 
 export async function GET(
   request: NextRequest,
@@ -23,8 +24,9 @@ export async function GET(
     }
 
     const isGodMode = user?.email ? isSuperAdminEmail(user.email) : false;
-    if (user && project.user_id !== user.id && !isGodMode) {
-      return NextResponse.json({ error: "Unauthorized access" }, { status: 403 });
+
+    if (!isGodMode && project.user_id !== user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     return NextResponse.json({ project });
@@ -39,6 +41,11 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
+    const proCheck = await verifyUserProAccess(request);
+    if (!proCheck.authorized || !proCheck.isPro) {
+      return NextResponse.json({ error: "Project editing is a PRO feature", upgradeRequired: true }, { status: 403 });
+    }
+
     const body = await request.json();
     const validation = ProjectUpdateSchema.safeParse(body);
 
@@ -50,13 +57,8 @@ export async function PATCH(
     }
 
     const supabase = await createServerSupabase();
-    const { data: { user } } = await supabase.auth.getUser();
-    const isGodMode = user?.email ? isSuperAdminEmail(user.email) : false;
-
-    const clientTierHeader = request.headers.get("x-user-plan") || "pro";
-    if (!isGodMode && !canUseFeature(clientTierHeader, "project_management")) {
-      return NextResponse.json({ error: "Project editing is a PRO feature", upgradeRequired: true }, { status: 403 });
-    }
+    const user = proCheck.user;
+    const isGodMode = proCheck.role === "superadmin";
 
     const updates = {
       ...validation.data,
@@ -99,14 +101,14 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createServerSupabase();
-    const { data: { user } } = await supabase.auth.getUser();
-    const isGodMode = user?.email ? isSuperAdminEmail(user.email) : false;
-
-    const clientTierHeader = request.headers.get("x-user-plan") || "pro";
-    if (!isGodMode && !canUseFeature(clientTierHeader, "project_management")) {
+    const proCheck = await verifyUserProAccess(request);
+    if (!proCheck.authorized || !proCheck.isPro) {
       return NextResponse.json({ error: "Project deletion is a PRO feature", upgradeRequired: true }, { status: 403 });
     }
+
+    const supabase = await createServerSupabase();
+    const user = proCheck.user;
+    const isGodMode = proCheck.role === "superadmin";
 
     if (user) {
       const { data: project } = await supabase

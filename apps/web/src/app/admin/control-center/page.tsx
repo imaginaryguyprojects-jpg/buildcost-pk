@@ -85,7 +85,7 @@ type ControlTab =
   | "emergency";
 
 export default function SuperAdminControlCenterPage() {
-  const { user, isSuperAdmin, loginAsSuperAdmin, showToast } = useAuthStore();
+  const { user, isSuperAdmin, showToast } = useAuthStore();
   const {
     projects,
     materialRates,
@@ -406,6 +406,28 @@ export default function SuperAdminControlCenterPage() {
     c.section.toLowerCase().includes(contentSearch.toLowerCase())
   );
 
+  if (!user || !isSuperAdmin()) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+        <div className="max-w-md w-full p-8 rounded-3xl bg-slate-900 border border-slate-800 text-center space-y-4 shadow-2xl">
+          <div className="w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 mx-auto flex items-center justify-center">
+            <ShieldCheck className="w-7 h-7" />
+          </div>
+          <h2 className="text-xl font-bold text-white">Super Admin Access Restricted</h2>
+          <p className="text-xs text-slate-400">
+            This Control Center requires verified Super Admin authorization. Your session does not have sufficient clearance.
+          </p>
+          <Link
+            href="/login?redirect=/admin/control-center"
+            className="inline-flex items-center justify-center w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md transition-all"
+          >
+            Sign In with Super Admin Credentials
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       {/* 1. TOP GOD-MODE EXECUTIVE HEADER */}
@@ -455,27 +477,10 @@ export default function SuperAdminControlCenterPage() {
             <span>{emergencyStatus.isEmergencyMode ? "EMERGENCY ACTIVE" : "Emergency Mode"}</span>
           </button>
 
-          {/* Quick Dual Admin Switcher */}
-          <div className="hidden lg:flex items-center gap-1 bg-slate-950/80 border border-slate-800 px-2 py-1 rounded-xl text-[11px]">
-            <span className="text-slate-500 text-[10px]">Auth As:</span>
-            {SUPER_ADMIN_EMAILS.map((adminEmail) => (
-              <button
-                key={adminEmail}
-                type="button"
-                onClick={() => {
-                  loginAsSuperAdmin(adminEmail);
-                  showToast(`Switched Super Admin session to ${adminEmail}`, "success");
-                }}
-                className={cn(
-                  "px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all",
-                  user?.email === adminEmail
-                    ? "bg-amber-500 text-slate-950"
-                    : "text-slate-400 hover:text-white"
-                )}
-              >
-                {adminEmail.split("@")[0]}
-              </button>
-            ))}
+          {/* Verified Admin Session Indicator */}
+          <div className="hidden lg:flex items-center gap-1.5 bg-slate-950/80 border border-slate-800 px-3 py-1 rounded-xl text-[11px]">
+            <span className="text-slate-500 text-[10px]">Active Admin:</span>
+            <span className="font-semibold text-amber-400">{user.email}</span>
           </div>
 
           <Link

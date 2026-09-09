@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 export default function VendorsPage() {
   const { vendors, purchases, recordVendorPayment, deleteVendor, materialRates } = useProjectStore();
   const { user, notify, openUpgradeModal } = useAuthStore();
+  const isPro = user?.is_pro === true || user?.role === "admin" || user?.role === "superadmin" || user?.plan === "pro";
 
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -72,11 +73,6 @@ export default function VendorsPage() {
     setPaymentModalVendor(null);
     setPaymentAmount(0);
   };
-
-  const isPro =
-    user?.plan === "pro" ||
-    user?.plan === "business" ||
-    user?.subscriptionStatus === "PRO_ACTIVE";
 
   return (
     <div className="space-y-6">

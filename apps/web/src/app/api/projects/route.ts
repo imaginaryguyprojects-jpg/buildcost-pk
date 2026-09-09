@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { ProjectCreateSchema } from "@buildcost/validation";
 import { canUseFeature, isSuperAdminEmail } from "@buildcost/config";
+import { verifyUserProAccess } from "@/lib/auth/subscriptionGuard";
 
 export async function GET(request: NextRequest) {
   try {
@@ -58,39 +59,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createServerSupabase();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    // Check user profile and subscription tier
-    let userTier = "free";
-    const userId = user?.id;
-
-    if (user) {
-      if (user.email && isSuperAdminEmail(user.email)) {
-        userTier = "pro";
-      } else {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("subscription_tier, role")
-          .eq("id", user.id)
-          .single();
-        if (profile?.role === "admin" || profile?.role === "superadmin") {
-          userTier = "pro";
-        } else if (profile?.subscription_tier) {
-          userTier = profile.subscription_tier;
-        }
-      }
-    }
-
-    // Client entitlement header fallback
-    const clientTierHeader = request.headers.get("x-user-plan") || userTier;
-    const effectiveTier =
-      clientTierHeader.toLowerCase() === "pro" || clientTierHeader.toLowerCase() === "business"
-        ? "pro"
-        : userTier;
-
-    // Strict PRO entitlement enforcement (Section 1 & 27)
-    if (!canUseFeature(effectiveTier, "project_management")) {
+    const proCheck = await verifyUserProAccess(request);
+    if (!proCheck.authorized || !proCheck.isPro) {
       return NextResponse.json(
         {
           error: "Project Management is a PRO feature",
@@ -100,6 +70,10 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
+
+    const supabase = await createServerSupabase();
+    const user = proCheck.user;
+    const userId = proCheck.userId;
 
     const input = validation.data;
     const projectId = `proj_${Date.now()}`;

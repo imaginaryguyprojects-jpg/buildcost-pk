@@ -18,7 +18,8 @@ import {
   Search,
   CreditCard,
   Zap,
-  Menu
+  Menu,
+  Crown
 } from "lucide-react";
 import { PAKISTANI_CITIES } from "@buildcost/config";
 import { useProjectStore } from "@/stores/projectStore";
@@ -185,28 +186,45 @@ export function Topbar() {
 
         {/* PRO / God-Mode / Plan Branding */}
         <div className="hidden sm:flex items-center gap-2">
-          {/* GOD MODE Super Admin Badge */}
-          <Link
-            href="/admin/control-center"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[#FEF3C7] dark:bg-amber-950/60 border border-[#FCD34D] dark:border-amber-700/60 rounded-xl text-xs font-black text-[#92400E] dark:text-amber-300 select-none hover:bg-amber-200 dark:hover:bg-amber-900/60 transition-all shadow-xs"
-            title="Super Admin God-Mode Active"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-            <span className="text-[11px] font-black tracking-tight">⚡ GOD MODE</span>
-            <span className="text-[10px] text-amber-800 dark:text-amber-200 font-bold border-l border-amber-400/60 pl-1.5">
-              Super Admin
-            </span>
-          </Link>
+          {isSuperAdmin() ? (
+            <>
+              {/* GOD MODE Super Admin Badge */}
+              <Link
+                href="/admin/control-center"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[#FEF3C7] dark:bg-amber-950/60 border border-[#FCD34D] dark:border-amber-700/60 rounded-xl text-xs font-black text-[#92400E] dark:text-amber-300 select-none hover:bg-amber-200 dark:hover:bg-amber-900/60 transition-all shadow-xs"
+                title="Super Admin God-Mode Active"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                <span className="text-[11px] font-black tracking-tight">⚡ GOD MODE</span>
+                <span className="text-[10px] text-amber-800 dark:text-amber-200 font-bold border-l border-amber-400/60 pl-1.5">
+                  Super Admin
+                </span>
+              </Link>
 
-          {/* God Mode Button */}
-          <Link
-            href="/admin"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs bg-[#FEF3C7] dark:bg-amber-950/60 border border-[#FCD34D] dark:border-amber-700/60 text-[#92400E] dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/60"
-            title="Open God Mode Admin Panel"
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-            <span>God Mode</span>
-          </Link>
+              {/* God Mode Button */}
+              <Link
+                href="/admin"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs bg-[#FEF3C7] dark:bg-amber-950/60 border border-[#FCD34D] dark:border-amber-700/60 text-[#92400E] dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/60"
+                title="Open God Mode Admin Panel"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                <span>Admin</span>
+              </Link>
+            </>
+          ) : user?.is_pro || user?.plan === "pro" ? (
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-700/60 rounded-xl text-xs font-bold text-emerald-700 dark:text-emerald-300 select-none shadow-xs">
+              <Crown className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 fill-emerald-500" />
+              <span>PRO MEMBER</span>
+            </div>
+          ) : (
+            <button
+              onClick={() => openUpgradeModal("Topbar")}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+            >
+              <Crown className="w-3.5 h-3.5" />
+              <span>Upgrade to PRO</span>
+            </button>
+          )}
         </div>
 
         {/* Light / Dark Mode Toggle Button */}
@@ -252,14 +270,16 @@ export function Topbar() {
                 <div className="text-[11px] text-slate-500 truncate">{user.email}</div>
               </div>
               <div className="py-1 border-b border-slate-100 dark:border-slate-800">
-                <Link
-                  href="/admin"
-                  onClick={() => setUserMenuOpen(false)}
-                  className="flex items-center gap-2 px-4 py-2 text-amber-600 dark:text-amber-400 font-bold hover:bg-amber-500/15 transition-colors"
-                >
-                  <Zap className="w-4 h-4 text-amber-500" />
-                  <span>⚡ God-Mode Admin Panel</span>
-                </Link>
+                {isSuperAdmin() && (
+                  <Link
+                    href="/admin"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2 text-amber-600 dark:text-amber-400 font-bold hover:bg-amber-500/15 transition-colors"
+                  >
+                    <Zap className="w-4 h-4 text-amber-500" />
+                    <span>⚡ God-Mode Admin Panel</span>
+                  </Link>
+                )}
                 <Link
                   href="/projects"
                   onClick={() => setUserMenuOpen(false)}

@@ -96,7 +96,7 @@ const LIVE_ACTIVITIES: ActivityEvent[] = [
 
 export default function AdminDashboardPage() {
   const { materialRates, updateMaterialRate, selectedCityId, setSelectedCityId } = useProjectStore();
-  const { showToast, upgradeToPro, user, isSuperAdmin, loginAsSuperAdmin } = useAuthStore();
+  const { showToast, upgradeToPro, user, isSuperAdmin } = useAuthStore();
   const {
     payments,
     paymentAccounts,
@@ -319,6 +319,28 @@ export default function AdminDashboardPage() {
   const pendingCount = pendingPaymentsCount;
   const approvedTotalRevenue = totalRevenuePkr;
 
+  if (!user || !isSuperAdmin()) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center p-4">
+        <div className="max-w-md w-full p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-4 shadow-xl">
+          <div className="w-14 h-14 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 mx-auto flex items-center justify-center">
+            <ShieldCheck className="w-7 h-7" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Admin Access Restricted</h2>
+          <p className="text-xs text-slate-500">
+            This console requires verified Super Admin credentials. Please sign in with an authorized account.
+          </p>
+          <Link
+            href="/login?redirect=/admin"
+            className="inline-flex items-center justify-center w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all"
+          >
+            Sign In as Admin
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Top Header */}
@@ -352,80 +374,46 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Super Admin God-Mode Banner & Quick Switcher */}
-      {isSuperAdmin() ? (
-        <div className="p-4 rounded-3xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/40 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black shrink-0 border border-emerald-500/30 shadow-inner">
-              <Zap className="w-5 h-5 text-emerald-400" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-black uppercase tracking-wider text-emerald-400">
-                  Super Admin God-Mode Active
-                </span>
-                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono font-bold border border-emerald-500/30">
-                  {user?.email || "imaginary.guy.project@gmail.com"}
-                </span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
-                  Full Write &amp; Delete Rights
-                </span>
-              </div>
-              <p className="text-xs text-slate-300 mt-0.5">
-                Absolute platform authority: Create, edit, delete, and override projects, rates, vendors, and receiving payout accounts without restrictions.
-              </p>
-            </div>
+      {/* Super Admin Executive Banner */}
+      <div className="p-4 rounded-3xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/40 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black shrink-0 border border-emerald-500/30 shadow-inner">
+            <Zap className="w-5 h-5 text-emerald-400" />
           </div>
-          <div className="flex items-center gap-2 shrink-0 flex-wrap">
-            <Link
-              href="/admin/control-center"
-              className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs shadow-md transition-all flex items-center gap-1.5"
-            >
-              <Zap className="w-3.5 h-3.5 fill-slate-950" />
-              <span>Platform Control Center (20 Modules)</span>
-            </Link>
-            <button
-              onClick={() => setActiveTab("accounts")}
-              className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
-            >
-              <Wallet className="w-3.5 h-3.5" />
-              <span>Payment Accounts ({paymentAccounts.length})</span>
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="p-4 rounded-3xl bg-amber-500/10 border border-amber-500/30 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-500 flex items-center justify-center font-black shrink-0">
-              <AlertCircle className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                Super Admin Access Required
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-black uppercase tracking-wider text-emerald-400">
+                Super Admin Active
               </span>
-              <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
-                You are currently viewed as <strong className="text-white">{user?.email || "Guest"}</strong>. To manage payment accounts and system settings, authenticate as a Super Admin below:
-              </p>
+              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono font-bold border border-emerald-500/30">
+                {user?.email}
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                Full Write &amp; Delete Rights
+              </span>
             </div>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap shrink-0">
-            <button
-              onClick={() => loginAsSuperAdmin("imaginary.guy.project@gmail.com")}
-              className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1.5"
-            >
-              <Zap className="w-3.5 h-3.5" />
-              <span>Log In: imaginary.guy.project@gmail.com</span>
-            </button>
-            <button
-              onClick={() => loginAsSuperAdmin("umershahzad0@gmail.com")}
-              className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs shadow-sm transition-all flex items-center gap-1.5"
-            >
-              <Zap className="w-3.5 h-3.5" />
-              <span>Log In: umershahzad0@gmail.com</span>
-            </button>
+            <p className="text-xs text-slate-300 mt-0.5">
+              Platform authority: Create, edit, and override projects, rates, vendors, and receiving payout accounts.
+            </p>
           </div>
         </div>
-      )}
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          <Link
+            href="/admin/control-center"
+            className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs shadow-md transition-all flex items-center gap-1.5"
+          >
+            <Zap className="w-3.5 h-3.5 fill-slate-950" />
+            <span>Platform Control Center (20 Modules)</span>
+          </Link>
+          <button
+            onClick={() => setActiveTab("accounts")}
+            className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
+          >
+            <Wallet className="w-3.5 h-3.5" />
+            <span>Payment Accounts ({paymentAccounts.length})</span>
+          </button>
+        </div>
+      </div>
 
       {/* 4 Executive KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

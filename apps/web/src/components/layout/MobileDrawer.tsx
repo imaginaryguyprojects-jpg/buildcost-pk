@@ -83,6 +83,8 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
   const [citySelectorOpen, setCitySelectorOpen] = useState(false);
 
   const isPro =
+    user?.is_pro === true ||
+    isSuper ||
     user?.plan === "pro" ||
     user?.plan === "business" ||
     user?.subscriptionStatus === "PRO_ACTIVE";
@@ -130,19 +132,33 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
         { label: "Saved Calculations", href: "/history", icon: BookOpen }
       ]
     },
+    ...(isSuper
+      ? [
+          {
+            id: "admin",
+            title: "Admin",
+            icon: Settings,
+            items: [
+              {
+                label: "God-Mode Admin",
+                href: "/admin",
+                icon: ShieldAlert,
+                badge: "⚡ GOD"
+              },
+              { label: "Control Center", href: "/admin/control-center", icon: Settings },
+              { label: "Live Analytics", href: "/admin/live-analytics", icon: Activity },
+              { label: "Market Rates", href: "/rates/materials", icon: TrendingUp, badge: "PRO" },
+              { label: "Users & Subscriptions", href: "/admin?tab=users", icon: CreditCard }
+            ]
+          }
+        ]
+      : []),
     {
-      id: "admin",
-      title: "Admin",
+      id: "settings_section",
+      title: "Settings",
       icon: Settings,
       items: [
-        {
-          label: isSuper ? "God-Mode Admin" : "Admin Dashboard",
-          href: "/admin",
-          icon: ShieldAlert,
-          badge: isSuper ? "⚡ GOD" : "ADMIN"
-        },
         { label: "Market Rates", href: "/rates/materials", icon: TrendingUp, badge: "PRO" },
-        { label: "Users & Subscriptions", href: "/admin?tab=users", icon: CreditCard },
         { label: "Settings", href: "/settings", icon: Settings }
       ]
     }

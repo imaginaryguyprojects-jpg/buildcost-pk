@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 export default function PurchasesPage() {
   const { purchases, projects, vendors, updatePurchaseStatus } = useProjectStore();
   const { user, notify, openUpgradeModal } = useAuthStore();
+  const isPro = user?.is_pro === true || user?.role === "admin" || user?.role === "superadmin" || user?.plan === "pro";
 
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string>("all");
@@ -67,11 +68,6 @@ export default function PurchasesPage() {
       : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
     window.open(url, "_blank");
   };
-
-  const isPro =
-    user?.plan === "pro" ||
-    user?.plan === "business" ||
-    user?.subscriptionStatus === "PRO_ACTIVE";
 
   return (
     <div className="space-y-6">

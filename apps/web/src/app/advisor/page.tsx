@@ -29,8 +29,8 @@ const PRESET_PROMPTS = [
 ];
 
 export default function AIAdvisorPage() {
-  const { user, openUpgradeModal } = useAuthStore();
-  const isPro = canUseFeature(user?.plan, "price_scenario_simulator");
+  const { user, isSuperAdmin, openUpgradeModal } = useAuthStore();
+  const isPro = Boolean(user?.is_pro || isSuperAdmin() || canUseFeature(user?.plan, "price_scenario_simulator"));
 
   const [showSimulator, setShowSimulator] = useState(false);
   const [steelDelta, setSteelDelta] = useState(10);

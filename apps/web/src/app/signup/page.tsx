@@ -3,49 +3,92 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Calculator, Lock, Mail, User, Building, ArrowRight } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { Calculator, Lock, Mail, User, CheckCircle2, ArrowRight, ShieldCheck } from "lucide-react";
+import { useAuthStore } from "@/stores/authStore";
+import { validateEmail, validatePassword } from "@/lib/auth/validation";
 
 export default function SignupPage() {
   const router = useRouter();
+  const { signup } = useAuthStore();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [verificationSent, setVerificationSent] = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
+    const emailCheck = validateEmail(email);
+    if (!emailCheck.valid) {
+      setError(emailCheck.error || "Please enter a valid email address.");
+      setLoading(false);
+      return;
+    }
+
+    const passCheck = validatePassword(password);
+    if (!passCheck.valid) {
+      setError(passCheck.error || "Password must be at least 8 characters with letters and numbers.");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const supabase = createClient();
-      const { error: authError } = await supabase.auth.signUp({
+      const res = await signup({
+        fullName,
         email,
-        password,
-        options: {
-          data: {
-            full_name: fullName
-          }
-        }
+        password
       });
 
-      if (authError) {
-        if (authError.message.includes("fetch") || authError.message.includes("placeholder")) {
-          router.push("/dashboard");
-          return;
-        }
-        setError(authError.message);
+      if (!res.success) {
+        setError(res.error || "Failed to create account. Please try again.");
+        return;
+      }
+
+      if (res.needsVerification) {
+        setVerificationSent(true);
       } else {
         router.push("/dashboard");
       }
-    } catch {
-      router.push("/dashboard");
+    } catch (err: any) {
+      setError(err.message || "Failed to create account. Please check your connection.");
     } finally {
       setLoading(false);
     }
   };
+
+  if (verificationSent) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4">
+        <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center space-y-6 shadow-2xl">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center border border-emerald-500/30 shadow-lg">
+            <Mail className="w-8 h-8 animate-bounce" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-black text-white tracking-tight">Verify Your Email</h2>
+            <p className="text-sm text-slate-400">
+              We&apos;ve sent a verification link to <strong className="text-emerald-400">{email}</strong>.
+            </p>
+            <p className="text-xs text-slate-500 pt-1">
+              Please click the link in your email to activate your BuildCost account. Once verified, you can sign in to access your dashboard.
+            </p>
+          </div>
+          <div className="pt-2">
+            <Link
+              href="/login"
+              className="inline-flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs tracking-wide shadow-lg shadow-emerald-950/40 transition-all"
+            >
+              <span>Go to Sign In</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4">
