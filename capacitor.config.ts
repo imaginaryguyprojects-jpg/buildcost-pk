@@ -11,10 +11,11 @@ const config: CapacitorConfig = {
   },
   android: {
     buildOptions: {
-      versionCode: 5,
-      versionName: '2.0.0',
+      versionCode: 6,
+      versionName: '2.1.0',
     },
   },
+
 };
 
 export default config;

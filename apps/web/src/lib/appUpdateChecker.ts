@@ -14,9 +14,10 @@ export interface UpdateCheckResult {
 
 export const CURRENT_CLIENT_INFO = {
   platform: "android",
-  version: "2.0.0",
-  versionCode: 5
+  version: "2.1.0",
+  versionCode: 6
 };
+
 
 export async function checkAppUpdate(
   currentVersionCode: number = CURRENT_CLIENT_INFO.versionCode,

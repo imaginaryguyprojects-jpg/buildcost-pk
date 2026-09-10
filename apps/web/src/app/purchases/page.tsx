@@ -5,6 +5,7 @@ import { useProjectStore } from "@/stores/projectStore";
 import { useAuthStore } from "@/stores/authStore";
 import { PurchaseOrder, PurchaseStatus, PurchasePaymentStatus } from "@buildcost/types";
 import { AddPurchaseModal } from "@/components/purchases/AddPurchaseModal";
+import { WhatsAppOrderModal } from "@/components/purchases/WhatsAppOrderModal";
 import { ProFeatureLock } from "@/components/pro/ProFeatureLock";
 import { ProBadge } from "@/components/pro/ProBadge";
 import {
@@ -30,6 +31,7 @@ export default function PurchasesPage() {
   const isPro = user?.is_pro === true || user?.role === "admin" || user?.role === "superadmin" || user?.plan === "pro";
 
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<string>("all");
@@ -88,22 +90,34 @@ export default function PurchasesPage() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            if (!isPro) {
-              openUpgradeModal("Material Purchases & Orders");
-              return;
-            }
-            setAddModalOpen(true);
-          }}
-          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-md shadow-emerald-950/20 transition-all flex items-center gap-2 self-start md:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Record New Purchase</span>
-          {!isPro && <ProBadge size="xs" variant="amber" />}
-        </button>
+        <div className="flex items-center gap-2 self-start md:self-auto">
+          <button
+            type="button"
+            onClick={() => setWhatsAppModalOpen(true)}
+            className="px-4 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-xl font-bold text-xs transition-all flex items-center gap-2 shadow-xs"
+          >
+            <MessageSquare className="w-4 h-4 text-emerald-500" />
+            <span>WhatsApp Order Slip</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (!isPro) {
+                openUpgradeModal("Material Purchases & Orders");
+                return;
+              }
+              setAddModalOpen(true);
+            }}
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-md shadow-emerald-950/20 transition-all flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Record New Purchase</span>
+            {!isPro && <ProBadge size="xs" variant="amber" />}
+          </button>
+        </div>
       </div>
+
 
       {!isPro ? (
         <div className="space-y-6">
@@ -363,8 +377,15 @@ export default function PurchasesPage() {
         isOpen={addModalOpen}
         onClose={() => setAddModalOpen(false)}
       />
+
+      {/* 1-Click WhatsApp Order Slip Modal */}
+      <WhatsAppOrderModal
+        isOpen={whatsAppModalOpen}
+        onClose={() => setWhatsAppModalOpen(false)}
+      />
         </>
       )}
     </div>
+
   );
 }

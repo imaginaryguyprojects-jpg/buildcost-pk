@@ -15,17 +15,18 @@ export interface AppReleaseConfig {
 export const fallbackAppReleases: Record<string, AppReleaseConfig> = {
   android: {
     platform: "android",
-    latestVersion: "2.0.0",
-    latestVersionCode: 5,
+    latestVersion: "2.1.0",
+    latestVersionCode: 6,
     minimumVersionCode: 5,
     mandatoryUpdate: false,
-    otaAvailable: false,
-    otaBundleUrl: "",
+    otaAvailable: true,
+    otaBundleUrl: "https://github.com/imaginaryguyprojects-jpg/buildcost-pk/releases/download/v2.1.0/buildcost-ota-latest.zip",
     otaChannel: "production",
-    apkDownloadUrl: "https://buildcostconnect.pk/releases/BuildCost-PK-v2.0.0-offline.apk",
-    releaseNotes: "BuildCost Connect v2.0.0 Offline-First Edition: Bundled civil engineering estimators, offline cached PBS material rates, BOQ generator, and local sync queue.",
+    apkDownloadUrl: "https://github.com/imaginaryguyprojects-jpg/buildcost-pk/releases/download/v2.1.0/BuildCost-PK-v2.1.0-offline.apk",
+    releaseNotes: "⚡ BuildCost Connect v2.1.0 Major Update:\n• Remote Site Photo Timeline with Live GPS Coordinates & Timestamp Watermark for Overseas Pakistanis\n• 1-Click WhatsApp Material Order Slips with Pakistani Vendor Presets (Cement, 60-Grade Sariya, Sand, Bajri, Bricks)\n• AI Construction Advisor & Fraud Prevention Chatbot (60-Grade Sariya verification, Cement fresh checks, Pre-slab checklists)\n• Voice Note Site Diary with Urdu / Roman Urdu mic dictation & auto-parsing\n• Background OTA live auto-update.",
     updatedAt: new Date().toISOString()
   },
+
   web: {
     platform: "web",
     latestVersion: "2.0.0",

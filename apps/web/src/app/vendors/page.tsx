@@ -5,6 +5,7 @@ import { useProjectStore } from "@/stores/projectStore";
 import { useAuthStore } from "@/stores/authStore";
 import { Vendor, VendorCategory } from "@buildcost/types";
 import { AddVendorModal } from "@/components/vendors/AddVendorModal";
+import { WhatsAppOrderModal } from "@/components/purchases/WhatsAppOrderModal";
 import { ProFeatureLock } from "@/components/pro/ProFeatureLock";
 import { ProBadge } from "@/components/pro/ProBadge";
 import {
@@ -21,8 +22,10 @@ import {
   TrendingDown,
   CheckCircle2,
   X,
-  CreditCard
+  CreditCard,
+  Truck
 } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 
 export default function VendorsPage() {
@@ -31,11 +34,13 @@ export default function VendorsPage() {
   const isPro = user?.is_pro === true || user?.role === "admin" || user?.role === "superadmin" || user?.plan === "pro";
 
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [orderSlipVendorId, setOrderSlipVendorId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [activeLedgerVendor, setActiveLedgerVendor] = useState<Vendor | null>(null);
   const [paymentModalVendor, setPaymentModalVendor] = useState<Vendor | null>(null);
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "bank_transfer" | "cheque">("cash");
+
 
   // Summary totals
   const totalPurchases = vendors.reduce((acc, v) => acc + (v.totalPurchases || 0), 0);
@@ -93,22 +98,34 @@ export default function VendorsPage() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            if (!isPro) {
-              openUpgradeModal("Vendor Management & Khata Ledger");
-              return;
-            }
-            setAddModalOpen(true);
-          }}
-          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-md shadow-emerald-950/20 transition-all flex items-center gap-2 self-start md:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add New Vendor</span>
-          {!isPro && <ProBadge size="xs" variant="amber" />}
-        </button>
+        <div className="flex items-center gap-2 self-start md:self-auto">
+          <button
+            type="button"
+            onClick={() => setOrderSlipVendorId("custom")}
+            className="px-4 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-xl font-bold text-xs transition-all flex items-center gap-2 shadow-xs"
+          >
+            <Truck className="w-4 h-4 text-emerald-500" />
+            <span>Order Slip</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (!isPro) {
+                openUpgradeModal("Vendor Management & Khata Ledger");
+                return;
+              }
+              setAddModalOpen(true);
+            }}
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-md shadow-emerald-950/20 transition-all flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add New Vendor</span>
+            {!isPro && <ProBadge size="xs" variant="amber" />}
+          </button>
+        </div>
       </div>
+
 
       {!isPro ? (
         <div className="space-y-6">
@@ -353,6 +370,16 @@ export default function VendorsPage() {
 
                 <button
                   type="button"
+                  onClick={() => setOrderSlipVendorId(vendor.id)}
+                  className="p-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition-colors"
+                  title="Generate 1-Click WhatsApp Order Slip"
+                >
+                  <Truck className="w-4 h-4" />
+                </button>
+
+
+                <button
+                  type="button"
                   onClick={() => setActiveLedgerVendor(vendor)}
                   className="flex-1 py-2 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs transition-colors flex items-center justify-center gap-1.5"
                 >
@@ -538,8 +565,16 @@ export default function VendorsPage() {
         isOpen={addModalOpen}
         onClose={() => setAddModalOpen(false)}
       />
+
+      {/* 1-Click WhatsApp Order Slip Modal */}
+      <WhatsAppOrderModal
+        isOpen={orderSlipVendorId !== null}
+        defaultVendorId={orderSlipVendorId !== "custom" && orderSlipVendorId ? orderSlipVendorId : undefined}
+        onClose={() => setOrderSlipVendorId(null)}
+      />
         </>
       )}
     </div>
+
   );
 }

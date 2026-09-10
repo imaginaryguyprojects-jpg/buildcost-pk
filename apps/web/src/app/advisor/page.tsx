@@ -22,11 +22,15 @@ interface Message {
 }
 
 const PRESET_PROMPTS = [
-  "How much cement & steel do I need for a 10 Marla house in DHA Lahore?",
-  "What is the cost difference between Grey Structure vs Turnkey in Islamabad?",
-  "Should I use 1:2:4 or 1:1.5:3 for columns and slabs?",
-  "Estimate tile and paint cost for 5 Marla 2-story house"
+  "Thekedar bol raha hai 60 grade sariya lagaya hai, verify kaise karun?",
+  "5 Marla slab ke liye kitne bags cement aur kitna steel lagega?",
+  "Garmi mein concrete pouring ke waqt kya ehtiyat karein?",
+  "Cement ki quality bina lab ke site par kaise test karein?",
+  "Ret (Sand) mein silt test kaise karein taake plaster na jharay?",
+  "Slab dhalai se pehle konsi cheezein check karna zaroori hain?",
+  "Grey Structure vs Turnkey finishing cost difference in Islamabad?"
 ];
+
 
 export default function AIAdvisorPage() {
   const { user, isSuperAdmin, openUpgradeModal } = useAuthStore();
@@ -92,7 +96,149 @@ export default function AIAdvisorPage() {
 
       const lower = query.toLowerCase();
 
-      if (lower.includes("10 marla") || lower.includes("dha")) {
+      if (lower.includes("60 grade") || lower.includes("sariya") || lower.includes("steel verify") || lower.includes("verify kaise")) {
+        aiResponse = {
+          id: `ai_${Date.now()}`,
+          sender: "ai",
+          text: `🛡️ **Thekedar 60-Grade Sariya Verification (Anti-Fraud Field Guide):**
+
+Pakistan mein local thekedar aksar B-Grade re-rolled sariya (jo ship-breaking scrap ya kachay lohay se banta hai) 60-grade keh kar daal dete hain. Site par in 4 tareeqon se 100% verify karein:
+
+1. **Mill Embossing Stamp Check:**
+   • Primary Pakistani Mills (Mughal Supreme, Amreli, Ittefaq, Model, Agha) har 1 meter ke faslay par sariye ke upar apna naam aur **"G-60"** ya **"ASTM A615"** permanently emboss (ubhri hui likhai) karti hain.
+   • Agar sariye par koi naam nahi ya sirf aam dhabay hain, to foran reject karein — wo local re-rolled sariya hai.
+
+2. **180° Cold Bend Test (Site par khud karein):**
+   • Mistri se kahein aik 4-sutri (12mm) sariye ka tukra le kar usay 180 degree par pura moray (bend kare).
+   • **Pass:** Asli 60-grade sariya smoothly bend hoga, bahir wali satah par koi crack nahi aayega.
+   • **Fail:** Do number (re-rolled) sariya brittle hota hai, morne par toot jayega ya uski satah phat jayegi.
+
+3. **Deformed Rib Pattern (Dhaariyan):**
+   • Genuine sariye ki ribs sharp, sharp-edged aur accurate angle par hoti hain jo concrete ko pakar kar rakhti hain. Re-rolled sariye ki dhariaan ghisi hui aur smooth hoti hain.
+
+4. **Under-Weight Check (Gauge ki Chori):**
+   • 1 foot ka tukra katwa kar digital scale par tolein:
+     - 3 Sutri (10mm): ~0.170 kg per foot
+     - 4 Sutri (12mm): ~0.302 kg per foot
+     - 6 Sutri (20mm): ~0.680 kg per foot
+   • Agar wazan 8-10% se zyada kam ho, to thekedar under-gauge sariya la raha hai!`,
+          dataCard: {
+            title: "Pakistani Standard Steel Verification Parameters",
+            totalCost: 260000,
+            details: [
+              { label: "Standard Specification", value: "ASTM A615 / Grade 60 (60,000 PSI Yield)" },
+              { label: "Approved Mills", value: "Mughal, Amreli, Ittefaq, Model, Agha" },
+              { label: "Site Bend Test Requirement", value: "180° Cold Bend (No Cracks / Fracture)" },
+              { label: "Standard Weight (#4 12mm)", value: "0.302 kg/ft (0.99 kg/meter)" }
+            ]
+          },
+          timestamp: new Date().toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" })
+        };
+      } else if (lower.includes("5 marla slab") || lower.includes("slab ke liye kitne") || lower.includes("roof slab")) {
+        aiResponse = {
+          id: `ai_${Date.now()}`,
+          sender: "ai",
+          text: `📐 **5 Marla Roof Slab (Chhat Dhalai) Itemized Calculation:**
+
+Standard 5 Marla ground floor roof slab (1,150 to 1,200 sqft covered area with 5.5 inch slab thickness + 9x12 beams) ke liye required materials:
+
+• **Cement:** 100 se 110 Bags (1:2:4 Concrete Mix Ratio).
+• **Steel Rebar (Grade 60):** 1,350 se 1,500 kg (~1.4 Metric Tons).
+  - Main bars: 4 Sutri (1/2") @ 6 inch c/c
+  - Distribution bars: 3 Sutri (3/8") @ 7 inch c/c
+• **Sand (Ravi / Chenab):** 220 se 240 CFT (approx 1 Badi Trolley).
+• **Crush (Margalla / Sargodha 1/2'' down):** 440 se 480 CFT (approx 1 Dumper / 2 Trolleys).
+• **Waterproofing Chemical:** 1 can (Sika-1 ya Fosroc Conplast).
+• **Dhalai Labour (Pouring Dehari):** Rs. 45,000 se Rs. 55,000.`,
+          dataCard: {
+            title: "5 Marla Slab Casting Cost Benchmark (Islamabad/Lahore)",
+            totalCost: 650000,
+            details: [
+              { label: "Cement (105 Bags @ Rs. 1,380)", value: "Rs. 1,44,900" },
+              { label: "Steel (1.4 Tons G-60 @ Rs. 260k)", value: "Rs. 3,64,000" },
+              { label: "Sand & Crush Aggregates", value: "Rs. 82,000" },
+              { label: "Casting Labour & Vibrator", value: "Rs. 50,000" },
+              { label: "Estimated Slab Total Cost", value: "Rs. 6,40,900 (~Rs. 535/sqft)" }
+            ]
+          },
+          timestamp: new Date().toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" })
+        };
+      } else if (lower.includes("garmi") || lower.includes("temperature") || lower.includes("hot weather")) {
+        aiResponse = {
+          id: `ai_${Date.now()}`,
+          sender: "ai",
+          text: `☀️ **Garmi Mein Concrete Pouring (Hot Weather Concreting Guide):**
+
+Pakistan ke mausam mein garmi (>36°C) ke dauran dhalai mein concrete ka paani tezi se evaporate hota hai jisse shrinkage cracks (daraarein) par jati hain. In ehtiyati tadabeer par amal karein:
+
+1. **Pouring Timing:**
+   • Dhalai hamesha subah 5:00 AM se 9:30 AM ke darmiyan karein, ya sham 5:00 PM ke baad karein. Dopehar 12 se 4 baje shadeed dhoop mein hargiz dhalai na hone dein!
+2. **Aggregates Par Pani Ka Chhirkao:**
+   • Dhalai se 1 ghanta pehle Ret aur Bajri ke dher par thanda paani chhirkein taake aggregate ka temperature kam ho.
+3. **Shuttering Ko Geela Karein:**
+   • Dhalai shuru karne se pehle lakri ki shuttering par paani marein taake sookhi lakri concrete slurry ka paani na choosay.
+4. **Extra Paani (Slump Dilution) Mat Dalne Dein:**
+   • Thekedar aasani ke liye mixer mein extra paani daalne ki koshish karte hain. Is se concrete ki taqat 40% tak gir jati hai! Admixture (plasticizer) use karein agar flow barhana ho.
+5. **Tarai (Curing) Ki Shuruat:**
+   • Slab cast hone ke aglay din subah cement ki kiyarian (bunds) bana kar paani bhar dein (ponding). Garmi mein kam az kam **14 se 21 din** musalsal tarai lazmi hai!`,
+          timestamp: new Date().toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" })
+        };
+      } else if (lower.includes("cement ki quality") || lower.includes("cement test") || lower.includes("cement check")) {
+        aiResponse = {
+          id: `ai_${Date.now()}`,
+          sender: "ai",
+          text: `🧪 **Cement Quality Check — Bina Lab Ke Site Par 4 Field Tests:**
+
+1. **Manufacturing Date (Bori ki Seel):**
+   • Bori ke kinaray par print date check karein. Cement jitna taaza ho utna behtar hai. Agar cement 90 din (3 maah) se purana ho, to uski taqat 20-30% kam ho chuki hoti hai.
+2. **Hand Feel Test (Hath Ka Test):**
+   • Bori ke andar hath daalein. Taaza cement hath ko **thanda (cool)** mehsoos hona chahiye aur powder ki tarah narm. Agar hath ko garam lage ya usme dhele (lumps/gathiyan) ban chuki hon, to cement kharab ho chuka hai.
+3. **Float Test (Pani Ka Test):**
+   • Aik glass saaf paani lein aur usme aik chutki cement phenkein.
+   • **Pass:** Taaza cement paani ki satah par kuch second float (tairta) hai aur phir aahista aahista doobta hai.
+   • **Fail:** Agar cement foran pathar ki tarah neechay baith jaye, to usme ret ya pathar ka powder (adulteration) milaya gaya hai.
+4. **Glass Plate Patty Test:**
+   • Thoda sa cement paani ke sath garha paste bana kar glass ki plate par 1 inch mota disc banayein. 24 ghante paani mein rakhne ke baad ye sakht ho jana chahiye aur koi crack nahi aana chahiye.`,
+          timestamp: new Date().toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" })
+        };
+      } else if (lower.includes("silt test") || lower.includes("ret") || lower.includes("sand")) {
+        aiResponse = {
+          id: `ai_${Date.now()}`,
+          sender: "ai",
+          text: `🏖️ **Ret (Sand) Ka Silt Test — Plaster aur Chunai Ki Hifazat:**
+
+Agar ret mein mitti (silt/clay) 6% se zyada ho to kuch mahinon baad plaster jhadna shuru ho jata hai aur deewaron par moisture/seelan aa jati hai. 5 minute mein test karein:
+
+**Tareeqa-e-Kaar (Method):**
+1. Aik 200ml ki transparent sheeshay ki bottle lein.
+2. 100ml tak site se aayi hui ret bharein.
+3. Bottle mein 150ml tak saaf paani daalein aur 1/2 chamach namak (salt) mix karein.
+4. Bottle ka dhakkan band karke 1 minute tak achi tarah hilayein (shake karein).
+5. Bottle ko bilkul sidha kisi jagah par 3 ghante ke liye chhor dein.
+
+**Result Kaise Parhein:**
+• Bhaari ret neechay baith jayegi, aur mitti/silt ki barari layer uske upar ban jayegi.
+• **Formula:** (Silt Layer ki motai ÷ Ret ki motai) × 100
+• Agar silt ki layer **6% se zyada** hai, to gaari wapas bhej dein ya ret ko dho kar (wash karke) use karein!`,
+          timestamp: new Date().toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" })
+        };
+      } else if (lower.includes("slab dhalai") || lower.includes("pre-slab") || lower.includes("shuttering check")) {
+        aiResponse = {
+          id: `ai_${Date.now()}`,
+          sender: "ai",
+          text: `📋 **Slab Dhalai Se Pehle Ki Must-Do Civil Inspection Checklist:**
+
+Concrete mixer chalne se pehle thekedar ki mojoodgi mein ye 6 baatein zaroor verify karein:
+
+1. [ ] **Concrete Cover Blocks (Spacers):** Sariye ke neechay 1-inch (25mm) cement/concrete ke spacers lagay hone chahiye taake sariya shuttering plate ke sath na chipkay. Lakri ya eent ke tukray hargiz use na hone dein!
+2. [ ] **Two Vibrators on Site:** Site par kam az kam **2 needle vibrators** mojood hone chahiye (1 chalne ke liye + 1 standby). Vibrator ke baghair dhalai mein concrete porous (honeycombing) reh jati hai.
+3. [ ] **Shuttering Oil:** Shuttering plates par oil laga hona chahiye taake khulne ke waqt slab ka face smooth niklay.
+4. [ ] **Electrical Conduits & Fan Boxes:** Har fan box aur light box mein geela akhbar/tape bhara ho taake concrete slurry andar ja kar pipe block na kare.
+5. [ ] **Support Props (Balli/Pipes):** Shuttering ki balliyan bilkul vertical hon aur unke neechay lakri ke patte (sole plates) hon taake mitti dabne par chhat jhuk na jaye.
+6. [ ] **Lap Length (Sariya Jod):** Jahan sariya overlap ho raha hai, wahan overlap ki lambai kam az kam 48D (e.g. 1/2" sariya = 24 inches overlap) honi chahiye.`,
+          timestamp: new Date().toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" })
+        };
+      } else if (lower.includes("10 marla") || lower.includes("dha")) {
         const est = calculateCompleteHouseEstimate({
           plotAreaMarla: 10,
           marlaSqft: 225,
@@ -170,6 +316,7 @@ export default function AIAdvisorPage() {
           timestamp: new Date().toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" })
         };
       }
+
 
       setMessages((prev) => [...prev, aiResponse]);
       setIsTyping(false);

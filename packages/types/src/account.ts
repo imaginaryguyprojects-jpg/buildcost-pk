@@ -298,6 +298,19 @@ export interface ProjectReminder {
   createdAt: string;
 }
 
+export interface SitePhoto {
+  id: string;
+  url: string;
+  caption?: string;
+  stage?: "excavation" | "foundation" | "columns" | "shuttering" | "slab" | "brickwork" | "plaster" | "finishing" | "other";
+  timestamp: string;
+  latitude?: number;
+  longitude?: number;
+  locationName?: string;
+  isGpsVerified: boolean;
+  uploadedBy?: string;
+}
+
 export interface SiteDiaryEntry {
   id: string;
   projectId: string;
@@ -308,6 +321,8 @@ export interface SiteDiaryEntry {
   materialsReceived?: string;
   issues?: string;
   photoUrls?: string[];
+  photos?: SitePhoto[];
   notes?: string;
   createdAt: string;
 }
+

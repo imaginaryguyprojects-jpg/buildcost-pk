@@ -22,6 +22,7 @@ import {
   ProjectReminder,
   ReminderStatus,
   SiteDiaryEntry,
+  SitePhoto,
   ProjectAuditLog,
   ProjectAuditAction
 } from "@buildcost/types";
@@ -154,7 +155,10 @@ interface ProjectStoreState {
 
   // Site Diary
   addSiteDiaryEntry: (entry: Omit<SiteDiaryEntry, "id" | "createdAt">) => SiteDiaryEntry;
+  addPhotoToDiaryEntry: (entryId: string, photo: Omit<SitePhoto, "id">) => void;
+  deleteSiteDiaryEntry: (id: string) => void;
 }
+
 
 export const useProjectStore = create<ProjectStoreState>()(
   persist(
@@ -755,8 +759,33 @@ export const useProjectStore = create<ProjectStoreState>()(
           siteDiary: [newLog, ...state.siteDiary]
         }));
         return newLog;
+      },
+
+      addPhotoToDiaryEntry: (entryId, photo) => {
+        const newPhoto: SitePhoto = {
+          ...photo,
+          id: "photo_" + Math.random().toString(36).substring(2, 9)
+        };
+        set((state) => ({
+          siteDiary: state.siteDiary.map((entry) =>
+            entry.id === entryId
+              ? {
+                  ...entry,
+                  photos: [newPhoto, ...(entry.photos || [])],
+                  photoUrls: [newPhoto.url, ...(entry.photoUrls || [])]
+                }
+              : entry
+          )
+        }));
+      },
+
+      deleteSiteDiaryEntry: (id) => {
+        set((state) => ({
+          siteDiary: state.siteDiary.filter((entry) => entry.id !== id)
+        }));
       }
     }),
+
     {
       name: "buildcost_store_v5"
     }

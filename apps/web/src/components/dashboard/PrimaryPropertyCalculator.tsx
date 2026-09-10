@@ -32,8 +32,11 @@ import {
   Check,
   Info,
   Ruler,
-  Maximize2
+  Maximize2,
+  Printer,
+  FileText
 } from "lucide-react";
+
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 import { PAKISTANI_CITIES } from "@buildcost/config";
 import { calculateGreyStructureEstimate, calculateFullHouseEstimate } from "@buildcost/calculations";
@@ -84,9 +87,20 @@ const CITY_BENCHMARKS: Record<string, { cement: number; steel: number; brick: nu
 };
 
 export function PrimaryPropertyCalculator() {
-  const { isAuthenticated, openLoginModal, openProjectUpgradeModal, openCheckoutModal, showToast } = useAuthStore();
+  const { isAuthenticated, user, isSuperAdmin, openLoginModal, openUpgradeModal, openProjectUpgradeModal, openCheckoutModal, showToast } = useAuthStore();
   const { selectedCityId: globalCityId, setSelectedCityId: setGlobalCityId } = useProjectStore();
   const [isMounted, setIsMounted] = useState(false);
+
+  const isPro = Boolean(user?.is_pro || isSuperAdmin() || user?.plan === "pro");
+
+  const handleSharePdfOrPrint = () => {
+    if (!isPro) {
+      openUpgradeModal("Share the calculation in PDF or Print");
+    } else {
+      window.print();
+    }
+  };
+
 
   useEffect(() => {
     setIsMounted(true);
@@ -373,8 +387,49 @@ export function PrimaryPropertyCalculator() {
 
   return (
     <div id="calculator-section" className="space-y-5 max-w-7xl mx-auto w-full text-slate-900 dark:text-slate-100 transition-colors duration-200">
+      {/* 0. TOP BANNER: SHARE CALCULATION IN PDF OR PRINT (PREMIUM GATED) */}
+      <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 dark:from-emerald-950/90 dark:via-teal-950/90 dark:to-emerald-950/90 border border-emerald-400/40 dark:border-emerald-500/30 rounded-2xl p-4 sm:p-5 shadow-lg shadow-emerald-950/10 text-white transition-all">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+            <div className="w-11 h-11 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shrink-0 shadow-xs">
+              <Printer className="w-5 h-5 text-emerald-200" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                <span className="font-extrabold text-sm sm:text-base tracking-tight text-white drop-shadow-xs">
+                  Share the calculation in PDF or Print
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 flex items-center gap-1 shadow-xs">
+                  <Sparkles className="w-2.5 h-2.5" />
+                  <span>PREMIUM</span>
+                </span>
+                <span className="text-xs text-emerald-100/90 font-semibold hidden sm:inline-block">
+                  • Official Contractor &amp; Bank Estimation Report
+                </span>
+              </div>
+              <p className="text-xs text-emerald-100/80 max-w-2xl leading-relaxed">
+                Export an official watermarked PDF cost report with itemized civil quantities, live market rates, and labour schedules ready for WhatsApp sharing or instant printing.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 self-start md:self-center">
+            <button
+              type="button"
+              onClick={handleSharePdfOrPrint}
+              className="px-4 py-2.5 rounded-xl bg-white text-emerald-900 hover:bg-emerald-50 active:scale-95 font-extrabold text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <Download className="w-4 h-4 text-emerald-700" />
+              <span>Share in PDF / Print</span>
+              {!isPro && <Lock className="w-3.5 h-3.5 text-amber-600 ml-0.5" />}
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* 1. TOP CARD: MATERIAL RATES PANEL */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xs">
+
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/60 flex items-center justify-center text-[#059669] dark:text-emerald-400 shrink-0">
