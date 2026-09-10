@@ -9,5 +9,7 @@
         <domain includeSubdomains="true">supabase.co</domain>
         <domain includeSubdomains="true">appassets.androidplatform.net</domain>
         <domain includeSubdomains="true">vercel.app</domain>
+        <domain includeSubdomains="true">github.com</domain>
+        <domain includeSubdomains="true">githubusercontent.com</domain>
     </domain-config>
 </network-security-config>

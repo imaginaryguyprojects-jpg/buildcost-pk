@@ -35,6 +35,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import androidx.webkit.WebViewAssetLoader;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -67,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
         setupBackNavigation();
 
         loadTargetUrl();
+        OtaUpdateManager.checkForUpdates(this, webView);
     }
 
     private void initViews() {
@@ -114,6 +117,30 @@ public class MainActivity extends AppCompatActivity {
                                 cleanPath = "index.html";
                             }
 
+                            // PRIORITY 1: Check OTA Live Hot-Patch file first (if applied)
+                            File otaFile = OtaUpdateManager.getOtaFile(MainActivity.this, cleanPath);
+                            if (otaFile != null && otaFile.isFile()) {
+                                return new WebResourceResponse(getMimeType(cleanPath), "UTF-8", new FileInputStream(otaFile));
+                            }
+
+                            // Check OTA directory index
+                            if (cleanPath.endsWith("/")) {
+                                File otaIndex = OtaUpdateManager.getOtaFile(MainActivity.this, cleanPath + "index.html");
+                                if (otaIndex != null && otaIndex.isFile()) {
+                                    return new WebResourceResponse("text/html", "UTF-8", new FileInputStream(otaIndex));
+                                }
+                            } else {
+                                File otaIndex = OtaUpdateManager.getOtaFile(MainActivity.this, cleanPath + "/index.html");
+                                if (otaIndex != null && otaIndex.isFile()) {
+                                    return new WebResourceResponse("text/html", "UTF-8", new FileInputStream(otaIndex));
+                                }
+                                File otaHtml = OtaUpdateManager.getOtaFile(MainActivity.this, cleanPath + ".html");
+                                if (otaHtml != null && otaHtml.isFile()) {
+                                    return new WebResourceResponse("text/html", "UTF-8", new FileInputStream(otaHtml));
+                                }
+                            }
+
+                            // PRIORITY 2: Fall back to factory bundled APK assets
                             String assetPath = "www/" + cleanPath;
                             AssetManager am = getAssets();
 
@@ -140,7 +167,12 @@ public class MainActivity extends AppCompatActivity {
                                 } catch (IOException ignored) {}
                             }
 
-                            // 3. Client-side SPA fallback (serves www/index.html for Next.js in-memory routing)
+                            // PRIORITY 3: Client-side SPA fallback (OTA index.html first, then bundled index.html)
+                            File otaSpaFallback = OtaUpdateManager.getOtaFile(MainActivity.this, "index.html");
+                            if (otaSpaFallback != null && otaSpaFallback.isFile()) {
+                                return new WebResourceResponse("text/html", "UTF-8", new FileInputStream(otaSpaFallback));
+                            }
+
                             try {
                                 InputStream is = am.open("www/index.html");
                                 return new WebResourceResponse("text/html", "UTF-8", is);

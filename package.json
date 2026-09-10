@@ -11,7 +11,8 @@
     "typecheck": "pnpm -r exec tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
     "build:mobile-bundle": "node scripts/build-mobile-bundle.mjs",
-    "build:apk": "node scripts/build-standalone-apk.mjs"
+    "build:apk": "node scripts/build-standalone-apk.mjs",
+    "build:ota": "node scripts/build-ota-bundle.mjs"
   },
   "devDependencies": {
     "turbo": "^2.4.4",
