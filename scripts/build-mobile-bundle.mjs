@@ -83,15 +83,48 @@ try {
 
   console.log('\n✓ Static export successfully compiled to apps/web/out/');
 
-  // 3. Clean and copy to android/app/src/main/assets/www/
-  console.log(`\n3. Synchronizing bundled assets to Android assets (${androidAssetsWwwDir})...`);
+  // 3. Post-process HTML files: ensure relative CSS and JS paths
+  console.log('Normalizing asset links to relative paths in HTML...');
+  function normalizeHtmlPaths(dir) {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        normalizeHtmlPaths(fullPath);
+      } else if (entry.name.endsWith('.html')) {
+        let content = fs.readFileSync(fullPath, 'utf8');
+        const relativeToRoot = path.relative(dir, outDir);
+        const prefix = relativeToRoot ? relativeToRoot.replace(/\\/g, '/') + '/' : './';
+        // Convert any root-relative /_next/ to relative prefix
+        content = content.replace(/(href|src)=["']\/_next\//g, `$1="${prefix}_next/`);
+        fs.writeFileSync(fullPath, content, 'utf8');
+      }
+    }
+  }
+  normalizeHtmlPaths(outDir);
+
+  // 4. Duplicate _next as next to bypass any Android AAPT underscore stripping
+  const nextUnderscore = path.join(outDir, '_next');
+  const nextPlain = path.join(outDir, 'next');
+  if (fs.existsSync(nextUnderscore) && !fs.existsSync(nextPlain)) {
+    console.log('Mirroring _next/ to next/ for robust AAPT packaging compatibility...');
+    copyFolderRecursive(nextUnderscore, nextPlain);
+  }
+
+  // 5. Synchronize to both android assets/www and assets/public
+  const androidAssetsPublicDir = path.join(rootDir, 'android', 'app', 'src', 'main', 'assets', 'public');
+  console.log(`\nSynchronizing bundled assets to Android assets (${androidAssetsWwwDir} & ${androidAssetsPublicDir})...`);
+  
   safeRemove(androidAssetsWwwDir);
   fs.mkdirSync(androidAssetsWwwDir, { recursive: true });
-
   copyFolderRecursive(outDir, androidAssetsWwwDir);
 
+  safeRemove(androidAssetsPublicDir);
+  fs.mkdirSync(androidAssetsPublicDir, { recursive: true });
+  copyFolderRecursive(outDir, androidAssetsPublicDir);
+
   const copiedFilesCount = fs.readdirSync(androidAssetsWwwDir).length;
-  console.log(`✓ Synchronized ${copiedFilesCount} asset directories/files into Android APK assets.\n`);
+  console.log(`✓ Synchronized ${copiedFilesCount} asset directories/files into Android APK assets (www & public).\n`);
 
 } catch (err) {
   console.error('\n❌ Mobile bundle build failed:', err.message);

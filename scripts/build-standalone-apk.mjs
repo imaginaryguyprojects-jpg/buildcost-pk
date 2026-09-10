@@ -16,11 +16,15 @@ console.log('📱 BuildCost Connect — Offline Standalone APK Generator');
 console.log('===============================================================\n');
 
 // Step 1: Build the static bundle and copy into Android assets
-console.log('STEP 1: Compiling and bundling offline web assets...');
-execSync('node scripts/build-mobile-bundle.mjs', {
-  cwd: rootDir,
-  stdio: 'inherit'
-});
+if (!process.argv.includes('--skip-bundle')) {
+  console.log('STEP 1: Compiling and bundling offline web assets...');
+  execSync('node scripts/build-mobile-bundle.mjs', {
+    cwd: rootDir,
+    stdio: 'inherit'
+  });
+} else {
+  console.log('STEP 1: Skipping bundle rebuild (--skip-bundle flag provided)...');
+}
 
 // Step 2: Build Android Release APK & AAB via Gradle
 console.log('\nSTEP 2: Building native Android APK & AAB via Gradle...');
@@ -37,9 +41,9 @@ if (!fs.existsSync(tempApk)) {
 }
 
 // Step 3: Copy artifacts to project root
-const versionedApkName = 'BuildCost-PK-v1.3.0-offline.apk';
+const versionedApkName = 'BuildCost-PK-v2.0.0-offline.apk';
 const genericApkName = 'BuildCost-PK.apk';
-const versionedAabName = 'BuildCost-PK-v1.3.0-release.aab';
+const versionedAabName = 'BuildCost-PK-v2.0.0-release.aab';
 const genericAabName = 'BuildCost-PK.aab';
 
 const targetVersionedApk = path.join(rootDir, versionedApkName);

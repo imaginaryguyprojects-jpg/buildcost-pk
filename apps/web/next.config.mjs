@@ -9,6 +9,7 @@ const nextConfig = {
     "@buildcost/validation"
   ],
   output: isMobile ? "export" : undefined,
+  assetPrefix: isMobile ? "./" : undefined,
   images: {
     unoptimized: isMobile ? true : undefined
   },
