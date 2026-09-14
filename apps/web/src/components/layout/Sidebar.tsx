@@ -322,18 +322,27 @@ export function Sidebar() {
         </div>
 
         {/* Version & What's New Link */}
-        <Link
-          href="/updates"
-          className="mt-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-900 text-[11px] text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center justify-between transition-colors group border border-transparent hover:border-slate-200 dark:hover:border-slate-800"
-        >
-          <span className="font-bold text-slate-400 dark:text-slate-500 group-hover:text-emerald-400">
-            v{APP_VERSION}
-          </span>
-          <span className="font-semibold flex items-center gap-1 text-slate-600 dark:text-slate-300 group-hover:text-emerald-400">
-            <span>What's New</span>
-            <Sparkles className="w-3 h-3 text-amber-500" />
-          </span>
-        </Link>
+        <div className="flex items-center gap-1 mt-2">
+          <Link
+            href="/updates"
+            className="flex-1 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-900 text-[11px] text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center justify-between transition-colors group border border-transparent hover:border-slate-200 dark:hover:border-slate-800"
+          >
+            <span className="font-bold text-slate-400 dark:text-slate-500 group-hover:text-emerald-400">
+              v{APP_VERSION}
+            </span>
+            <span className="font-semibold flex items-center gap-1 text-slate-600 dark:text-slate-300 group-hover:text-emerald-400">
+              <span>What's New</span>
+              <Sparkles className="w-3 h-3 text-amber-500" />
+            </span>
+          </Link>
+          <Link
+            href="/privacy"
+            title="Privacy Policy"
+            className="px-2 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-900 text-[11px] font-medium text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-800 shrink-0"
+          >
+            Privacy
+          </Link>
+        </div>
       </div>
     </aside>
   );
