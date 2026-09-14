@@ -153,7 +153,10 @@ export function PrimaryPropertyCalculator() {
   const [marlaStandardType, setMarlaStandardType] = useState<string>("272.25");
   const [customMarlaSqft, setCustomMarlaSqft] = useState<number>(272.25);
 
-  // 3. Property / Plot Size Mode
+  // 3. Property / Plot Size Mode & Dimensions
+  const [plotSizeMode, setPlotSizeMode] = useState<"preset" | "custom">("preset");
+  const [customLengthFt, setCustomLengthFt] = useState<number>(50);
+  const [customWidthFt, setCustomWidthFt] = useState<number>(25);
   const [plotUnit, setPlotUnit] = useState<PlotUnit>("marla");
   const [plotSize, setPlotSize] = useState<number>(10);
 
@@ -172,6 +175,11 @@ export function PrimaryPropertyCalculator() {
 
   // Derived plot area in square feet
   const plotAreaSqft = useMemo(() => {
+    if (plotSizeMode === "custom") {
+      const length = Math.max(1, customLengthFt || 0);
+      const width = Math.max(1, customWidthFt || 0);
+      return Math.round(length * width);
+    }
     const size = Math.max(0.01, plotSize || 1);
     if (plotUnit === "marla") {
       return Math.round(size * activeMarlaSqft);
@@ -180,13 +188,16 @@ export function PrimaryPropertyCalculator() {
       return Math.round(size * 20 * activeMarlaSqft);
     }
     return Math.round(size);
-  }, [plotSize, plotUnit, activeMarlaSqft]);
+  }, [plotSizeMode, customLengthFt, customWidthFt, plotSize, plotUnit, activeMarlaSqft]);
 
   const plotAreaInMarlas = useMemo(() => {
+    if (plotSizeMode === "custom") {
+      return Number((plotAreaSqft / activeMarlaSqft).toFixed(2));
+    }
     if (plotUnit === "marla") return plotSize;
     if (plotUnit === "kanal") return plotSize * 20;
     return Number((plotAreaSqft / activeMarlaSqft).toFixed(2));
-  }, [plotSize, plotUnit, plotAreaSqft, activeMarlaSqft]);
+  }, [plotSizeMode, plotAreaSqft, activeMarlaSqft, plotUnit, plotSize]);
 
   // Standard setback & coverage ratio in Pakistan
   const coverageRatio = useMemo(() => {
@@ -380,8 +391,13 @@ export function PrimaryPropertyCalculator() {
   };
 
   const handleReset = () => {
+    setPlotSizeMode("preset");
     setPlotSize(10);
     setPlotUnit("marla");
+    setCustomLengthFt(50);
+    setCustomWidthFt(25);
+    setMarlaStandardType("272.25");
+    setCustomMarlaSqft(272.25);
     setFloorsSelection(2);
     setConstructionScope("grey");
     setUserCoveredArea(null);
@@ -643,49 +659,175 @@ export function PrimaryPropertyCalculator() {
         {/* ----------------------------------------------------------------------- */}
         <div className="lg:col-span-7 bg-white dark:bg-slate-900 border-2 border-blue-200/80 dark:border-blue-900/40 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col justify-between space-y-6">
           <div className="space-y-5">
-            {/* Header: FREE Badge + Title + Subtitle */}
-            <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="px-2.5 py-0.5 rounded-md text-xs font-black uppercase tracking-wider bg-blue-600 text-white shadow-xs">
-                  FREE
-                </span>
-                <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
-                  Basic Calculator
-                </h2>
+            {/* Header: FREE Badge + Title + Subtitle + Segmented Mode Switcher */}
+            <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2.5 py-0.5 rounded-md text-xs font-black uppercase tracking-wider bg-blue-600 text-white shadow-xs">
+                    FREE
+                  </span>
+                  <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                    Basic Calculator
+                  </h2>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Quick estimate with standard settings
+                </p>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Quick estimate with standard settings
-              </p>
+
+              {/* Mode Toggle: Preset vs Custom */}
+              <div className="inline-flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0 self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPlotSizeMode("preset");
+                    setUserCoveredArea(null);
+                  }}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    plotSizeMode === "preset"
+                      ? "bg-blue-600 text-white shadow-xs"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  Standard Plots
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPlotSizeMode("custom");
+                    setUserCoveredArea(null);
+                  }}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    plotSizeMode === "custom"
+                      ? "bg-blue-600 text-white shadow-xs"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  Custom Dimensions
+                </button>
+              </div>
             </div>
 
             {/* Inputs & Estimate Split (Row with Inputs on Left, Estimate Card on Right) */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
               {/* Left: Inputs (7 cols on md) */}
               <div className="md:col-span-7 space-y-3.5">
-                {/* Row 1: Plot Size & Construction Type */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300 block mb-1">
-                      Plot Size
-                    </label>
-                    <select
-                      value={plotSize}
-                      onChange={(e) => {
-                        const val = parseFloat(e.target.value);
-                        setPlotSize(val);
-                        setUserCoveredArea(null);
-                      }}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 cursor-pointer"
-                    >
-                      <option value={3}>3 Marla (20×35 ft)</option>
-                      <option value={5}>5 Marla (25×50 ft)</option>
-                      <option value={7}>7 Marla (30×60 ft)</option>
-                      <option value={10}>10 Marla (35×70 ft)</option>
-                      <option value={20}>1 Kanal (50×90 ft)</option>
-                      <option value={40}>2 Kanal (75×120 ft)</option>
-                    </select>
-                  </div>
+                {/* Plot Size & Marla Standard or Custom Dimensions */}
+                {plotSizeMode === "preset" ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300 block mb-1">
+                        Plot Size
+                      </label>
+                      <select
+                        value={plotSize}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          setPlotSize(val);
+                          setUserCoveredArea(null);
+                        }}
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+                      >
+                        <option value={3}>3 Marla ({Math.round(3 * activeMarlaSqft).toLocaleString()} sq ft)</option>
+                        <option value={5}>5 Marla ({Math.round(5 * activeMarlaSqft).toLocaleString()} sq ft)</option>
+                        <option value={7}>7 Marla ({Math.round(7 * activeMarlaSqft).toLocaleString()} sq ft)</option>
+                        <option value={10}>10 Marla ({Math.round(10 * activeMarlaSqft).toLocaleString()} sq ft)</option>
+                        <option value={20}>1 Kanal ({Math.round(20 * activeMarlaSqft).toLocaleString()} sq ft)</option>
+                        <option value={40}>2 Kanal ({Math.round(40 * activeMarlaSqft).toLocaleString()} sq ft)</option>
+                      </select>
+                    </div>
 
+                    <div>
+                      <label className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300 block mb-1">
+                        Marla Standard
+                      </label>
+                      <select
+                        value={marlaStandardType}
+                        onChange={(e) => {
+                          setMarlaStandardType(e.target.value);
+                          setUserCoveredArea(null);
+                        }}
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+                      >
+                        <option value="272.25">272.25 sq ft (Official / Revenue)</option>
+                        <option value="250">250 sq ft (CDA / Bahria / DHA)</option>
+                        <option value="225">225 sq ft (Urban Societies)</option>
+                      </select>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300 block mb-1">
+                          Length (ft)
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={customLengthFt}
+                          onChange={(e) => {
+                            setCustomLengthFt(parseFloat(e.target.value) || 0);
+                            setUserCoveredArea(null);
+                          }}
+                          placeholder="e.g. 50"
+                          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300 block mb-1">
+                          Width (ft)
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={customWidthFt}
+                          onChange={(e) => {
+                            setCustomWidthFt(parseFloat(e.target.value) || 0);
+                            setUserCoveredArea(null);
+                          }}
+                          placeholder="e.g. 25"
+                          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                      <div>
+                        <label className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300 block mb-1">
+                          Marla Standard
+                        </label>
+                        <select
+                          value={marlaStandardType}
+                          onChange={(e) => {
+                            setMarlaStandardType(e.target.value);
+                            setUserCoveredArea(null);
+                          }}
+                          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+                        >
+                          <option value="272.25">272.25 sq ft (Official / Revenue)</option>
+                          <option value="250">250 sq ft (CDA / Bahria / DHA)</option>
+                          <option value="225">225 sq ft (Urban Societies)</option>
+                        </select>
+                      </div>
+
+                      {/* Dynamic Readout Badge */}
+                      <div className="p-2 sm:mt-4 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 text-xs font-semibold text-blue-900 dark:text-blue-200 flex items-center gap-2">
+                        <Ruler className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                        <div className="truncate">
+                          <span className="font-bold">{customLengthFt || 0}′ × {customWidthFt || 0}′</span> = {plotAreaSqft.toLocaleString()} sq ft
+                          <span className="text-blue-600 dark:text-blue-400 font-extrabold block text-[11px]">
+                            ({plotAreaInMarlas} Marla @ {activeMarlaSqft} sq ft/m)
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Row: Construction Type & Floors */}
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300 block mb-1">
                       Construction Type
@@ -698,22 +840,6 @@ export function PrimaryPropertyCalculator() {
                       <option value="grey">Grey Structure</option>
                       <option value="complete">Full Finishing</option>
                     </select>
-                  </div>
-                </div>
-
-                {/* Row 2: Covered Area (sq ft) & Floors */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300 block mb-1">
-                      Covered Area (sq ft)
-                    </label>
-                    <input
-                      type="number"
-                      value={coveredAreaSqft}
-                      onChange={(e) => setUserCoveredArea(parseFloat(e.target.value) || 0)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
-                      placeholder="e.g. 2,722"
-                    />
                   </div>
 
                   <div>
@@ -735,7 +861,61 @@ export function PrimaryPropertyCalculator() {
                   </div>
                 </div>
 
-                {/* Row 3: Calculate Estimate & Reset Buttons */}
+                {/* Covered Area (sq ft) + Quick Ratio Buttons */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300">
+                      Covered Area (sq ft)
+                    </label>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setUserCoveredArea(null)}
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold transition-colors cursor-pointer ${
+                          userCoveredArea === null
+                            ? "bg-blue-600 text-white shadow-xs"
+                            : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+                        }`}
+                        title="Auto-suggested covered area with standard setback and floors"
+                      >
+                        Auto
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setUserCoveredArea(Math.round(plotAreaSqft * 0.8 * floorsSelection))}
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold transition-colors cursor-pointer ${
+                          userCoveredArea === Math.round(plotAreaSqft * 0.8 * floorsSelection)
+                            ? "bg-blue-600 text-white shadow-xs"
+                            : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+                        }`}
+                        title="80% plot coverage per floor"
+                      >
+                        80%
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setUserCoveredArea(Math.round(plotAreaSqft * 1.0 * floorsSelection))}
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold transition-colors cursor-pointer ${
+                          userCoveredArea === Math.round(plotAreaSqft * 1.0 * floorsSelection)
+                            ? "bg-blue-600 text-white shadow-xs"
+                            : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+                        }`}
+                        title="100% full coverage per floor"
+                      >
+                        100%
+                      </button>
+                    </div>
+                  </div>
+                  <input
+                    type="number"
+                    value={coveredAreaSqft}
+                    onChange={(e) => setUserCoveredArea(parseFloat(e.target.value) || 0)}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
+                    placeholder="e.g. 2,722"
+                  />
+                </div>
+
+                {/* Calculate Estimate & Reset Buttons */}
                 <div className="flex items-center gap-2 pt-1">
                   <button
                     type="button"
