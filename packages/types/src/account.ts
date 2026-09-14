@@ -161,6 +161,8 @@ export interface HouseLayout {
     firstFloor?: RoomPlanElement[];
   };
   isFavorite?: boolean;
+  isPro?: boolean;
+  isVisible?: boolean;
   isSystemPreset: boolean;
   createdAt: string;
 }

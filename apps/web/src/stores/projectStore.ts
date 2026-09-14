@@ -134,6 +134,8 @@ interface ProjectStoreState {
   // Layouts
   toggleFavoriteLayout: (id: string) => void;
   toggleLayoutFavorite: (id: string) => void;
+  toggleLayoutPro: (id: string) => void;
+  toggleLayoutVisibility: (id: string) => void;
 
   // Vendors
   addVendor: (vendor: Omit<Vendor, "id" | "createdAt">) => Vendor;
@@ -585,6 +587,20 @@ export const useProjectStore = create<ProjectStoreState>()(
       },
       toggleLayoutFavorite: (id: string) => {
         get().toggleFavoriteLayout(id);
+      },
+      toggleLayoutPro: (id: string) => {
+        set((state) => ({
+          layouts: state.layouts.map((l) =>
+            l.id === id ? { ...l, isPro: !l.isPro } : l
+          )
+        }));
+      },
+      toggleLayoutVisibility: (id: string) => {
+        set((state) => ({
+          layouts: state.layouts.map((l) =>
+            l.id === id ? { ...l, isVisible: l.isVisible === false ? true : false } : l
+          )
+        }));
       },
 
       // Vendors

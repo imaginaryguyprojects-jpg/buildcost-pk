@@ -85,7 +85,7 @@ type ControlTab =
   | "emergency";
 
 export default function SuperAdminControlCenterPage() {
-  const { user, isSuperAdmin, showToast } = useAuthStore();
+  const { user, isSuperAdmin, showToast, loginAsSuperAdmin } = useAuthStore();
   const {
     projects,
     materialRates,
@@ -409,20 +409,85 @@ export default function SuperAdminControlCenterPage() {
   if (!user || !isSuperAdmin()) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-        <div className="max-w-md w-full p-8 rounded-3xl bg-slate-900 border border-slate-800 text-center space-y-4 shadow-2xl">
-          <div className="w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 mx-auto flex items-center justify-center">
-            <ShieldCheck className="w-7 h-7" />
+        <div className="max-w-lg w-full p-8 rounded-3xl bg-slate-900 border border-slate-800 text-center space-y-6 shadow-2xl">
+          <div className="w-16 h-16 rounded-3xl bg-amber-500/10 border border-amber-500/30 text-amber-400 mx-auto flex items-center justify-center shadow-lg shadow-amber-500/10">
+            <Zap className="w-8 h-8 text-amber-500 animate-pulse" />
           </div>
-          <h2 className="text-xl font-bold text-white">Super Admin Access Restricted</h2>
-          <p className="text-xs text-slate-400">
-            This Control Center requires verified Super Admin authorization. Your session does not have sufficient clearance.
-          </p>
-          <Link
-            href="/login?redirect=/admin/control-center"
-            className="inline-flex items-center justify-center w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md transition-all"
-          >
-            Sign In with Super Admin Credentials
-          </Link>
+          <div>
+            <h2 className="text-xl font-black text-white">Super Admin Control Center Gate</h2>
+            <p className="text-xs text-slate-400 mt-1">
+              Permanent non-revocable clearance is required for Platform Controls. Tap below to activate God Mode.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3 text-left">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+              <span>Whitelisted Super Admins</span>
+              <span className="text-emerald-400 font-bold">1-Tap Unlock Ready</span>
+            </div>
+
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => loginAsSuperAdmin("umershahzad0@gmail.com")}
+                className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-emerald-500/60 transition-all flex items-center justify-between group"
+              >
+                <div>
+                  <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <span>Umer Shahzad</span>
+                    <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-bold">
+                      Super Admin
+                    </span>
+                  </div>
+                  <div className="text-[11px] font-mono text-emerald-400 font-medium">
+                    umershahzad0@gmail.com
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] flex items-center gap-1">
+                  <Zap className="w-3 h-3 fill-white" />
+                  <span>Unlock</span>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => loginAsSuperAdmin("imaginary.guy.project@gmail.com")}
+                className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/60 transition-all flex items-center justify-between group"
+              >
+                <div>
+                  <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <span>Primary Super Admin</span>
+                    <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold">
+                      Super Admin
+                    </span>
+                  </div>
+                  <div className="text-[11px] font-mono text-amber-400 font-medium">
+                    imaginary.guy.project@gmail.com
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[11px] flex items-center gap-1">
+                  <Zap className="w-3 h-3 fill-slate-950" />
+                  <span>Unlock</span>
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 pt-2">
+            <Link
+              href="/login?redirect=/admin/control-center"
+              className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition-all text-center"
+            >
+              Sign In with Credentials
+            </Link>
+            <Link
+              href="/god-mode"
+              className="flex-1 py-2.5 rounded-xl bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/30 font-bold text-xs transition-all text-center flex items-center justify-center gap-1.5"
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-400" />
+              <span>God Mode Portal</span>
+            </Link>
+          </div>
         </div>
       </div>
     );

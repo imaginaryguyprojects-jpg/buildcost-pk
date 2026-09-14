@@ -37,7 +37,15 @@ import {
   Compass,
   Hammer,
   Wallet,
-  Zap
+  Zap,
+  Search,
+  ToggleLeft,
+  ToggleRight,
+  Sparkles,
+  ShieldAlert,
+  RefreshCw,
+  Lock,
+  Unlock
 } from "lucide-react";
 import { useProjectStore } from "@/stores/projectStore";
 import { useAuthStore } from "@/stores/authStore";
@@ -95,8 +103,16 @@ const LIVE_ACTIVITIES: ActivityEvent[] = [
 ];
 
 export default function AdminDashboardPage() {
-  const { materialRates, updateMaterialRate, selectedCityId, setSelectedCityId } = useProjectStore();
-  const { showToast, upgradeToPro, user, isSuperAdmin } = useAuthStore();
+  const {
+    materialRates,
+    updateMaterialRate,
+    selectedCityId,
+    setSelectedCityId,
+    layouts,
+    toggleLayoutPro,
+    toggleLayoutVisibility
+  } = useProjectStore();
+  const { showToast, upgradeToPro, user, isSuperAdmin, loginAsSuperAdmin } = useAuthStore();
   const {
     payments,
     paymentAccounts,
@@ -130,7 +146,41 @@ export default function AdminDashboardPage() {
     updateLaunchPriceConfig
   } = useSystemSettingsStore();
 
-  const [activeTab, setActiveTab] = useState<"payments" | "accounts" | "rates" | "activity" | "settings" | "analytics">("payments");
+  const [activeTab, setActiveTab] = useState<
+    "payments" | "accounts" | "users" | "rates" | "layouts" | "activity" | "settings" | "analytics"
+  >("payments");
+
+  // Read URL ?tab= parameter if present on load
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab") as any;
+      if (
+        tabParam &&
+        ["payments", "accounts", "users", "rates", "layouts", "activity", "settings", "analytics"].includes(tabParam)
+      ) {
+        setActiveTab(tabParam);
+      }
+    }
+  }, []);
+
+  // Platform User Management State
+  const [platformUsers, setPlatformUsers] = useState([
+    { id: "usr_1", name: "Muhammad Tariq", email: "tariq.civil@gmail.com", role: "user", plan: "pro", phone: "0300-8541299", company: "Tariq Construction", projectsCount: 4, joined: "Aug 15, 2026", status: "active" },
+    { id: "usr_2", name: "Engr. Asad Malik", email: "asad.engr@gmail.com", role: "user", plan: "pro", phone: "0321-4829101", company: "Malik Builders", projectsCount: 7, joined: "Aug 20, 2026", status: "active" },
+    { id: "usr_3", name: "Zubair Ahmad", email: "zubair.ahmad@outlook.com", role: "user", plan: "free", phone: "0345-9120482", company: "Private Homeowner", projectsCount: 1, joined: "Aug 28, 2026", status: "active" },
+    { id: "usr_4", name: "Umer Shahzad", email: "umershahzad0@gmail.com", role: "superadmin", plan: "pro", phone: "0300-5155604", company: "BuildCost PK Master Control", projectsCount: 12, joined: "Aug 01, 2026", status: "active" },
+    { id: "usr_5", name: "Primary Super Admin", email: "imaginary.guy.project@gmail.com", role: "superadmin", plan: "pro", phone: "0345-5074541", company: "BuildCost PK Master Control", projectsCount: 15, joined: "Aug 01, 2026", status: "active" },
+    { id: "usr_6", name: "Hassan Raza", email: "hassan.raza.contractor@gmail.com", role: "user", plan: "free", phone: "0333-5129988", company: "Raza & Sons", projectsCount: 2, joined: "Sep 02, 2026", status: "active" },
+    { id: "usr_7", name: "Kamran Akram", email: "kamran.akram99@gmail.com", role: "user", plan: "free", phone: "0312-9988776", company: "Civil Works Pvt", projectsCount: 0, joined: "Sep 09, 2026", status: "active" },
+  ]);
+  const [userSearch, setUserSearch] = useState("");
+  const [userPlanFilter, setUserPlanFilter] = useState<"all" | "pro" | "free">("all");
+  const [userStatusFilter, setUserStatusFilter] = useState<"all" | "active" | "suspended">("all");
+
+  // Layouts Manager Filters
+  const [layoutCategoryFilter, setLayoutCategoryFilter] = useState<string>("all");
+  const [layoutPlanFilter, setLayoutPlanFilter] = useState<"all" | "free" | "pro">("all");
   const [analyticsRange, setAnalyticsRange] = useState<"today" | "7d" | "30d" | "3m" | "1y">("30d");
   const [paymentFilter, setPaymentFilter] = useState<"all" | "pending" | "under_review" | "approved" | "rejected" | "expired" | "refunded">("all");
   const [selectedPayment, setSelectedPayment] = useState<PaymentSubmission | null>(null);
@@ -321,21 +371,90 @@ export default function AdminDashboardPage() {
 
   if (!user || !isSuperAdmin()) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center p-4">
-        <div className="max-w-md w-full p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-4 shadow-xl">
-          <div className="w-14 h-14 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 mx-auto flex items-center justify-center">
-            <ShieldCheck className="w-7 h-7" />
+      <div className="min-h-[75vh] flex items-center justify-center p-4">
+        <div className="max-w-lg w-full p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-6 shadow-2xl">
+          <div className="w-16 h-16 rounded-3xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-600 dark:text-amber-400 mx-auto flex items-center justify-center shadow-lg shadow-amber-500/10">
+            <Zap className="w-8 h-8 text-amber-500 animate-pulse" />
           </div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Admin Access Restricted</h2>
-          <p className="text-xs text-slate-500">
-            This console requires verified Super Admin credentials. Please sign in with an authorized account.
-          </p>
-          <Link
-            href="/login?redirect=/admin"
-            className="inline-flex items-center justify-center w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all"
-          >
-            Sign In as Admin
-          </Link>
+          <div>
+            <h2 className="text-xl font-black text-slate-900 dark:text-white">
+              Executive Admin &amp; God Mode Gate
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Permanent non-revocable Super Admin privileges are reserved for verified accounts.
+              Tap below to instantly activate God Mode on this device.
+            </p>
+          </div>
+
+          {/* 1-Click Whitelist Instant Bypass */}
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 space-y-3 text-left">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center justify-between">
+              <span>Super-Admin Whitelist (1-Tap Unlock)</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold">Ready</span>
+            </div>
+
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => loginAsSuperAdmin("umershahzad0@gmail.com")}
+                className="w-full p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/60 transition-all flex items-center justify-between group shadow-xs"
+              >
+                <div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <span>Umer Shahzad</span>
+                    <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
+                      Super Admin
+                    </span>
+                  </div>
+                  <div className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-medium">
+                    umershahzad0@gmail.com
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] shadow-xs flex items-center gap-1">
+                  <Zap className="w-3 h-3 fill-white" />
+                  <span>Unlock</span>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => loginAsSuperAdmin("imaginary.guy.project@gmail.com")}
+                className="w-full p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-amber-500/60 transition-all flex items-center justify-between group shadow-xs"
+              >
+                <div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <span>Primary Super Admin</span>
+                    <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold">
+                      Super Admin
+                    </span>
+                  </div>
+                  <div className="text-[11px] font-mono text-amber-600 dark:text-amber-400 font-medium">
+                    imaginary.guy.project@gmail.com
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[11px] shadow-xs flex items-center gap-1">
+                  <Zap className="w-3 h-3 fill-slate-950" />
+                  <span>Unlock</span>
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 pt-2">
+            <Link
+              href="/login?redirect=/admin"
+              className="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs transition-all text-center"
+            >
+              Password Login
+            </Link>
+            <Link
+              href="/god-mode"
+              className="flex-1 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-amber-500/20 dark:text-amber-300 dark:hover:bg-amber-500/30 border border-transparent dark:border-amber-500/30 font-bold text-xs transition-all text-center flex items-center justify-center gap-1.5"
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-400" />
+              <span>God Mode Portal</span>
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -503,15 +622,20 @@ export default function AdminDashboardPage() {
         </button>
 
         <button
-          onClick={() => setActiveTab("activity")}
+          onClick={() => setActiveTab("users")}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-            activeTab === "activity"
+            activeTab === "users"
               ? "bg-emerald-600 text-white shadow-xs"
               : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
           }`}
         >
-          <Activity className="w-3.5 h-3.5" />
-          <span>Live Activity Feed</span>
+          <Users className="w-3.5 h-3.5" />
+          <span>User Management</span>
+          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+            activeTab === "users" ? "bg-white text-emerald-700" : "bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+          }`}>
+            {platformUsers.length}
+          </span>
         </button>
 
         <button
@@ -524,6 +648,35 @@ export default function AdminDashboardPage() {
         >
           <Edit3 className="w-3.5 h-3.5" />
           <span>Market Rate Master</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("layouts")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            activeTab === "layouts"
+              ? "bg-emerald-600 text-white shadow-xs"
+              : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+          }`}
+        >
+          <Building className="w-3.5 h-3.5" />
+          <span>Floor Plans &amp; Layouts</span>
+          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+            activeTab === "layouts" ? "bg-white text-emerald-700" : "bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+          }`}>
+            {layouts.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("activity")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            activeTab === "activity"
+              ? "bg-emerald-600 text-white shadow-xs"
+              : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+          }`}
+        >
+          <Activity className="w-3.5 h-3.5" />
+          <span>Live Activity Feed</span>
         </button>
 
         <button
@@ -2184,6 +2337,456 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 7: SECTION: USER MANAGEMENT & ROLE OVERRIDE PANEL (MODULE B) */}
+      {activeTab === "users" && (
+        <div className="space-y-6">
+          {/* User Breakdown Stats Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+              <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
+                Total Registered Users
+              </span>
+              <div className="text-2xl font-black text-slate-900 dark:text-white font-mono">
+                1,480
+              </div>
+              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                +42 new this week
+              </span>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+              <span className="text-[10px] uppercase font-bold text-amber-600 dark:text-amber-400 block mb-1">
+                Paid PRO Subscribers
+              </span>
+              <div className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono">
+                236
+              </div>
+              <span className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold">
+                16.0% conversion rate
+              </span>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+              <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
+                Free Tier Users
+              </span>
+              <div className="text-2xl font-black text-slate-700 dark:text-slate-300 font-mono">
+                1,244
+              </div>
+              <span className="text-[11px] text-slate-400">
+                84.0% of userbase
+              </span>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+              <span className="text-[10px] uppercase font-bold text-cyan-600 dark:text-cyan-400 block mb-1">
+                Super Admins Whitelisted
+              </span>
+              <div className="text-2xl font-black text-cyan-600 dark:text-cyan-400 font-mono">
+                2
+              </div>
+              <span className="text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold">
+                Full God-Mode bypass
+              </span>
+            </div>
+          </div>
+
+          {/* Search, Filters & Controls */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-xs space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Users className="w-5 h-5 text-emerald-600" />
+                  <span>Module B: User Accounts &amp; 1-Click Role Override</span>
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Search users by name, email, or Pakistani phone number. Instantly grant PRO access or suspend accounts.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    placeholder="Search email, name or phone..."
+                    className="pl-9 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 w-64"
+                  />
+                </div>
+
+                <select
+                  value={userPlanFilter}
+                  onChange={(e: any) => setUserPlanFilter(e.target.value)}
+                  className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none"
+                >
+                  <option value="all">All Plans</option>
+                  <option value="pro">Paid PRO Only</option>
+                  <option value="free">Free Users Only</option>
+                </select>
+
+                <select
+                  value={userStatusFilter}
+                  onChange={(e: any) => setUserStatusFilter(e.target.value)}
+                  className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="active">Active</option>
+                  <option value="suspended">Suspended</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Users Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 text-[11px] uppercase tracking-wider font-bold">
+                    <th className="pb-3 pl-2">User Details</th>
+                    <th className="pb-3">Contact</th>
+                    <th className="pb-3">Role</th>
+                    <th className="pb-3">Plan Tier</th>
+                    <th className="pb-3">Projects</th>
+                    <th className="pb-3">Joined</th>
+                    <th className="pb-3">Status</th>
+                    <th className="pb-3 pr-2 text-right">Admin Override</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                  {platformUsers
+                    .filter((u) => {
+                      const matchSearch =
+                        u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
+                        u.email.toLowerCase().includes(userSearch.toLowerCase()) ||
+                        u.phone.toLowerCase().includes(userSearch.toLowerCase());
+                      const matchPlan = userPlanFilter === "all" || u.plan === userPlanFilter;
+                      const matchStatus = userStatusFilter === "all" || u.status === userStatusFilter;
+                      return matchSearch && matchPlan && matchStatus;
+                    })
+                    .map((u) => {
+                      const isSuper = isSuperAdminEmail(u.email);
+                      return (
+                        <tr key={u.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                          <td className="py-3 pl-2">
+                            <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                              <span>{u.name}</span>
+                              {isSuper && (
+                                <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold text-[9px] uppercase border border-amber-500/30">
+                                  God Mode
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-slate-400">{u.company}</div>
+                          </td>
+
+                          <td className="py-3">
+                            <div className="font-mono text-[11px] text-slate-700 dark:text-slate-300">{u.email}</div>
+                            <div className="text-[11px] text-slate-400">{u.phone}</div>
+                          </td>
+
+                          <td className="py-3">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              u.role === "superadmin"
+                                ? "bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
+                                : u.role === "admin"
+                                ? "bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800"
+                                : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                            }`}>
+                              {u.role}
+                            </span>
+                          </td>
+
+                          <td className="py-3">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                              u.plan === "pro"
+                                ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                            }`}>
+                              {u.plan}
+                            </span>
+                          </td>
+
+                          <td className="py-3 font-mono font-bold text-slate-800 dark:text-slate-200">
+                            {u.projectsCount}
+                          </td>
+
+                          <td className="py-3 text-slate-400 text-[11px]">
+                            {u.joined}
+                          </td>
+
+                          <td className="py-3">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              u.status === "active"
+                                ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600"
+                                : "bg-rose-50 dark:bg-rose-950/40 text-rose-600"
+                            }`}>
+                              {u.status}
+                            </span>
+                          </td>
+
+                          <td className="py-3 pr-2 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {/* 1-Click PRO Upgrade/Downgrade */}
+                              <button
+                                type="button"
+                                disabled={isSuper}
+                                onClick={() => {
+                                  const nextPlan = u.plan === "pro" ? "free" : "pro";
+                                  setPlatformUsers((prev) =>
+                                    prev.map((item) => (item.id === u.id ? { ...item, plan: nextPlan } : item))
+                                  );
+                                  showToast(
+                                    nextPlan === "pro"
+                                      ? `🎉 Granted PRO access to ${u.name}`
+                                      : `Revoked PRO access for ${u.name}`,
+                                    "success"
+                                  );
+                                }}
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                                  u.plan === "pro"
+                                    ? "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                                    : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs"
+                                }`}
+                              >
+                                {u.plan === "pro" ? "Demote to Free" : "Grant PRO"}
+                              </button>
+
+                              {/* 1-Click Suspend/Unsuspend */}
+                              <button
+                                type="button"
+                                disabled={isSuper}
+                                onClick={() => {
+                                  const nextStatus = u.status === "active" ? "suspended" : "active";
+                                  setPlatformUsers((prev) =>
+                                    prev.map((item) => (item.id === u.id ? { ...item, status: nextStatus } : item))
+                                  );
+                                  showToast(
+                                    nextStatus === "suspended"
+                                      ? `⚠️ Account suspended: ${u.name}`
+                                      : `Restored account: ${u.name}`,
+                                    nextStatus === "suspended" ? "warning" : "success"
+                                  );
+                                }}
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                                  u.status === "active"
+                                    ? "bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400"
+                                    : "bg-emerald-50 hover:bg-emerald-100 text-emerald-600"
+                                }`}
+                              >
+                                {u.status === "active" ? "Suspend" : "Restore"}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 8: SECTION: FLOOR PLANS & ARCHITECTURAL LAYOUTS MANAGER (MODULE C) */}
+      {activeTab === "layouts" && (
+        <div className="space-y-6">
+          {/* Layouts Stats */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+              <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
+                Total House Layouts
+              </span>
+              <div className="text-2xl font-black text-slate-900 dark:text-white font-mono">
+                {layouts.length}
+              </div>
+              <span className="text-[11px] text-slate-400">
+                Pakistani residential standards
+              </span>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+              <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 block mb-1">
+                Free Tier Layouts
+              </span>
+              <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                {layouts.filter((l) => !l.isPro).length}
+              </div>
+              <span className="text-[11px] text-emerald-600 font-semibold">
+                Available to all users
+              </span>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+              <span className="text-[10px] uppercase font-bold text-amber-600 dark:text-amber-400 block mb-1">
+                PRO Exclusive Layouts
+              </span>
+              <div className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono">
+                {layouts.filter((l) => l.isPro).length}
+              </div>
+              <span className="text-[11px] text-amber-600 font-semibold">
+                Requires active PRO plan
+              </span>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+              <span className="text-[10px] uppercase font-bold text-cyan-600 dark:text-cyan-400 block mb-1">
+                Visible in App
+              </span>
+              <div className="text-2xl font-black text-cyan-600 dark:text-cyan-400 font-mono">
+                {layouts.filter((l) => l.isVisible !== false).length}
+              </div>
+              <span className="text-[11px] text-cyan-600 font-semibold">
+                Published &amp; live
+              </span>
+            </div>
+          </div>
+
+          {/* Filters & Actions */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Building className="w-5 h-5 text-emerald-600" />
+                  <span>Module C: Architectural Floor Plans (Free vs. PRO Gate)</span>
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Manage architectural layout visibility and toggle tier access (Free vs. PRO) with 1 click.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <select
+                  value={layoutCategoryFilter}
+                  onChange={(e) => setLayoutCategoryFilter(e.target.value)}
+                  className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none"
+                >
+                  <option value="all">All Plot Sizes</option>
+                  <option value="3_marla">3 Marla</option>
+                  <option value="5_marla">5 Marla</option>
+                  <option value="7_marla">7 Marla</option>
+                  <option value="10_marla">10 Marla</option>
+                  <option value="1_kanal">1 Kanal</option>
+                </select>
+
+                <select
+                  value={layoutPlanFilter}
+                  onChange={(e: any) => setLayoutPlanFilter(e.target.value)}
+                  className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none"
+                >
+                  <option value="all">All Tiers</option>
+                  <option value="free">Free Only</option>
+                  <option value="pro">PRO Only</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Layout Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {layouts
+                .filter((l) => {
+                  const matchCat = layoutCategoryFilter === "all" || l.plotCategory === layoutCategoryFilter;
+                  const matchPlan =
+                    layoutPlanFilter === "all" ||
+                    (layoutPlanFilter === "pro" ? Boolean(l.isPro) : !l.isPro);
+                  return matchCat && matchPlan;
+                })
+                .map((layout) => {
+                  const isPro = Boolean(layout.isPro);
+                  const isVisible = layout.isVisible !== false;
+                  return (
+                    <div
+                      key={layout.id}
+                      className="p-5 rounded-2xl bg-slate-50/70 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-3 flex flex-col justify-between"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                            isPro
+                              ? "bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30"
+                              : "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
+                          }`}>
+                            {isPro ? "PRO Locked" : "Free Plan"}
+                          </span>
+
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            isVisible
+                              ? "bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300"
+                              : "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300"
+                          }`}>
+                            {isVisible ? "Published" : "Hidden"}
+                          </span>
+                        </div>
+
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                          {layout.title}
+                        </h4>
+
+                        <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                          <div>Plot: {layout.plotWidthFt} × {layout.plotDepthFt} ft</div>
+                          <div>Area: {layout.plotAreaSqft} sq ft</div>
+                          <div>Covered: {layout.coveredAreaSqft} sq ft</div>
+                          <div>Beds/Baths: {layout.bedrooms}B / {layout.bathrooms}B</div>
+                          <div>Floors: {layout.floors} Storey</div>
+                          <div>Porch: {layout.hasCarPorch ? "Yes" : "No"}</div>
+                        </div>
+
+                        {layout.description && (
+                          <p className="text-[11px] text-slate-500 line-clamp-2">
+                            {layout.description}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="pt-3 border-t border-slate-200/80 dark:border-slate-700 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            toggleLayoutPro(layout.id);
+                            showToast(
+                              !isPro
+                                ? `🔒 Layout "${layout.title}" converted to PRO Exclusive!`
+                                : `🔓 Layout "${layout.title}" opened as FREE for all users!`,
+                              "success"
+                            );
+                          }}
+                          className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs ${
+                            isPro
+                              ? "bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 text-slate-800 dark:text-slate-200"
+                              : "bg-amber-500 hover:bg-amber-400 text-slate-950"
+                          }`}
+                        >
+                          {isPro ? "Make Free" : "Make PRO"}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            toggleLayoutVisibility(layout.id);
+                            showToast(
+                              isVisible
+                                ? `Layout "${layout.title}" is now hidden.`
+                                : `Layout "${layout.title}" is now published.`,
+                              "info"
+                            );
+                          }}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                            isVisible
+                              ? "border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                              : "border-cyan-500 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-950/40"
+                          }`}
+                        >
+                          {isVisible ? "Hide" : "Publish"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
           </div>
         </div>
