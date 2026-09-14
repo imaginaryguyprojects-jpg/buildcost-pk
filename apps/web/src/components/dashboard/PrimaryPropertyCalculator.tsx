@@ -3,37 +3,31 @@
 import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
-  Calculator,
   Building2,
   Home,
   CheckCircle2,
   Lock,
   Download,
   Share2,
-  FileSpreadsheet,
-  Layers,
   Clock,
   Sparkles,
-  TrendingUp,
-  Truck,
-  Hammer,
-  Boxes,
-  HelpCircle,
-  ArrowRight,
-  Sliders,
-  DollarSign,
-  ShieldCheck,
-  ChevronDown,
-  ChevronUp,
   RotateCcw,
-  Coins,
-  Search,
   Building,
   Check,
-  Info,
   Ruler,
   Maximize2,
   Printer,
+  Calendar,
+  Layers,
+  Bath,
+  Settings,
+  BarChart3,
+  Sliders,
+  DollarSign,
+  Crown,
+  MapPin,
+  ChevronDown,
+  ChevronUp,
   FileText
 } from "lucide-react";
 
@@ -46,6 +40,9 @@ import {
 } from "@buildcost/calculations";
 import { ProConstructionInputs, ProBathroomItem, ProDetailedEstimate } from "@buildcost/types";
 import { ProConstructionSection } from "@/components/calculator/ProConstructionSection";
+import { HouseLayoutPlansSection } from "@/components/calculator/HouseLayoutPlansSection";
+import { FeatureComparisonSection } from "@/components/calculator/FeatureComparisonSection";
+import { GreyStructureBreakdownGrid } from "@/components/calculator/GreyStructureBreakdownGrid";
 import { formatPKR, formatLakhCrore, formatNumber } from "@/lib/formatters";
 import { useAuthStore } from "@/stores/authStore";
 import { useProjectStore } from "@/stores/projectStore";
@@ -55,14 +52,14 @@ export type PlotUnit = "marla" | "kanal" | "sqft";
 export type ConstructionScope = "grey" | "complete" | "custom";
 export type QualityTier = "standard" | "economy" | "premium" | "luxury";
 
-// Standard Pakistani Plot Presets with Typical Dimensions
+// Standard Pakistani Plot Presets
 export const PAK_STANDARD_PLOTS = [
-  { size: 3, unit: "marla" as PlotUnit, dimensions: "20×35 ft", label: "3 Marla", sqft: 700, popular: true },
-  { size: 5, unit: "marla" as PlotUnit, dimensions: "25×50 ft", label: "5 Marla", sqft: 1250, popular: true },
-  { size: 7, unit: "marla" as PlotUnit, dimensions: "30×60 ft", label: "7 Marla", sqft: 1800, popular: true },
-  { size: 10, unit: "marla" as PlotUnit, dimensions: "35×70 ft", label: "10 Marla", sqft: 2450, popular: true },
-  { size: 1, unit: "kanal" as PlotUnit, dimensions: "50×90 ft", label: "1 Kanal", sqft: 4500, popular: true },
-  { size: 2, unit: "kanal" as PlotUnit, dimensions: "75×120 ft", label: "2 Kanal", sqft: 9000, popular: false }
+  { size: 3, unit: "marla" as PlotUnit, dimensions: "20×35 ft", label: "3 Marla", sqft: 700 },
+  { size: 5, unit: "marla" as PlotUnit, dimensions: "25×50 ft", label: "5 Marla", sqft: 1250 },
+  { size: 7, unit: "marla" as PlotUnit, dimensions: "30×60 ft", label: "7 Marla", sqft: 1800 },
+  { size: 10, unit: "marla" as PlotUnit, dimensions: "35×70 ft", label: "10 Marla", sqft: 2450 },
+  { size: 1, unit: "kanal" as PlotUnit, dimensions: "50×90 ft", label: "1 Kanal", sqft: 4500 },
+  { size: 2, unit: "kanal" as PlotUnit, dimensions: "75×120 ft", label: "2 Kanal", sqft: 9000 }
 ];
 
 // Marla standard presets
@@ -73,17 +70,11 @@ export const MARLA_STANDARD_PRESETS = [
   { id: "custom", label: "Custom", region: "1 Marla = Custom sq ft", sqft: 272.25 }
 ];
 
-// Quick city chips (Top 5 major Pakistan cities)
-const QUICK_CITIES = [
-  { id: "rwp", name: "Rawalpindi" },
-  { id: "isb", name: "Islamabad" },
-  { id: "lhr", name: "Lahore" },
-  { id: "khi", name: "Karachi" },
-  { id: "pew", name: "Peshawar" }
-];
-
-// Benchmark rates per city category (Calibrated for Pakistani civil engineering benchmarks)
-const CITY_BENCHMARKS: Record<string, { cement: number; steel: number; brick: number; sand: number; crush: number; labour: number; transportPerSqft: number }> = {
+// Benchmark rates per city category
+const CITY_BENCHMARKS: Record<
+  string,
+  { cement: number; steel: number; brick: number; sand: number; crush: number; labour: number; transportPerSqft: number }
+> = {
   isb: { cement: 1460, steel: 265, brick: 14.5, sand: 45, crush: 95, labour: 430, transportPerSqft: 38 },
   rwp: { cement: 1460, steel: 265, brick: 14.5, sand: 45, crush: 95, labour: 430, transportPerSqft: 38 },
   lhr: { cement: 1430, steel: 258, brick: 13.5, sand: 42, crush: 88, labour: 410, transportPerSqft: 32 },
@@ -93,7 +84,16 @@ const CITY_BENCHMARKS: Record<string, { cement: number; steel: number; brick: nu
 };
 
 export function PrimaryPropertyCalculator() {
-  const { isAuthenticated, user, isSuperAdmin, openLoginModal, openUpgradeModal, openProjectUpgradeModal, openCheckoutModal, showToast } = useAuthStore();
+  const {
+    isAuthenticated,
+    user,
+    isSuperAdmin,
+    openLoginModal,
+    openUpgradeModal,
+    openCheckoutModal,
+    showToast
+  } = useAuthStore();
+
   const { selectedCityId: globalCityId, setSelectedCityId: setGlobalCityId, saveCalculation } = useProjectStore();
   const [isMounted, setIsMounted] = useState(false);
 
@@ -133,130 +133,15 @@ export function PrimaryPropertyCalculator() {
     setProInputs((prev) => ({ ...prev, isProEnabled: isPro }));
   }, [isPro]);
 
-  const handleSharePdfOrPrint = () => {
-    if (!isPro) {
-      openUpgradeModal("Share the calculation in PDF or Print");
-    } else {
-      window.print();
-    }
-  };
-
-  const handleSaveCalculation = () => {
-    if (!isAuthenticated) {
-      openLoginModal();
-      return;
-    }
-    saveCalculation({
-      projectId: "default",
-      calculatorType: "property_calculator_v3",
-      inputs: {
-        selectedCityId,
-        marlaStandardType,
-        plotSize,
-        plotUnit,
-        coveredAreaSqft,
-        floors: effectiveFloors,
-        constructionScope,
-        qualityTier,
-        proInputs: isPro ? proInputs : undefined
-      },
-      result: {
-        materialsCost:
-          calculationResult.cementCost +
-          calculationResult.steelCost +
-          calculationResult.bricksCost +
-          calculationResult.sandCost +
-          calculationResult.crushCost,
-        labourCost: calculationResult.labourCost,
-        equipmentCost: 0,
-        transportCost: calculationResult.transportCost,
-        finishingCost: calculationResult.finishingCost,
-        contingencyCost: calculationResult.wastageCost,
-        otherCost: 0,
-        grandTotal: calculationResult.totalCost,
-        totalCoveredAreaSqft: coveredAreaSqft,
-        costPerSqft: calculationResult.costPerSqft,
-        materials: [
-          {
-            materialId: "cement",
-            materialName: "Cement",
-            category: "Grey Structure",
-            rawQuantity: calculationResult.cementBags,
-            wastagePercent: 5,
-            wastageQuantity: Math.round(calculationResult.cementBags * 0.05),
-            finalQuantity: calculationResult.cementBags,
-            unit: "bags",
-            unitRate: activeRates.cementBagRate,
-            cost: calculationResult.cementCost
-          },
-          {
-            materialId: "steel",
-            materialName: "Deformed Steel Rebar",
-            category: "Grey Structure",
-            rawQuantity: calculationResult.steelKg,
-            wastagePercent: 4,
-            wastageQuantity: Math.round(calculationResult.steelKg * 0.04),
-            finalQuantity: calculationResult.steelKg,
-            unit: "kg",
-            unitRate: activeRates.steelKgRate,
-            cost: calculationResult.steelCost
-          },
-          {
-            materialId: "bricks",
-            materialName: "Awwal Red Clay Bricks",
-            category: "Grey Structure",
-            rawQuantity: calculationResult.bricksCount,
-            wastagePercent: 5,
-            wastageQuantity: Math.round(calculationResult.bricksCount * 0.05),
-            finalQuantity: calculationResult.bricksCount,
-            unit: "bricks",
-            unitRate: activeRates.brickRate,
-            cost: calculationResult.bricksCost
-          },
-          {
-            materialId: "sand",
-            materialName: "Chenab/Ravi Sand",
-            category: "Grey Structure",
-            rawQuantity: calculationResult.sandCft,
-            wastagePercent: 5,
-            wastageQuantity: Math.round(calculationResult.sandCft * 0.05),
-            finalQuantity: calculationResult.sandCft,
-            unit: "cft",
-            unitRate: activeRates.sandCftRate,
-            cost: calculationResult.sandCost
-          },
-          {
-            materialId: "crush",
-            materialName: "Margalla Bajri / Crush",
-            category: "Grey Structure",
-            rawQuantity: calculationResult.crushCft,
-            wastagePercent: 5,
-            wastageQuantity: Math.round(calculationResult.crushCft * 0.05),
-            finalQuantity: calculationResult.crushCft,
-            unit: "cft",
-            unitRate: activeRates.crushCftRate,
-            cost: calculationResult.crushCost
-          }
-        ],
-        labour: [],
-        assumptions: []
-      },
-      ratesSnapshot: {
-        cement: { rate: activeRates.cementBagRate, source: selectedCity.name, verifiedAt: new Date().toISOString() },
-        steel: { rate: activeRates.steelKgRate, source: selectedCity.name, verifiedAt: new Date().toISOString() },
-        brick: { rate: activeRates.brickRate, source: selectedCity.name, verifiedAt: new Date().toISOString() }
-      }
-    });
-    showToast("Calculation saved to your project library!", "success");
-  };
-
+  // Drawer to configure detailed PRO parameters
+  const [showProDrawer, setShowProDrawer] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // 1. City Selection (Synced with global store)
-  const [selectedCityId, setSelectedCityId] = useState<string>(globalCityId || "rwp");
+  // 1. City Selection (Default to Lahore or Islamabad as in reference image)
+  const [selectedCityId, setSelectedCityId] = useState<string>(globalCityId || "lhr");
 
   useEffect(() => {
     if (globalCityId && globalCityId !== selectedCityId) {
@@ -268,18 +153,14 @@ export function PrimaryPropertyCalculator() {
   const [marlaStandardType, setMarlaStandardType] = useState<string>("272.25");
   const [customMarlaSqft, setCustomMarlaSqft] = useState<number>(272.25);
 
-  // 3. Property / Plot Size Mode & Custom Dimensions
-  const [plotDimensionMode, setPlotDimensionMode] = useState<"standard" | "custom">("standard");
-  const [customWidthFt, setCustomWidthFt] = useState<number>(25);
-  const [customLengthFt, setCustomLengthFt] = useState<number>(50);
-
+  // 3. Property / Plot Size Mode
   const [plotUnit, setPlotUnit] = useState<PlotUnit>("marla");
-  const [plotSize, setPlotSize] = useState<number>(5);
+  const [plotSize, setPlotSize] = useState<number>(10);
 
-  // 4. Floors & Covered Area
-  const [floorsSelection, setFloorsSelection] = useState<number | "custom">(2);
-  const [customFloors, setCustomFloors] = useState<number>(4);
-  const effectiveFloors = floorsSelection === "custom" ? Math.max(1, customFloors) : Number(floorsSelection);
+  // 4. Floors & Scope
+  const [floorsSelection, setFloorsSelection] = useState<number>(2);
+  const [constructionScope, setConstructionScope] = useState<ConstructionScope>("grey");
+  const [qualityTier, setQualityTier] = useState<QualityTier>("standard");
 
   // Active Marla sq ft value
   const activeMarlaSqft = useMemo(() => {
@@ -291,225 +172,177 @@ export function PrimaryPropertyCalculator() {
 
   // Derived plot area in square feet
   const plotAreaSqft = useMemo(() => {
-    if (plotDimensionMode === "custom") {
-      const w = Math.max(1, customWidthFt || 1);
-      const l = Math.max(1, customLengthFt || 1);
-      return Math.round(w * l);
-    }
     const size = Math.max(0.01, plotSize || 1);
     if (plotUnit === "marla") {
-      return size * activeMarlaSqft;
-    } else if (plotUnit === "kanal") {
-      return size * 20 * activeMarlaSqft;
-    } else {
-      return size;
+      return Math.round(size * activeMarlaSqft);
     }
-  }, [plotDimensionMode, customWidthFt, customLengthFt, plotSize, plotUnit, activeMarlaSqft]);
+    if (plotUnit === "kanal") {
+      return Math.round(size * 20 * activeMarlaSqft);
+    }
+    return Math.round(size);
+  }, [plotSize, plotUnit, activeMarlaSqft]);
 
-  // Derived plot area in Marlas and Kanals
-  const plotAreaInMarlas = plotAreaSqft / activeMarlaSqft;
-  const plotAreaInKanals = plotAreaInMarlas / 20;
+  const plotAreaInMarlas = useMemo(() => {
+    if (plotUnit === "marla") return plotSize;
+    if (plotUnit === "kanal") return plotSize * 20;
+    return Number((plotAreaSqft / activeMarlaSqft).toFixed(2));
+  }, [plotSize, plotUnit, plotAreaSqft, activeMarlaSqft]);
 
-  // Auto suggested covered area: ~70% plot coverage * number of floors
+  // Standard setback & coverage ratio in Pakistan
+  const coverageRatio = useMemo(() => {
+    if (plotAreaInMarlas <= 5) return 0.88;
+    if (plotAreaInMarlas <= 7) return 0.82;
+    if (plotAreaInMarlas <= 10) return 0.76;
+    return 0.70;
+  }, [plotAreaInMarlas]);
+
   const autoSuggestedCoveredArea = useMemo(() => {
-    return Math.round(plotAreaSqft * 0.7 * effectiveFloors);
-  }, [plotAreaSqft, effectiveFloors]);
+    const groundCovered = Math.round(plotAreaSqft * coverageRatio);
+    const upperCovered = Math.round(groundCovered * 0.95);
+    const total = groundCovered + Math.max(0, floorsSelection - 1) * upperCovered;
+    return total;
+  }, [plotAreaSqft, coverageRatio, floorsSelection]);
 
-  const [coveredAreaSqft, setCoveredAreaSqft] = useState<number>(autoSuggestedCoveredArea);
-  const [isCoveredAreaManuallyModified, setIsCoveredAreaManuallyModified] = useState<boolean>(false);
+  // Covered Area input state (auto suggested, but user editable)
+  const [userCoveredArea, setUserCoveredArea] = useState<number | null>(null);
+  const coveredAreaSqft = userCoveredArea !== null ? userCoveredArea : autoSuggestedCoveredArea;
 
-  // Update covered area automatically when plot or floors change unless user manually overrode it
-  useEffect(() => {
-    if (!isCoveredAreaManuallyModified) {
-      setCoveredAreaSqft(autoSuggestedCoveredArea);
-    }
-  }, [autoSuggestedCoveredArea, isCoveredAreaManuallyModified]);
-
-  // 5. Construction Scope & Quality Tier
-  const [constructionScope, setConstructionScope] = useState<ConstructionScope>("grey");
-  const [qualityTier, setQualityTier] = useState<QualityTier>("standard");
-
-  // Selected city object
+  // Selected City object
   const selectedCity = useMemo(() => {
-    return PAKISTANI_CITIES.find((c) => c.id === selectedCityId) || PAKISTANI_CITIES[0];
+    const found = PAKISTANI_CITIES.find((c) => c.id === selectedCityId);
+    if (found) return found;
+    return { id: "lhr", name: "Lahore", province: "Punjab", marlaSize: 250 };
   }, [selectedCityId]);
 
-  // Active City Benchmark Rates
+  // City benchmark rates
   const cityRates = useMemo(() => {
     return CITY_BENCHMARKS[selectedCityId] || CITY_BENCHMARKS.default;
   }, [selectedCityId]);
 
-  // 6. Custom / Editable Rates State
-  const [showRatesPanel, setShowRatesPanel] = useState<boolean>(false);
+  // Custom rates overrides
   const [useCustomRates, setUseCustomRates] = useState<boolean>(false);
   const [customRates, setCustomRates] = useState({
-    cement: cityRates.cement,
-    steel: cityRates.steel,
-    brick: cityRates.brick,
-    sand: cityRates.sand,
-    crush: cityRates.crush,
-    labour: cityRates.labour
+    cement: 1430,
+    steel: 258,
+    brick: 13.5,
+    sand: 42,
+    crush: 88,
+    labour: 410
   });
 
-  // Keep custom rates aligned when city changes if custom rates are not currently applied
-  useEffect(() => {
-    if (!useCustomRates) {
-      setCustomRates({
-        cement: cityRates.cement,
-        steel: cityRates.steel,
-        brick: cityRates.brick,
-        sand: cityRates.sand,
-        crush: cityRates.crush,
-        labour: cityRates.labour
-      });
-    }
-  }, [cityRates, useCustomRates]);
-
-  // Handle City Change (Auto-suggests local Marla Standard)
-  const handleCitySelect = (cityId: string) => {
-    setSelectedCityId(cityId);
-    const city = PAKISTANI_CITIES.find((c) => c.id === cityId);
-    if (city) {
-      if (city.defaultMarlaSqft === 250) {
-        setMarlaStandardType("250");
-      } else if (city.defaultMarlaSqft === 225) {
-        setMarlaStandardType("225");
-      } else {
-        setMarlaStandardType("272.25");
-      }
-    }
-  };
-
-  // Reset Rates to City Defaults
-  const handleResetToCityRates = () => {
-    setCustomRates({
-      cement: cityRates.cement,
-      steel: cityRates.steel,
-      brick: cityRates.brick,
-      sand: cityRates.sand,
-      crush: cityRates.crush,
-      labour: cityRates.labour
-    });
-    setUseCustomRates(false);
-    showToast(`Rates reset to official ${selectedCity.name} market benchmarks`, "info");
-  };
-
-  // Active Rates
+  // Effective rates
   const activeRates = useMemo(() => {
-    if (useCustomRates) {
-      return {
-        cementBagRate: customRates.cement,
-        steelKgRate: customRates.steel,
-        brickRate: customRates.brick,
-        sandCftRate: customRates.sand,
-        crushCftRate: customRates.crush,
-        labourSqftRate: customRates.labour,
-        transportRate: Math.round(coveredAreaSqft * cityRates.transportPerSqft)
-      };
-    }
     return {
-      cementBagRate: cityRates.cement,
-      steelKgRate: cityRates.steel,
-      brickRate: cityRates.brick,
-      sandCftRate: cityRates.sand,
-      crushCftRate: cityRates.crush,
-      labourSqftRate: cityRates.labour,
-      transportRate: Math.round(coveredAreaSqft * cityRates.transportPerSqft)
+      cementBagRate: useCustomRates ? customRates.cement : cityRates.cement,
+      steelKgRate: useCustomRates ? customRates.steel : cityRates.steel,
+      brickRate: useCustomRates ? customRates.brick : cityRates.brick,
+      sandCftRate: useCustomRates ? customRates.sand : cityRates.sand,
+      crushCftRate: useCustomRates ? customRates.crush : cityRates.crush,
+      labourRate: useCustomRates ? customRates.labour : cityRates.labour,
+      transportRatePerSqft: cityRates.transportPerSqft
     };
-  }, [useCustomRates, customRates, cityRates, coveredAreaSqft]);
+  }, [useCustomRates, customRates, cityRates]);
 
-  // 7. Core Calculations
+  // Real Civil Engineering Calculation Engine Integration
   const calculationResult = useMemo(() => {
-    const safeCovered = Math.max(50, coveredAreaSqft || autoSuggestedCoveredArea);
-    const safeFloors = Math.max(1, effectiveFloors);
+    const isGreyOnly = constructionScope === "grey";
 
-    // 1. Standard Grey structure civil engineering estimate
     const greyEst = calculateGreyStructureEstimate({
-      coveredAreaSqft: safeCovered,
-      numberOfFloors: safeFloors,
-      rates: activeRates
+      coveredAreaSqft,
+      numberOfFloors: floorsSelection,
+      rates: {
+        cementBagRate: activeRates.cementBagRate,
+        steelKgRate: activeRates.steelKgRate,
+        brickRate: activeRates.brickRate,
+        sandCftRate: activeRates.sandCftRate,
+        crushCftRate: activeRates.crushCftRate,
+        labourSqftRate: activeRates.labourRate,
+        transportRate: activeRates.transportRatePerSqft * coveredAreaSqft
+      }
     });
 
-    // 2. Full house estimate (finishing package included)
     const fullEst = calculateFullHouseEstimate({
-      plotAreaMarla: Math.max(0.1, plotAreaInMarlas),
-      coveredAreaSqft: safeCovered,
-      numberOfFloors: safeFloors,
+      plotAreaMarla: Math.max(1, Math.round(coveredAreaSqft / 225)),
+      coveredAreaSqft,
+      numberOfFloors: floorsSelection,
       quality: qualityTier,
-      rates: activeRates
+      rates: {
+        cementBagRate: activeRates.cementBagRate,
+        steelKgRate: activeRates.steelKgRate,
+        brickRate: activeRates.brickRate,
+        sandCftRate: activeRates.sandCftRate,
+        crushCftRate: activeRates.crushCftRate,
+        greyLabourSqftRate: activeRates.labourRate
+      }
     });
 
-    // 3. PRO Exact Construction Calculation (Version 3.0.0)
+    // Version 3.0.0: Reconciled Structural Master Engine
     const advancedPro = calculateAdvancedGreyStructure({
-      coveredAreaSqft: safeCovered,
-      numberOfFloors: safeFloors,
-      plotAreaMarla: Math.max(0.1, plotAreaInMarlas),
-      rates: activeRates,
+      coveredAreaSqft,
+      numberOfFloors: floorsSelection,
       proInputs: {
         ...proInputs,
         isProEnabled: isPro
+      },
+      rates: {
+        cementBagRate: activeRates.cementBagRate,
+        steelKgRate: activeRates.steelKgRate,
+        brickRate: activeRates.brickRate,
+        sandCftRate: activeRates.sandCftRate,
+        crushCftRate: activeRates.crushCftRate,
+        labourSqftRate: activeRates.labourRate,
+        transportRate: activeRates.transportRatePerSqft * coveredAreaSqft
       }
     });
 
-    const isGreyOnly = constructionScope === "grey";
-    const greyGrandTotal = isPro ? advancedPro.totalCost : greyEst.costs.grandTotal;
-    const finishingEstimate = Math.max(0, fullEst.summary.totalProjectEstimate - greyEst.costs.grandTotal);
-    const totalCost = isGreyOnly ? greyGrandTotal : (greyGrandTotal + finishingEstimate);
-    const costPerSqft = Math.round(totalCost / safeCovered);
-
-    // Itemized quantities & costs (reconciled based on PRO or Standard)
     const cementBags = isPro ? advancedPro.materials.cement.finalQuantity : greyEst.materials.cement.finalQuantity;
-    const cementCost = Math.round(cementBags * activeRates.cementBagRate);
-
     const steelKg = isPro ? advancedPro.materials.steel.finalQuantity : greyEst.materials.steel.finalQuantity;
-    const steelCost = Math.round(steelKg * activeRates.steelKgRate);
-
     const bricksCount = isPro ? advancedPro.materials.bricks.finalQuantity : greyEst.materials.bricks.finalQuantity;
-    const bricksCost = Math.round(bricksCount * activeRates.brickRate);
-
     const sandCft = isPro ? advancedPro.materials.sand.finalQuantity : greyEst.materials.sand.finalQuantity;
-    const sandCost = Math.round(sandCft * activeRates.sandCftRate);
-
     const crushCft = isPro ? advancedPro.materials.crush.finalQuantity : greyEst.materials.crush.finalQuantity;
+
+    const cementCost = Math.round(cementBags * activeRates.cementBagRate);
+    const steelCost = Math.round(steelKg * activeRates.steelKgRate);
+    const bricksCost = Math.round(bricksCount * activeRates.brickRate);
+    const sandCost = Math.round(sandCft * activeRates.sandCftRate);
     const crushCost = Math.round(crushCft * activeRates.crushCftRate);
 
     const labourCost = isPro ? advancedPro.costs.labourCost : greyEst.costs.labourCost;
-    const transportCost = isPro ? advancedPro.costs.transportCost : greyEst.costs.transportCost;
-    const wastageCost = isPro ? advancedPro.costs.wastageCost : Math.round((cementCost + steelCost + bricksCost + sandCost + crushCost) * 0.045);
-    const finishingCost = isGreyOnly ? 0 : finishingEstimate;
+    const transportCost = isPro
+      ? advancedPro.costs.transportCost
+      : Math.round(coveredAreaSqft * activeRates.transportRatePerSqft);
+    const wastageCost = Math.round((cementCost + steelCost + bricksCost + sandCost + crushCost) * 0.035);
 
-    // Specific Grey Breakdown Elements
-    const brickMasonryCost = isPro
-      ? advancedPro.detailedEstimate.breakdown.brickworkCost
-      : greyEst.elementsBreakdown.brickMasonryCost;
-    const plasterCost = isPro
-      ? advancedPro.detailedEstimate.breakdown.plasterCost
-      : Math.round(greyEst.costs.grandTotal * 0.12);
-    const roofSlabCost = isPro
-      ? (advancedPro.detailedEstimate.breakdown.slabsCost + advancedPro.detailedEstimate.breakdown.beamsCost)
-      : (greyEst.elementsBreakdown.roofSlabsCost + greyEst.elementsBreakdown.beamsAndLintelsCost);
-    const foundationCost = isPro
-      ? advancedPro.detailedEstimate.breakdown.foundationCost
-      : (greyEst.elementsBreakdown.foundationCost + greyEst.elementsBreakdown.plinthAndDpcCost);
+    const greyGrandTotal = isPro
+      ? advancedPro.totalCost
+      : cementCost + steelCost + bricksCost + sandCost + crushCost + labourCost + transportCost + wastageCost;
 
-    // Timeline in months
-    const estimatedDurationMonths =
-      safeFloors === 1 ? "4 - 5" : safeFloors === 2 ? "7 - 9" : safeFloors === 3 ? "10 - 12" : "13 - 16";
+    const finishingCost = isGreyOnly ? 0 : Math.max(0, fullEst.summary.totalProjectEstimate - greyGrandTotal);
+    const totalCost = isGreyOnly ? greyGrandTotal : greyGrandTotal + finishingCost;
+    const costPerSqft = Math.round(totalCost / Math.max(1, coveredAreaSqft));
 
-    // Dynamic Chart Data with real calculated percentages
-    const chartItems = [
-      { name: "Cement", cost: cementCost, color: "#059669" },
-      { name: "Steel (Saria)", cost: steelCost, color: "#2563eb" },
-      { name: "Bricks", cost: bricksCost, color: "#d97706" },
-      { name: "Sand & Crush", cost: sandCost + crushCost, color: "#0891b2" },
-      { name: "Labour & Shuttering", cost: labourCost, color: "#7c3aed" },
-      { name: "Transport & Logistics", cost: transportCost, color: "#ea580c" },
-      { name: "Wastage Allowance", cost: wastageCost, color: "#64748b" }
-    ];
-
-    if (!isGreyOnly) {
-      chartItems.push({ name: "Finishing Package", cost: finishingCost, color: "#ec4899" });
+    // Estimated duration
+    let durationMin = 5;
+    let durationMax = 7;
+    if (coveredAreaSqft > 4000 || floorsSelection >= 3) {
+      durationMin = 10;
+      durationMax = 14;
+    } else if (coveredAreaSqft > 2200 || floorsSelection === 2) {
+      durationMin = 7;
+      durationMax = 9;
     }
+    const estimatedDuration = `${durationMin} - ${durationMax} Months`;
+
+    // 7 Real Material Breakdown Items for Donut Chart
+    const chartItems = [
+      { name: "Cement", cost: cementCost, color: "#2563eb" },
+      { name: "Steel (Saria)", cost: steelCost, color: "#3b82f6" },
+      { name: "Bricks", cost: bricksCost, color: "#f97316" },
+      { name: "Sand & Crush", cost: sandCost + crushCost, color: "#10b981" },
+      { name: "Labour & Shuttering", cost: labourCost, color: "#8b5cf6" },
+      { name: "Transport & Logistics", cost: transportCost, color: "#ec4899" },
+      { name: "Wastage Allowance", cost: wastageCost, color: "#06b6d4" }
+    ];
 
     const chartTotal = chartItems.reduce((acc, i) => acc + i.cost, 0);
     const chartData = chartItems.map((item) => ({
@@ -522,13 +355,10 @@ export function PrimaryPropertyCalculator() {
     return {
       totalCost,
       costPerSqft,
-      greyStructureCost: greyGrandTotal,
-      finishingCost,
-      estimatedDurationMonths,
+      estimatedDuration,
       cementBags,
       cementCost,
       steelKg,
-      steelTons: (steelKg / 1000).toFixed(2),
       steelCost,
       bricksCount,
       bricksCost,
@@ -540,1277 +370,591 @@ export function PrimaryPropertyCalculator() {
       transportCost,
       wastageCost,
       chartData,
-      activeRates,
-      greyEst,
-      fullEst,
-      brickMasonryCost,
-      plasterCost,
-      roofSlabCost,
-      foundationCost,
-      proDetailedEstimate: advancedPro.detailedEstimate,
-      isProMode: isPro
+      chartTotal
     };
-  }, [
-    coveredAreaSqft,
-    autoSuggestedCoveredArea,
-    effectiveFloors,
-    activeRates,
-    qualityTier,
-    constructionScope,
-    plotAreaInMarlas,
-    isPro,
-    proInputs
-  ]);
+  }, [coveredAreaSqft, floorsSelection, activeRates, qualityTier, constructionScope, isPro, proInputs]);
 
-  // Breakdown Sub-tab state
-  const [breakdownView, setBreakdownView] = useState<"grey" | "finishing" | "pro_exact">("grey");
+  // Handlers
+  const handleCalculateEstimate = () => {
+    showToast("Calculation updated with latest parameters!", "info");
+  };
 
-  const scrollToResults = () => {
-    const el = document.getElementById("calculation-results-anchor");
-    if (el) el.scrollIntoView({ behavior: "smooth" });
+  const handleReset = () => {
+    setPlotSize(10);
+    setPlotUnit("marla");
+    setFloorsSelection(2);
+    setConstructionScope("grey");
+    setUserCoveredArea(null);
+    setUseCustomRates(false);
+    showToast("Calculator reset to standard defaults.", "info");
+  };
+
+  const handleSharePdfOrPrint = () => {
+    if (!isPro) {
+      openUpgradeModal("Share the calculation in PDF or Print");
+    } else {
+      window.print();
+    }
   };
 
   return (
-    <div id="calculator-section" className="space-y-5 max-w-7xl mx-auto w-full text-slate-900 dark:text-slate-100 transition-colors duration-200">
-      {/* 0. TOP BANNER: SHARE CALCULATION IN PDF OR PRINT (PREMIUM GATED) */}
-      <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 dark:from-emerald-950/90 dark:via-teal-950/90 dark:to-emerald-950/90 border border-emerald-400/40 dark:border-emerald-500/30 rounded-2xl p-4 sm:p-5 shadow-lg shadow-emerald-950/10 text-white transition-all">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-start sm:items-center gap-3.5 min-w-0">
-            <div className="w-11 h-11 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shrink-0 shadow-xs">
-              <Printer className="w-5 h-5 text-emerald-200" />
+    <div id="calculator-section" className="space-y-6 max-w-7xl mx-auto w-full text-slate-900 dark:text-slate-100 transition-colors duration-200">
+      {/* ========================================================================= */}
+      {/* 1. HERO PROPERTY CALCULATOR BANNER (EXACT MATCH TO REFERENCE IMAGE)       */}
+      {/* ========================================================================= */}
+      <div className="bg-[#054e38] dark:bg-[#033023] border border-emerald-600/40 rounded-3xl p-6 sm:p-7 text-white shadow-lg relative overflow-hidden">
+        {/* Subtle ambient blur */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-5">
+          {/* Left: Home Icon + Title + Subtitle */}
+          <div className="flex items-start sm:items-center gap-4 min-w-0">
+            <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-white shrink-0 shadow-inner">
+              <Home className="w-6 h-6 text-emerald-200" />
             </div>
             <div>
-              <div className="flex flex-wrap items-center gap-2 mb-1">
-                <span className="font-extrabold text-sm sm:text-base tracking-tight text-white drop-shadow-xs">
-                  Share the calculation in PDF or Print
-                </span>
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 flex items-center gap-1 shadow-xs">
-                  <Sparkles className="w-2.5 h-2.5" />
-                  <span>PREMIUM</span>
-                </span>
-                <span className="text-xs text-emerald-100/90 font-semibold hidden sm:inline-block">
-                  • Official Contractor &amp; Bank Estimation Report
-                </span>
-              </div>
-              <p className="text-xs text-emerald-100/80 max-w-2xl leading-relaxed">
-                Export an official watermarked PDF cost report with itemized civil quantities, live market rates, and labour schedules ready for WhatsApp sharing or instant printing.
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-white">
+                Property Calculator
+              </h1>
+              <p className="text-xs sm:text-sm font-semibold text-emerald-200/90 mt-0.5">
+                Estimate your construction cost with confidence
+              </p>
+              <p className="text-[11px] sm:text-xs text-emerald-100/70 mt-0.5">
+                Get accurate material quantities, labour cost and total estimate for your dream home or project.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0 self-start md:self-center">
-            <button
-              type="button"
-              onClick={handleSharePdfOrPrint}
-              className="px-4 py-2.5 rounded-xl bg-white text-emerald-900 hover:bg-emerald-50 active:scale-95 font-extrabold text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer"
-            >
-              <Download className="w-4 h-4 text-emerald-700" />
-              <span>Share in PDF / Print</span>
-              {!isPro && <Lock className="w-3.5 h-3.5 text-amber-600 ml-0.5" />}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* 1. TOP CARD: MATERIAL RATES PANEL */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xs">
-
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/60 flex items-center justify-center text-[#059669] dark:text-emerald-400 shrink-0">
-              <Sliders className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-extrabold text-slate-900 dark:text-slate-100 text-sm sm:text-base">
-                  Material Rates (Cement, Steel, Bricks, Sand, Crush, Labour)
-                </span>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-500/40 text-[#059669] dark:text-emerald-400">
-                  FREE LIVE RECALCULATION
-                </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">
-                  {selectedCity.name} Official Benchmarks
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Override city benchmarks with your local mandi or supplier quotes. Instant recalculation.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0 self-end md:self-auto">
-            <button
-              type="button"
-              onClick={() => setShowRatesPanel(!showRatesPanel)}
-              className={cn(
-                "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-xs",
-                showRatesPanel
-                  ? "bg-slate-800 dark:bg-slate-700 border-slate-800 text-white"
-                  : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300"
-              )}
-            >
-              <span>{useCustomRates ? "Rates: Custom" : "Edit Rates"}</span>
-              {showRatesPanel ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Collapsible Rate Editor Drawer */}
-        {showRatesPanel && (
-          <div className="mt-4 pt-4 border-t border-slate-200/90 dark:border-slate-800/80 space-y-3 animate-in fade-in duration-200">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-[#059669] dark:text-emerald-400" />
-                <span>Adjust Live Supplier / Mandi Rates ({selectedCity.name})</span>
-              </span>
-
-              {useCustomRates && (
-                <button
-                  type="button"
-                  onClick={handleResetToCityRates}
-                  className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-bold flex items-center gap-1 transition-colors border border-slate-200 dark:border-slate-700"
-                >
-                  <RotateCcw className="w-3 h-3 text-slate-500" />
-                  <span>Reset to City Benchmark</span>
-                </button>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-xs">
-              {/* Cement */}
-              <div className="bg-slate-50/80 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 space-y-1.5 shadow-2xs">
-                <span className="text-[11px] font-extrabold uppercase text-slate-700 dark:text-slate-300 block">Cement (Bag)</span>
-                <div className="relative">
-                  <span className="absolute left-2.5 top-2 text-xs text-slate-400 font-bold">Rs</span>
-                  <input
-                    type="number"
-                    value={customRates.cement}
-                    onChange={(e) => {
-                      setCustomRates((prev) => ({ ...prev, cement: parseFloat(e.target.value) || 0 }));
-                      setUseCustomRates(true);
-                    }}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#059669] rounded-lg pl-8 pr-2 py-1.5 text-xs font-black text-slate-900 dark:text-white focus:outline-none shadow-2xs"
-                  />
-                </div>
-                <span className="text-[10px] text-slate-500 font-medium block">Benchmark: Rs {cityRates.cement}</span>
-              </div>
-
-              {/* Steel */}
-              <div className="bg-slate-50/80 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 space-y-1.5 shadow-2xs">
-                <span className="text-[11px] font-extrabold uppercase text-slate-700 dark:text-slate-300 block">Steel / Sariya (Kg)</span>
-                <div className="relative">
-                  <span className="absolute left-2.5 top-2 text-xs text-slate-400 font-bold">Rs</span>
-                  <input
-                    type="number"
-                    value={customRates.steel}
-                    onChange={(e) => {
-                      setCustomRates((prev) => ({ ...prev, steel: parseFloat(e.target.value) || 0 }));
-                      setUseCustomRates(true);
-                    }}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#059669] rounded-lg pl-8 pr-2 py-1.5 text-xs font-black text-slate-900 dark:text-white focus:outline-none shadow-2xs"
-                  />
-                </div>
-                <span className="text-[10px] text-slate-500 font-medium block">Benchmark: Rs {cityRates.steel}</span>
-              </div>
-
-              {/* Bricks */}
-              <div className="bg-slate-50/80 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 space-y-1.5 shadow-2xs">
-                <span className="text-[11px] font-extrabold uppercase text-slate-700 dark:text-slate-300 block">Bricks (Per Piece)</span>
-                <div className="relative">
-                  <span className="absolute left-2.5 top-2 text-xs text-slate-400 font-bold">Rs</span>
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={customRates.brick}
-                    onChange={(e) => {
-                      setCustomRates((prev) => ({ ...prev, brick: parseFloat(e.target.value) || 0 }));
-                      setUseCustomRates(true);
-                    }}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#059669] rounded-lg pl-8 pr-2 py-1.5 text-xs font-black text-slate-900 dark:text-white focus:outline-none shadow-2xs"
-                  />
-                </div>
-                <span className="text-[10px] text-slate-500 font-medium block">Benchmark: Rs {cityRates.brick}</span>
-              </div>
-
-              {/* Sand */}
-              <div className="bg-slate-50/80 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 space-y-1.5 shadow-2xs">
-                <span className="text-[11px] font-extrabold uppercase text-slate-700 dark:text-slate-300 block">Sand / Rait (CFT)</span>
-                <div className="relative">
-                  <span className="absolute left-2.5 top-2 text-xs text-slate-400 font-bold">Rs</span>
-                  <input
-                    type="number"
-                    value={customRates.sand}
-                    onChange={(e) => {
-                      setCustomRates((prev) => ({ ...prev, sand: parseFloat(e.target.value) || 0 }));
-                      setUseCustomRates(true);
-                    }}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#059669] rounded-lg pl-8 pr-2 py-1.5 text-xs font-black text-slate-900 dark:text-white focus:outline-none shadow-2xs"
-                  />
-                </div>
-                <span className="text-[10px] text-slate-500 font-medium block">Benchmark: Rs {cityRates.sand}</span>
-              </div>
-
-              {/* Crush */}
-              <div className="bg-slate-50/80 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 space-y-1.5 shadow-2xs">
-                <span className="text-[11px] font-extrabold uppercase text-slate-700 dark:text-slate-300 block">Crush / Bajri (CFT)</span>
-                <div className="relative">
-                  <span className="absolute left-2.5 top-2 text-xs text-slate-400 font-bold">Rs</span>
-                  <input
-                    type="number"
-                    value={customRates.crush}
-                    onChange={(e) => {
-                      setCustomRates((prev) => ({ ...prev, crush: parseFloat(e.target.value) || 0 }));
-                      setUseCustomRates(true);
-                    }}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#059669] rounded-lg pl-8 pr-2 py-1.5 text-xs font-black text-slate-900 dark:text-white focus:outline-none shadow-2xs"
-                  />
-                </div>
-                <span className="text-[10px] text-slate-500 font-medium block">Benchmark: Rs {cityRates.crush}</span>
-              </div>
-
-              {/* Labour */}
-              <div className="bg-slate-50/80 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 space-y-1.5 shadow-2xs">
-                <span className="text-[11px] font-extrabold uppercase text-slate-700 dark:text-slate-300 block">Labour Rate (/Sqft)</span>
-                <div className="relative">
-                  <span className="absolute left-2.5 top-2 text-xs text-slate-400 font-bold">Rs</span>
-                  <input
-                    type="number"
-                    value={customRates.labour}
-                    onChange={(e) => {
-                      setCustomRates((prev) => ({ ...prev, labour: parseFloat(e.target.value) || 0 }));
-                      setUseCustomRates(true);
-                    }}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#059669] rounded-lg pl-8 pr-2 py-1.5 text-xs font-black text-slate-900 dark:text-white focus:outline-none shadow-2xs"
-                  />
-                </div>
-                <span className="text-[10px] text-slate-500 font-medium block">Benchmark: Rs {cityRates.labour}</span>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* 2. PLOT & SPECIFICATION TUNING PANEL */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 sm:p-6 space-y-5 shadow-xs">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-          <div className="flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-[#059669] dark:text-emerald-400" />
-            <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
-              Property Specifications &amp; Location
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            {QUICK_CITIES.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => {
-                  setSelectedCityId(c.id);
-                  setGlobalCityId(c.id);
-                }}
-                className={cn(
-                  "px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer",
-                  selectedCityId === c.id
-                    ? "bg-[#059669] text-white shadow-xs"
-                    : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
-                )}
-              >
-                {c.name}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          {/* Plot Selection: Prominently Enlarged */}
-          <div className="lg:col-span-6 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-                Plot Size Selection (پلاٹ کا سائز)
+          {/* Right: City Selector Dropdown + Live Rates Pill */}
+          <div className="flex flex-wrap items-center gap-3 shrink-0 self-start md:self-center">
+            {/* Select City Dropdown */}
+            <div className="flex flex-col text-left">
+              <label className="text-[10px] font-bold text-emerald-200/80 uppercase tracking-wider mb-1">
+                Select City
               </label>
-              <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-bold">
-                <button
-                  type="button"
-                  onClick={() => setPlotDimensionMode("standard")}
-                  className={cn(
-                    "px-2.5 py-1 rounded-md transition-all cursor-pointer",
-                    plotDimensionMode === "standard"
-                      ? "bg-white dark:bg-slate-900 text-[#059669] dark:text-emerald-400 shadow-2xs font-black"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
-                  )}
+              <div className="relative">
+                <select
+                  value={selectedCityId}
+                  onChange={(e) => {
+                    setSelectedCityId(e.target.value);
+                    setGlobalCityId(e.target.value);
+                  }}
+                  className="appearance-none bg-white text-slate-800 font-bold text-xs pl-8 pr-9 py-2 rounded-xl shadow-sm focus:outline-none cursor-pointer border border-white/30"
                 >
-                  Standard
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPlotDimensionMode("custom")}
-                  className={cn(
-                    "px-2.5 py-1 rounded-md transition-all cursor-pointer",
-                    plotDimensionMode === "custom"
-                      ? "bg-white dark:bg-slate-900 text-[#059669] dark:text-emerald-400 shadow-2xs font-black"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
-                  )}
-                >
-                  Custom (W×L)
-                </button>
+                  <option value="lhr">Lahore</option>
+                  <option value="isb">Islamabad</option>
+                  <option value="rwp">Rawalpindi</option>
+                  <option value="khi">Karachi</option>
+                  <option value="pew">Peshawar</option>
+                  <option value="mul">Multan</option>
+                  <option value="fsd">Faisalabad</option>
+                  <option value="skt">Sialkot</option>
+                </select>
+                <MapPin className="w-3.5 h-3.5 text-emerald-600 absolute left-2.5 top-2.5 pointer-events-none" />
+                <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 top-2.5 pointer-events-none" />
               </div>
             </div>
 
-            {plotDimensionMode === "standard" ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5">
-                {PAK_STANDARD_PLOTS.map((p) => {
-                  const isSelected = plotSize === p.size && plotUnit === p.unit;
-                  return (
-                    <button
-                      key={p.label}
-                      type="button"
-                      onClick={() => {
-                        setPlotSize(p.size);
-                        setPlotUnit(p.unit);
-                      }}
-                      className={cn(
-                        "py-3 sm:py-3.5 px-3 rounded-2xl text-center border-2 transition-all flex flex-col items-center justify-center cursor-pointer min-h-[74px] sm:min-h-[82px]",
-                        isSelected
-                          ? "bg-[#059669] text-white border-emerald-600 shadow-md shadow-emerald-800/15 scale-[1.02]"
-                          : "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400 hover:bg-emerald-50/40"
-                      )}
-                    >
-                      <span className="text-sm sm:text-base font-black tracking-tight">{p.label}</span>
-                      <span className={cn("text-[11px] font-medium mt-0.5", isSelected ? "text-emerald-100" : "text-slate-400")}>
-                        {p.dimensions}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="p-3 rounded-2xl bg-slate-50/90 dark:bg-slate-950 border border-slate-200/90 dark:border-slate-800 grid grid-cols-2 gap-3 text-xs">
+            {/* Live Rates Pill Badge */}
+            <div className="flex flex-col text-left self-end">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#033827] border border-emerald-500/40 text-emerald-200 rounded-xl text-xs font-bold shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 <div>
-                  <span className="text-xs text-slate-600 dark:text-slate-400 block mb-1 font-bold">Width (ft)</span>
-                  <input
-                    type="number"
-                    value={customWidthFt}
-                    onChange={(e) => setCustomWidthFt(parseFloat(e.target.value) || 25)}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#059669] rounded-xl px-3 py-2 text-sm font-bold text-slate-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <span className="text-xs text-slate-600 dark:text-slate-400 block mb-1 font-bold">Length (ft)</span>
-                  <input
-                    type="number"
-                    value={customLengthFt}
-                    onChange={(e) => setCustomLengthFt(parseFloat(e.target.value) || 50)}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#059669] rounded-xl px-3 py-2 text-sm font-bold text-slate-900 dark:text-white"
-                  />
+                  <div className="text-[11px] font-extrabold text-white leading-none">Live Rates</div>
+                  <div className="text-[9px] text-emerald-300/80 font-medium mt-0.5">Last updated: 09 Sep 2026</div>
                 </div>
               </div>
-            )}
-          </div>
-
-          {/* Floors */}
-          <div className="lg:col-span-3 space-y-2.5">
-            <label className="text-xs font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wider block">
-              Storeys (منزلیں)
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { val: 1, label: "Single", sub: "Ground" },
-                { val: 2, label: "Double", sub: "G + 1" },
-                { val: 3, label: "Triple", sub: "G + 2" }
-              ].map((f) => (
-                <button
-                  key={f.val}
-                  type="button"
-                  onClick={() => setFloorsSelection(f.val)}
-                  className={cn(
-                    "py-3 px-2 rounded-2xl border-2 text-center transition-all cursor-pointer flex flex-col items-center justify-center min-h-[74px] sm:min-h-[82px]",
-                    floorsSelection === f.val
-                      ? "bg-[#059669] text-white border-emerald-600 shadow-md shadow-emerald-800/15 scale-[1.02]"
-                      : "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:border-emerald-400 hover:bg-emerald-50/40"
-                  )}
-                >
-                  <span className="text-xs sm:text-sm font-black">{f.label}</span>
-                  <span className={cn("text-[10px] font-medium mt-0.5", floorsSelection === f.val ? "text-emerald-100" : "text-slate-400")}>
-                    {f.sub}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Scope of Work */}
-          <div className="lg:col-span-3 space-y-2.5">
-            <label className="text-xs font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wider block">
-              Scope of Work
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setConstructionScope("grey")}
-                className={cn(
-                  "py-3 px-2.5 rounded-2xl text-center border-2 transition-all cursor-pointer flex flex-col items-center justify-center min-h-[74px] sm:min-h-[82px]",
-                  constructionScope === "grey"
-                    ? "bg-slate-800 dark:bg-slate-700 text-white border-slate-800 dark:border-slate-600 shadow-md scale-[1.02]"
-                    : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
-                )}
-              >
-                <div className="text-xs sm:text-sm font-black">Grey Structure</div>
-                <div className="text-[10px] opacity-80 font-medium">گرے اسٹرکچر</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setConstructionScope("complete")}
-                className={cn(
-                  "py-3 px-2.5 rounded-2xl text-center border-2 transition-all cursor-pointer flex flex-col items-center justify-center min-h-[74px] sm:min-h-[82px]",
-                  constructionScope === "complete"
-                    ? "bg-[#059669] text-white border-emerald-600 shadow-md shadow-emerald-800/15 scale-[1.02]"
-                    : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-emerald-400"
-                )}
-              >
-                <div className="text-xs sm:text-sm font-black">Full Finishing</div>
-                <div className="text-[10px] opacity-80 font-medium">مکمل فنشنگ</div>
-              </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* PRO — EXACT CONSTRUCTION CALCULATION SUITE (Version 3.0.0) */}
-      <ProConstructionSection
-        inputs={proInputs}
-        onChange={setProInputs}
+      {/* ========================================================================= */}
+      {/* 2. DUAL-TIER SIDE-BY-SIDE PANELS (PRO LEFT • FREE RIGHT)                  */}
+      {/* ========================================================================= */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 w-full items-stretch">
+        {/* ----------------------------------------------------------------------- */}
+        {/* LEFT PANEL: PRO — EXACT CONSTRUCTION CALCULATION (5 COLS)               */}
+        {/* ----------------------------------------------------------------------- */}
+        <div className="lg:col-span-5 bg-[#f0fdf4] dark:bg-emerald-950/20 border-2 border-emerald-500/50 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col justify-between space-y-5">
+          <div className="space-y-4">
+            {/* Top Bar: PRO Badge + Title + Upgrade Button */}
+            <div className="flex items-center justify-between gap-2 border-b border-emerald-200/60 dark:border-emerald-800/60 pb-3.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-emerald-600 text-white shadow-xs">
+                  <Crown className="w-3.5 h-3.5 text-amber-300" />
+                  <span>PRO</span>
+                </span>
+                <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                  Exact Construction Calculation
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => openUpgradeModal("PRO — Exact Construction Calculation")}
+                className="px-3 py-1.5 rounded-xl bg-[#059669] hover:bg-emerald-700 text-white font-extrabold text-xs shadow-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+              >
+                <Crown className="w-3.5 h-3.5 text-amber-300" />
+                <span>Upgrade to PRO</span>
+              </button>
+            </div>
+
+            {/* Sub-Badges: More Accurate • Detailed • Professional */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold">
+                More Accurate
+              </span>
+              <span className="text-slate-300 dark:text-slate-700">•</span>
+              <span className="px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold">
+                Detailed
+              </span>
+              <span className="text-slate-300 dark:text-slate-700">•</span>
+              <span className="px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold">
+                Professional
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              Get precise material quantities, accurate costs and advanced construction options for a more reliable estimate.
+            </p>
+
+            {/* 6 Compact Feature Cards Grid (2 cols x 3 rows) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              {/* Card 1: Wall Height */}
+              <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-200/80 dark:border-emerald-800/60 shadow-2xs space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                    <Ruler className="w-4 h-4" />
+                  </div>
+                  <h3 className="font-extrabold text-xs text-slate-900 dark:text-white">Wall Height</h3>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                  Set exact wall height (automatic or manual) for accurate wall volume and material calculation.
+                </p>
+              </div>
+
+              {/* Card 2: Bathroom Count & Size */}
+              <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-200/80 dark:border-emerald-800/60 shadow-2xs space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 flex items-center justify-center shrink-0">
+                    <Bath className="w-4 h-4" />
+                  </div>
+                  <h3 className="font-extrabold text-xs text-slate-900 dark:text-white">Bathroom Count &amp; Size</h3>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                  Add multiple bathrooms with custom dimensions for precise material and cost estimation.
+                </p>
+              </div>
+
+              {/* Card 3: Foundation Depth & Dimensions */}
+              <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-200/80 dark:border-emerald-800/60 shadow-2xs space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                    <Layers className="w-4 h-4" />
+                  </div>
+                  <h3 className="font-extrabold text-xs text-slate-900 dark:text-white leading-tight">Foundation Depth &amp; Dimensions</h3>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                  Specify foundation depth, width and type for exact excavation and material needs.
+                </p>
+              </div>
+
+              {/* Card 4: Columns & Beams */}
+              <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-200/80 dark:border-emerald-800/60 shadow-2xs space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                    <Building className="w-4 h-4" />
+                  </div>
+                  <h3 className="font-extrabold text-xs text-slate-900 dark:text-white">Columns &amp; Beams</h3>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                  Add column and beam count, size and length for structural accuracy.
+                </p>
+              </div>
+
+              {/* Card 5: Automatic / Manual Mode */}
+              <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-200/80 dark:border-emerald-800/60 shadow-2xs space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                    <Settings className="w-4 h-4" />
+                  </div>
+                  <h3 className="font-extrabold text-xs text-slate-900 dark:text-white">Automatic / Manual Mode</h3>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                  Choose automatic calculations or enter your exact dimensions and specifications.
+                </p>
+              </div>
+
+              {/* Card 6: Detailed Material Breakdown */}
+              <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-200/80 dark:border-emerald-800/60 shadow-2xs space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                    <BarChart3 className="w-4 h-4" />
+                  </div>
+                  <h3 className="font-extrabold text-xs text-slate-900 dark:text-white leading-tight">Detailed Material Breakdown</h3>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                  Get exact quantities of cement, steel, bricks, sand, crush, labour and more.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Pro Callout & Drawer Toggle */}
+          <div className="pt-3 border-t border-emerald-200/60 dark:border-emerald-800/60 space-y-2.5">
+            <div className="flex items-start gap-2.5">
+              <Crown className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <div>
+                <span className="text-xs font-extrabold text-slate-900 dark:text-white block">
+                  These advanced features are available in PRO version only.
+                </span>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                  Unlock exact construction calculation and get the most accurate estimate.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => openUpgradeModal("PRO — Exact Construction Calculation")}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-[#059669] hover:bg-emerald-700 text-white font-extrabold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Crown className="w-3.5 h-3.5 text-amber-300" />
+                <span>Upgrade to PRO (PKR 200/mo • PKR 799/yr)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowProDrawer(!showProDrawer)}
+                className="py-2.5 px-3 rounded-xl border border-emerald-400 dark:border-emerald-700 bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-300 font-bold text-xs hover:bg-emerald-50 transition-colors flex items-center gap-1"
+                title="Configure Exact Structural Parameters"
+              >
+                <span>{showProDrawer ? "Hide Details" : "Configure"}</span>
+                {showProDrawer ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ----------------------------------------------------------------------- */}
+        {/* RIGHT PANEL: FREE — BASIC CALCULATOR (7 COLS)                           */}
+        {/* ----------------------------------------------------------------------- */}
+        <div className="lg:col-span-7 bg-white dark:bg-slate-900 border-2 border-blue-200/80 dark:border-blue-900/40 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col justify-between space-y-6">
+          <div className="space-y-5">
+            {/* Header: FREE Badge + Title + Subtitle */}
+            <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="px-2.5 py-0.5 rounded-md text-xs font-black uppercase tracking-wider bg-blue-600 text-white shadow-xs">
+                  FREE
+                </span>
+                <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                  Basic Calculator
+                </h2>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Quick estimate with standard settings
+              </p>
+            </div>
+
+            {/* Inputs & Estimate Split (Row with Inputs on Left, Estimate Card on Right) */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
+              {/* Left: Inputs (7 cols on md) */}
+              <div className="md:col-span-7 space-y-3.5">
+                {/* Row 1: Plot Size & Construction Type */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300 block mb-1">
+                      Plot Size
+                    </label>
+                    <select
+                      value={plotSize}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        setPlotSize(val);
+                        setUserCoveredArea(null);
+                      }}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+                    >
+                      <option value={3}>3 Marla (20×35 ft)</option>
+                      <option value={5}>5 Marla (25×50 ft)</option>
+                      <option value={7}>7 Marla (30×60 ft)</option>
+                      <option value={10}>10 Marla (35×70 ft)</option>
+                      <option value={20}>1 Kanal (50×90 ft)</option>
+                      <option value={40}>2 Kanal (75×120 ft)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300 block mb-1">
+                      Construction Type
+                    </label>
+                    <select
+                      value={constructionScope}
+                      onChange={(e) => setConstructionScope(e.target.value as ConstructionScope)}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+                    >
+                      <option value="grey">Grey Structure</option>
+                      <option value="complete">Full Finishing</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Row 2: Covered Area (sq ft) & Floors */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300 block mb-1">
+                      Covered Area (sq ft)
+                    </label>
+                    <input
+                      type="number"
+                      value={coveredAreaSqft}
+                      onChange={(e) => setUserCoveredArea(parseFloat(e.target.value) || 0)}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
+                      placeholder="e.g. 2,722"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300 block mb-1">
+                      Floors
+                    </label>
+                    <select
+                      value={floorsSelection}
+                      onChange={(e) => {
+                        setFloorsSelection(parseInt(e.target.value));
+                        setUserCoveredArea(null);
+                      }}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+                    >
+                      <option value={1}>Single (Ground)</option>
+                      <option value={2}>Double (Ground + 1)</option>
+                      <option value={3}>Triple (Ground + 2)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Row 3: Calculate Estimate & Reset Buttons */}
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleCalculateEstimate}
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>Calculate Estimate</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
+
+              {/* Right: Your Estimate Result Card (5 cols on md) */}
+              <div className="md:col-span-5 p-4 rounded-2xl bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200/80 dark:border-blue-800/40 text-center space-y-2">
+                <div className="text-xs font-bold text-blue-700 dark:text-blue-300">
+                  Your Estimate <span className="text-[10px] text-slate-400 font-medium">(Free Version)</span>
+                </div>
+
+                <div className="w-9 h-9 rounded-xl bg-blue-600/10 border border-blue-600/20 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto">
+                  <Home className="w-5 h-5" />
+                </div>
+
+                <div>
+                  <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                    {formatPKR(calculationResult.totalCost)}
+                  </div>
+                  <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
+                    Total Construction Cost
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-blue-200/60 dark:border-blue-800/40 grid grid-cols-2 gap-1 text-[11px]">
+                  <div>
+                    <span className="text-slate-400 block text-[9px]">Cost per Sq Ft</span>
+                    <strong className="text-slate-800 dark:text-slate-200 font-bold">
+                      Rs. {formatNumber(calculationResult.costPerSqft)}
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[9px]">Estimated Duration</span>
+                    <strong className="text-slate-800 dark:text-slate-200 font-bold">
+                      {calculationResult.estimatedDuration}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Material Breakdown (Free Version) - Donut Chart + Legend */}
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                  Material Breakdown <span className="text-[10px] text-slate-400 lowercase font-normal">(free version)</span>
+                </h3>
+                <span className="text-[11px] font-bold text-slate-500">
+                  Total: {formatPKR(calculationResult.totalCost)}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                {/* Donut Chart Viewport (5 cols on md) */}
+                <div className="md:col-span-5 h-44 relative flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={calculationResult.chartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={46}
+                        outerRadius={66}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {calculationResult.chartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(val: any) => [formatPKR(Number(val)), "Cost"]}
+                        contentStyle={{
+                          backgroundColor: "#0f172a",
+                          borderColor: "#334155",
+                          borderRadius: "12px",
+                          fontSize: "11px",
+                          color: "#fff"
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+
+                  {/* Center Label */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                    <span className="text-[9px] text-slate-400 font-medium leading-none">Total Cost</span>
+                    <span className="text-xs font-black text-slate-900 dark:text-white mt-0.5 leading-none">
+                      {formatLakhCrore(calculationResult.totalCost)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Legend List (7 cols on md) */}
+                <div className="md:col-span-7 space-y-1.5 text-xs">
+                  {calculationResult.chartData.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-slate-700 dark:text-slate-300">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                        <span className="truncate font-medium text-[11px]">{item.name}</span>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0 font-mono text-[11px]">
+                        <span className="text-slate-400 w-10 text-right">{item.percentage}%</span>
+                        <span className="font-bold text-slate-900 dark:text-white w-20 text-right">
+                          {formatPKR(item.value)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Optional Pro Drawer for Deep Input Tuning (Appears if user clicked Configure) */}
+      {showProDrawer && (
+        <div className="animate-in fade-in duration-200">
+          <ProConstructionSection
+            isPro={isPro}
+            inputs={proInputs}
+            onChange={setProInputs}
+            coveredAreaSqft={coveredAreaSqft}
+            floors={floorsSelection}
+            onProLockClick={(feat: string) => {
+              if (!isAuthenticated) {
+                openLoginModal();
+              } else {
+                openUpgradeModal(`PRO Feature: ${feat}`);
+              }
+            }}
+          />
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 3. AVAILABLE LAYOUT PLANS (FREE 1 • PRO 3)                                */}
+      {/* ========================================================================= */}
+      <HouseLayoutPlansSection
         isPro={isPro}
-        onProLockClick={(title) => openUpgradeModal(title)}
-        proMonthlyPrice={DEFAULT_LAUNCH_PRICE_CONFIG.monthlyPrice}
-        proAnnualPrice={DEFAULT_LAUNCH_PRICE_CONFIG.annualPrice}
-        coveredAreaSqft={coveredAreaSqft}
-        floors={effectiveFloors}
-        plotWidthFt={plotDimensionMode === "custom" ? customWidthFt : Math.round(Math.sqrt(plotAreaSqft * 0.5))}
-        plotLengthFt={plotDimensionMode === "custom" ? customLengthFt : Math.round(Math.sqrt(plotAreaSqft * 2))}
+        onUpgradeClick={(feat) => openUpgradeModal(feat)}
       />
 
-      {/* 3. HERO ACTION BUTTONS */}
-      <div className="flex flex-wrap items-center justify-center gap-3 py-1">
-        <button
-          type="button"
-          onClick={() => {
-            scrollToResults();
-            showToast("Calculations updated successfully", "success");
-          }}
-          className="px-8 py-3.5 rounded-2xl bg-[#059669] hover:bg-emerald-700 active:scale-[0.98] text-white font-black text-sm sm:text-base shadow-lg shadow-emerald-800/20 flex items-center justify-center gap-3 transition-all cursor-pointer tracking-wide group"
-        >
-          <Calculator className="w-5 h-5 text-emerald-100 group-hover:rotate-6 transition-transform" />
-          <span>{isPro ? "Recalculate PRO Estimate" : "Calculate Estimate"}</span>
-          <ArrowRight className="w-4 h-4 text-emerald-200 group-hover:translate-x-1 transition-transform" />
-        </button>
+      {/* ========================================================================= */}
+      {/* 4. THREE-COLUMN FEATURE COMPARISON & APP UPDATE SECTION                   */}
+      {/* ========================================================================= */}
+      <FeatureComparisonSection
+        onUpgradeClick={(feat) => openUpgradeModal(feat)}
+      />
 
-        <button
-          type="button"
-          onClick={handleSaveCalculation}
-          className="px-6 py-3.5 rounded-2xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 font-bold text-sm border-2 border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-2 transition-all cursor-pointer"
-        >
-          <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          <span>Save Calculation</span>
-        </button>
-      </div>
+      {/* ========================================================================= */}
+      {/* 5. GREY STRUCTURE COST BREAKDOWN (8 COMPACT CARDS)                        */}
+      {/* ========================================================================= */}
+      <GreyStructureBreakdownGrid
+        totalCost={calculationResult.totalCost}
+        coveredAreaSqft={coveredAreaSqft}
+        floors={floorsSelection}
+        cementBags={calculationResult.cementBags}
+        steelKg={calculationResult.steelKg}
+        bricksCount={calculationResult.bricksCount}
+        sandCft={calculationResult.sandCft}
+        crushCft={calculationResult.crushCft}
+        labourCost={calculationResult.labourCost}
+        transportCost={calculationResult.transportCost}
+        wastageCost={calculationResult.wastageCost}
+        cementBagRate={activeRates.cementBagRate}
+        steelKgRate={activeRates.steelKgRate}
+        brickRate={activeRates.brickRate}
+        sandCftRate={activeRates.sandCftRate}
+        crushCftRate={activeRates.crushCftRate}
+        labourRate={activeRates.labourRate}
+      />
 
-      {/* 4. ESTIMATED SUMMARY SECTION */}
-      <div id="calculation-results-anchor" className="space-y-4 pt-2">
-        <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-          <h3 className="text-xs sm:text-sm font-black text-[#059669] dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4 text-[#059669] dark:text-emerald-400" />
-            <span>
-              {constructionScope === "grey"
-                ? "ESTIMATED GREY STRUCTURE COST"
-                : "ESTIMATED COMPLETE HOUSE COST"}{" "}
-              • {selectedCity.name.toUpperCase()}
-            </span>
-          </h3>
-          <span className="text-sm sm:text-base font-black text-slate-900 dark:text-slate-100">
-            {formatLakhCrore(calculationResult.totalCost)}
+      {/* ========================================================================= */}
+      {/* 6. PROFESSIONAL CONTRACTOR TOOLS BAR                                      */}
+      {/* ========================================================================= */}
+      <div className="p-5 sm:p-6 rounded-3xl bg-slate-900 text-white border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+        <div>
+          <span className="text-xs sm:text-sm font-black text-emerald-400 uppercase tracking-wider block">
+            Professional Contractor Tools
           </span>
+          <p className="text-xs text-slate-300 mt-0.5">
+            Export detailed BOQ, PDF reports, vendor comparison and more with PRO features.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-          {/* Card 1: Grand Total */}
-          <div className="md:col-span-6 bg-white dark:bg-slate-900 border-2 border-emerald-500/70 rounded-2xl p-5 sm:p-6 flex flex-col justify-between shadow-xs">
-            <span className="text-xs font-black text-[#059669] dark:text-emerald-400 uppercase tracking-wider block mb-1">
-              {constructionScope === "grey" ? "GREY STRUCTURE ESTIMATE" : "COMPLETE TURNKEY ESTIMATE"}
-            </span>
-            <div className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight py-1">
-              {formatPKR(calculationResult.totalCost)}
-            </div>
-            <div className="flex items-center gap-2 mt-2 text-xs sm:text-sm font-semibold">
-              <span className="px-2.5 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-500/40 text-[#059669] dark:text-emerald-300 font-extrabold">
-                {formatLakhCrore(calculationResult.totalCost)}
-              </span>
-              <span className="text-slate-600 dark:text-slate-400 font-bold">
-                • Rs {formatNumber(calculationResult.costPerSqft)} / sq ft
-              </span>
-            </div>
-          </div>
-
-          {/* Card 2: Cost / Sq Ft & Area */}
-          <div className="md:col-span-3 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 sm:p-6 flex flex-col justify-between shadow-2xs">
-            <div>
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1">
-                Cost / Sq Ft &amp; Area
-              </span>
-              <div className="text-2xl sm:text-3xl font-black text-cyan-700 dark:text-cyan-400">
-                Rs {formatNumber(calculationResult.costPerSqft)}
-              </div>
-            </div>
-            <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-              Construction Area: <strong className="text-slate-900 dark:text-slate-100 font-black">{formatNumber(coveredAreaSqft)} sq ft</strong>
-            </div>
-          </div>
-
-          {/* Card 3: Estimated Duration */}
-          <div className="md:col-span-3 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 sm:p-6 flex flex-col justify-between shadow-2xs">
-            <div>
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1">
-                Estimated Duration
-              </span>
-              <div className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-400 flex items-center gap-2">
-                <Clock className="w-5 h-5 shrink-0" />
-                <span>{calculationResult.estimatedDurationMonths} Months</span>
-              </div>
-            </div>
-            <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-              Standard Pakistani civil schedule
-            </div>
-          </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              if (!isAuthenticated) {
+                openLoginModal();
+              } else if (!isPro) {
+                openUpgradeModal("Export BOQ Summary");
+              } else {
+                window.print();
+              }
+            }}
+            className="px-5 py-2.5 rounded-xl bg-[#059669] hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer"
+          >
+            <Download className="w-4 h-4" />
+            <span>Export BOQ Summary</span>
+          </button>
         </div>
       </div>
-
-      {/* 5. GREY STRUCTURE COST BREAKDOWN */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 sm:p-6 space-y-6 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-4">
-          <div className="flex items-center gap-2.5">
-            <Layers className="w-5 h-5 text-[#059669] dark:text-emerald-400 shrink-0" />
-            <div>
-              <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white uppercase tracking-wider">
-                {constructionScope === "grey" ? "GREY STRUCTURE COST BREAKDOWN" : "TURNKEY HOUSE COST BREAKDOWN"}
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Calculated dynamic percentage shares for materials, civil labour, transport, and wastage.
-              </p>
-            </div>
-          </div>
-          <span className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-extrabold">
-            Total: {formatPKR(calculationResult.totalCost)}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          {/* Donut Chart */}
-          <div className="lg:col-span-5 flex flex-col items-center justify-center relative min-h-[230px]">
-            {isMounted ? (
-              <div className="w-56 h-56 relative">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Tooltip
-                      formatter={(value: any, name: any) => [formatPKR(Number(value)), name]}
-                      contentStyle={{
-                        backgroundColor: "#ffffff",
-                        borderColor: "#e2e8f0",
-                        borderRadius: "0.75rem",
-                        fontSize: "12px",
-                        color: "#0f172a",
-                        boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)"
-                      }}
-                    />
-                    <Pie
-                      data={calculationResult.chartData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={62}
-                      outerRadius={88}
-                      paddingAngle={3}
-                      dataKey="value"
-                    >
-                      {calculationResult.chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-extrabold uppercase tracking-wider">
-                    COST / SQFT
-                  </span>
-                  <span className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
-                    Rs {formatNumber(calculationResult.costPerSqft)}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <div className="w-56 h-56 flex items-center justify-center text-xs text-slate-400">
-                Loading chart...
-              </div>
-            )}
-          </div>
-
-          {/* Breakdown List: Significantly Larger, Bold, and Highly Legible */}
-          <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {calculationResult.chartData.map((item) => (
-              <div
-                key={item.name}
-                className="p-3.5 sm:p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3 shadow-2xs hover:border-emerald-400/50 hover:bg-emerald-50/20 transition-all"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <span
-                    className="w-3.5 h-3.5 rounded-full shrink-0 shadow-xs"
-                    style={{ backgroundColor: item.color }}
-                  />
-                  <span className="text-slate-900 dark:text-slate-100 font-bold truncate text-sm sm:text-base">
-                    {item.name}
-                  </span>
-                </div>
-                <div className="text-right shrink-0">
-                  <span className="text-slate-900 dark:text-white font-black block text-sm sm:text-base">
-                    {formatPKR(item.value)}
-                  </span>
-                  <span className="text-xs sm:text-sm text-[#059669] dark:text-emerald-400 font-extrabold block">
-                    {item.percentage}%
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* 6. DETAILED COST BREAKDOWN: GREY STRUCTURE VS FINISHING */}
-      <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-              <Boxes className="w-4 h-4 text-[#059669] dark:text-emerald-400" />
-              <span>Detailed Construction Phase Breakdown</span>
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Exact civil work itemization explicitly showing quantities and what is included in each phase.
-            </p>
-          </div>
-
-          {/* Phase Sub-Tabs */}
-          <div className="flex flex-wrap bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold self-start sm:self-auto gap-1">
-            <button
-              type="button"
-              onClick={() => setBreakdownView("grey")}
-              className={cn(
-                "px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer",
-                breakdownView === "grey"
-                  ? "bg-[#059669] text-white shadow-xs font-extrabold"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-              )}
-            >
-              <span>Grey Structure Phase (گرے اسٹرکچر)</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setBreakdownView("finishing")}
-              className={cn(
-                "px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer",
-                breakdownView === "finishing"
-                  ? "bg-[#059669] text-white shadow-xs font-extrabold"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-              )}
-            >
-              <span>Finishing &amp; Furnishing (فنشنگ)</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (!isPro) {
-                  openUpgradeModal("PRO Detailed Estimate Breakdown");
-                  return;
-                }
-                setBreakdownView("pro_exact");
-              }}
-              className={cn(
-                "px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer",
-                breakdownView === "pro_exact"
-                  ? "bg-emerald-600 text-white shadow-xs font-extrabold"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-              )}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>PRO Detailed Estimate</span>
-              {!isPro && <Lock className="w-3 h-3 text-amber-400 ml-0.5" />}
-            </button>
-          </div>
-        </div>
-
-        {/* PRO EXACT DETAILED ESTIMATE VIEW */}
-        {breakdownView === "pro_exact" ? (
-          <div className="bg-white dark:bg-slate-900 border-2 border-emerald-500/50 rounded-3xl p-5 sm:p-7 space-y-6 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-black">
-                  <Sparkles className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-                    <span>PRO Detailed Estimate — Zero Double-Counting</span>
-                    <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full bg-emerald-600 text-white">PRO VERIFIED</span>
-                  </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Exact civil engineering quantity breakdown partitioning walls, bunyad, columns, beams, slabs &amp; bathrooms.
-                  </p>
-                </div>
-              </div>
-              <div className="text-right">
-                <span className="text-[11px] text-slate-400 font-bold uppercase block">Total Grey Structure</span>
-                <span className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                  {formatPKR(calculationResult.proDetailedEstimate ? calculationResult.proDetailedEstimate.breakdown.wallsCost + calculationResult.proDetailedEstimate.breakdown.foundationCost + calculationResult.proDetailedEstimate.breakdown.columnsCost + calculationResult.proDetailedEstimate.breakdown.beamsCost + calculationResult.proDetailedEstimate.breakdown.slabsCost + calculationResult.proDetailedEstimate.breakdown.bathroomsCost + calculationResult.proDetailedEstimate.breakdown.labourCost + calculationResult.proDetailedEstimate.breakdown.transportCost + calculationResult.proDetailedEstimate.breakdown.wastageCost : calculationResult.totalCost)}
-                </span>
-              </div>
-            </div>
-
-            {/* Traceable Element Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 text-xs">
-              {/* 1. Walls */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
-                <div className="flex justify-between font-bold">
-                  <span className="text-slate-700 dark:text-slate-300">Exterior &amp; Main Walls:</span>
-                  <span className="text-slate-900 dark:text-white font-mono font-black">{formatPKR(calculationResult.proDetailedEstimate?.breakdown.wallsCost || 0)}</span>
-                </div>
-                <div className="text-[11px] text-slate-500 space-y-0.5">
-                  <div>Net Masonry Volume: {calculationResult.proDetailedEstimate?.wallVolumeCft || 0} CFT</div>
-                  <div>Wall Height: {proInputs.wallHeightMode === "manual" ? proInputs.manualWallHeightFt : 10} ft</div>
-                </div>
-              </div>
-
-              {/* 2. Bathrooms */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
-                <div className="flex justify-between font-bold">
-                  <span className="text-slate-700 dark:text-slate-300">Bathrooms (4.5&quot; Partitions):</span>
-                  <span className="text-slate-900 dark:text-white font-mono font-black">{formatPKR(calculationResult.proDetailedEstimate?.breakdown.bathroomsCost || 0)}</span>
-                </div>
-                <div className="text-[11px] text-slate-500 space-y-0.5">
-                  <div>Count: {calculationResult.proDetailedEstimate?.numberOfBathrooms || 2} Bathrooms</div>
-                  <div>Custom room footprints with dedicated mortar</div>
-                </div>
-              </div>
-
-              {/* 3. Foundation */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
-                <div className="flex justify-between font-bold">
-                  <span className="text-slate-700 dark:text-slate-300">Foundation (Bunyad):</span>
-                  <span className="text-slate-900 dark:text-white font-mono font-black">{formatPKR(calculationResult.proDetailedEstimate?.breakdown.foundationCost || 0)}</span>
-                </div>
-                <div className="text-[11px] text-slate-500 space-y-0.5">
-                  <div>Type: {proInputs.foundationType.toUpperCase()} ({proInputs.foundationDepthFt} ft depth)</div>
-                  <div>Excavation: {calculationResult.proDetailedEstimate?.excavationVolumeCft || 0} CFT</div>
-                </div>
-              </div>
-
-              {/* 4. Columns */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
-                <div className="flex justify-between font-bold">
-                  <span className="text-slate-700 dark:text-slate-300">RCC Columns (Satoon):</span>
-                  <span className="text-slate-900 dark:text-white font-mono font-black">{formatPKR(calculationResult.proDetailedEstimate?.breakdown.columnsCost || 0)}</span>
-                </div>
-                <div className="text-[11px] text-slate-500 space-y-0.5">
-                  <div>Nodes: {calculationResult.proDetailedEstimate?.numberOfColumns || 16} Columns</div>
-                  <div>Cross-section: {Math.round(proInputs.columnWidthFt * 12)}&quot; × {Math.round(proInputs.columnDepthFt * 12)}&quot; RCC</div>
-                </div>
-              </div>
-
-              {/* 5. Beams */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
-                <div className="flex justify-between font-bold">
-                  <span className="text-slate-700 dark:text-slate-300">RCC Beams (Tir &amp; Ties):</span>
-                  <span className="text-slate-900 dark:text-white font-mono font-black">{formatPKR(calculationResult.proDetailedEstimate?.breakdown.beamsCost || 0)}</span>
-                </div>
-                <div className="text-[11px] text-slate-500 space-y-0.5">
-                  <div>Total Length: {proInputs.beamLengthMode === "manual" ? proInputs.manualBeamTotalLengthFt : "Auto framed"} ft</div>
-                  <div>Cross-section: {Math.round(proInputs.beamWidthFt * 12)}&quot; × {Math.round(proInputs.beamDepthFt * 12)}&quot; RCC</div>
-                </div>
-              </div>
-
-              {/* 6. Roof Slabs */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
-                <div className="flex justify-between font-bold">
-                  <span className="text-slate-700 dark:text-slate-300">RCC Roof Slabs (Lenter):</span>
-                  <span className="text-slate-900 dark:text-white font-mono font-black">{formatPKR(calculationResult.proDetailedEstimate?.breakdown.slabsCost || 0)}</span>
-                </div>
-                <div className="text-[11px] text-slate-500 space-y-0.5">
-                  <div>5.5-inch 1:2:4 monolithic casting</div>
-                  <div>Area: {formatNumber(coveredAreaSqft)} sq ft</div>
-                </div>
-              </div>
-
-              {/* 7. Plaster */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
-                <div className="flex justify-between font-bold">
-                  <span className="text-slate-700 dark:text-slate-300">Plaster (Internal &amp; External):</span>
-                  <span className="text-slate-900 dark:text-white font-mono font-black">{formatPKR(calculationResult.proDetailedEstimate?.breakdown.plasterCost || 0)}</span>
-                </div>
-                <div className="text-[11px] text-slate-500 space-y-0.5">
-                  <div>Dual-coat cement mortar</div>
-                  <div>Exposed Wall Area: ~{calculationResult.proDetailedEstimate?.wallAreaSqft || 0} sq ft</div>
-                </div>
-              </div>
-
-              {/* 8. Labour & Shuttering */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
-                <div className="flex justify-between font-bold">
-                  <span className="text-slate-700 dark:text-slate-300">Labour &amp; Shuttering:</span>
-                  <span className="text-slate-900 dark:text-white font-mono font-black">{formatPKR(calculationResult.proDetailedEstimate?.breakdown.labourCost || 0)}</span>
-                </div>
-                <div className="text-[11px] text-slate-500 space-y-0.5">
-                  <div>Steel-fixing, wood shuttering, mistry &amp; mazdoor</div>
-                  <div>Foundation trench excavation labour included</div>
-                </div>
-              </div>
-
-              {/* 9. Transport & Wastage */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
-                <div className="flex justify-between font-bold">
-                  <span className="text-slate-700 dark:text-slate-300">Logistics &amp; Wastage:</span>
-                  <span className="text-slate-900 dark:text-white font-mono font-black">
-                    {formatPKR((calculationResult.proDetailedEstimate?.breakdown.transportCost || 0) + (calculationResult.proDetailedEstimate?.breakdown.wastageCost || 0) + (calculationResult.proDetailedEstimate?.breakdown.otherCost || 0))}
-                  </span>
-                </div>
-                <div className="text-[11px] text-slate-500 space-y-0.5">
-                  <div>Transport: {formatPKR(calculationResult.proDetailedEstimate?.breakdown.transportCost || 0)}</div>
-                  <div>Wastage: {formatPKR(calculationResult.proDetailedEstimate?.breakdown.wastageCost || 0)}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Quantitative Materials Table */}
-            <div className="pt-2">
-              <h5 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-                Calculated Material Quantities (No Double-Counting)
-              </h5>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs text-center">
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase block">Cement</span>
-                  <strong className="text-sm text-slate-900 dark:text-white font-mono">{formatNumber(calculationResult.cementBags)}</strong>
-                  <span className="text-[10px] text-slate-500 block">Bags</span>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase block">Rebar Steel</span>
-                  <strong className="text-sm text-slate-900 dark:text-white font-mono">{formatNumber(calculationResult.steelKg)}</strong>
-                  <span className="text-[10px] text-slate-500 block">Kg ({calculationResult.steelTons} Tons)</span>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase block">Awwal Bricks</span>
-                  <strong className="text-sm text-slate-900 dark:text-white font-mono">{formatNumber(calculationResult.bricksCount)}</strong>
-                  <span className="text-[10px] text-slate-500 block">Pcs</span>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase block">Sand</span>
-                  <strong className="text-sm text-slate-900 dark:text-white font-mono">{formatNumber(calculationResult.sandCft)}</strong>
-                  <span className="text-[10px] text-slate-500 block">CFT</span>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase block">Crush (Bajri)</span>
-                  <strong className="text-sm text-slate-900 dark:text-white font-mono">{formatNumber(calculationResult.crushCft)}</strong>
-                  <span className="text-[10px] text-slate-500 block">CFT</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : breakdownView === "grey" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* 1. Brick Masonry */}
-              <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
-                      🧱
-                    </div>
-                    <div>
-                      <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">
-                        Brick Masonry (دیواریں چڑھانا)
-                      </h4>
-                      <span className="text-[11px] text-slate-500 font-medium">First Class Kiln Awwal Bricks</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white block">
-                      {formatPKR(calculationResult.brickMasonryCost)}
-                    </span>
-                    <span className="text-[11px] text-[#059669] dark:text-emerald-400 font-extrabold">
-                      {formatLakhCrore(calculationResult.brickMasonryCost)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-slate-50/80 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 space-y-1.5">
-                  <div className="flex justify-between font-bold">
-                    <span className="text-slate-600 dark:text-slate-400">Awwal Bricks Required:</span>
-                    <strong className="text-slate-900 dark:text-white">{formatNumber(calculationResult.bricksCount)} Pcs</strong>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Mortar Cement:</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">~{Math.ceil(calculationResult.bricksCount * 0.0018)} Bags</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Screening Sand (Rait):</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">~{Math.round(calculationResult.bricksCount * 0.0095)} CFT</span>
-                  </div>
-                </div>
-
-                <div className="space-y-1 text-xs text-slate-600 dark:text-slate-400">
-                  <span className="font-extrabold text-slate-800 dark:text-slate-200 block text-[11px] uppercase tracking-wider">
-                    What is Included (کیا شامل ہے):
-                  </span>
-                  <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-600 dark:text-slate-400">
-                    <li>Awwal red kiln-fired bricks (اول کلاس پکی اینٹیں)</li>
-                    <li>1:6 &amp; 1:4 cement-sand mortar mixing (سیمنٹ ریت مسالہ)</li>
-                    <li>9-inch load-bearing exterior perimeter walls</li>
-                    <li>4.5-inch interior room partition walls</li>
-                    <li>Roof parapet walls &amp; boundary wall masonry</li>
-                    <li>Mason (Mistry) &amp; labour laying with plumb line check</li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* 2. Plastering */}
-              <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-2xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center font-bold">
-                      🪚
-                    </div>
-                    <div>
-                      <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">
-                        Plastering (پلستر کرنا)
-                      </h4>
-                      <span className="text-[11px] text-slate-500 font-medium">Internal &amp; External Dual-Coat</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white block">
-                      {formatPKR(calculationResult.plasterCost)}
-                    </span>
-                    <span className="text-[11px] text-[#059669] dark:text-emerald-400 font-extrabold">
-                      {formatLakhCrore(calculationResult.plasterCost)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-slate-50/80 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 space-y-1.5">
-                  <div className="flex justify-between font-bold">
-                    <span className="text-slate-600 dark:text-slate-400">Plaster Surface Area:</span>
-                    <strong className="text-slate-900 dark:text-white">{formatNumber(Math.round(coveredAreaSqft * 3.4))} sq ft</strong>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Cement for Plaster:</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">~{Math.ceil(coveredAreaSqft * 0.12)} Bags</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Chenab Fine Sand:</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">~{Math.round(coveredAreaSqft * 0.45)} CFT</span>
-                  </div>
-                </div>
-
-                <div className="space-y-1 text-xs text-slate-600 dark:text-slate-400">
-                  <span className="font-extrabold text-slate-800 dark:text-slate-200 block text-[11px] uppercase tracking-wider">
-                    What is Included (کیا شامل ہے):
-                  </span>
-                  <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-600 dark:text-slate-400">
-                    <li>0.5-inch internal 1:4 cement smooth trowel plaster</li>
-                    <li>0.75-inch external 1:3 weather-resistant sand plaster</li>
-                    <li>Ceiling underside chip-free neat plaster</li>
-                    <li>Chicken wire mesh (مرغی جالی) on brick-column joints</li>
-                    <li>Bamboo scaffolding (بانس پہاڑ) and 7-day water curing</li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* 3. Roof Slab Casting & RCC */}
-              <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
-                      🏗️
-                    </div>
-                    <div>
-                      <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">
-                        Roof Slab Casting (چھت ڈالنا اور لنٹر)
-                      </h4>
-                      <span className="text-[11px] text-slate-500 font-medium">RCC Concrete &amp; Grade 60 Sariya</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white block">
-                      {formatPKR(calculationResult.roofSlabCost)}
-                    </span>
-                    <span className="text-[11px] text-[#059669] dark:text-emerald-400 font-extrabold">
-                      {formatLakhCrore(calculationResult.roofSlabCost)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-slate-50/80 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 space-y-1.5">
-                  <div className="flex justify-between font-bold">
-                    <span className="text-slate-600 dark:text-slate-400">Grade 60 Steel Rebar:</span>
-                    <strong className="text-slate-900 dark:text-white">{calculationResult.steelTons} Tons ({formatNumber(calculationResult.steelKg)} kg)</strong>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Margalla Crush (Bajri):</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">{formatNumber(calculationResult.crushCft)} CFT</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Slab Casting Cement:</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">~{Math.ceil(calculationResult.cementBags * 0.65)} Bags</span>
-                  </div>
-                </div>
-
-                <div className="space-y-1 text-xs text-slate-600 dark:text-slate-400">
-                  <span className="font-extrabold text-slate-800 dark:text-slate-200 block text-[11px] uppercase tracking-wider">
-                    What is Included (کیا شامل ہے):
-                  </span>
-                  <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-600 dark:text-slate-400">
-                    <li>Grade 60 deformed steel rebar bending and binding (سریے کی باندھائی)</li>
-                    <li>1:2:4 ratio Margalla crushed stone concrete (لنٹر کنکریٹ)</li>
-                    <li>Steel / marine ply shuttering formwork with iron props (شٹرنگ)</li>
-                    <li>Electrical conduit piping &amp; fan boxes embedded prior to casting</li>
-                    <li>Mechanical vibrator compaction &amp; 14-day pond curing (ترائی)</li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* 4. Excavation & Foundation */}
-              <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-[#059669] flex items-center justify-center font-bold">
-                      ⛏️
-                    </div>
-                    <div>
-                      <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">
-                        Foundation &amp; DPC (بنیادیں اور ڈی پی سی)
-                      </h4>
-                      <span className="text-[11px] text-slate-500 font-medium">Excavation, Soling &amp; Damp Proofing</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white block">
-                      {formatPKR(calculationResult.foundationCost)}
-                    </span>
-                    <span className="text-[11px] text-[#059669] dark:text-emerald-400 font-extrabold">
-                      {formatLakhCrore(calculationResult.foundationCost)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-slate-50/80 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 space-y-1.5">
-                  <div className="flex justify-between font-bold">
-                    <span className="text-slate-600 dark:text-slate-400">Foundation Footings:</span>
-                    <strong className="text-slate-900 dark:text-white">4 to 5 ft solid depth</strong>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Lean Concrete Soling:</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">1:4:8 nominal mix</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Plinth Beam &amp; DPC:</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">Reinforced concrete + bitumen</span>
-                  </div>
-                </div>
-
-                <div className="space-y-1 text-xs text-slate-600 dark:text-slate-400">
-                  <span className="font-extrabold text-slate-800 dark:text-slate-200 block text-[11px] uppercase tracking-wider">
-                    What is Included (کیا شامل ہے):
-                  </span>
-                  <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-600 dark:text-slate-400">
-                    <li>Machine/manual trench excavation up to solid strata</li>
-                    <li>Termite chemical treatment spray barrier (دیمک سپرے)</li>
-                    <li>Lean concrete soling base layer</li>
-                    <li>Stepped brick foundation with reinforced plinth beam</li>
-                    <li>Double coat bitumen DPC with heavy polythene sheet (نمی سے بچاؤ)</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* TAB 2: FINISHING & FURNISHING PHASE CARDS */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 text-xs">
-              {/* Tiles */}
-              <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
-                    🔲
-                  </div>
-                  <div>
-                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Floor &amp; Wall Tiles (ٹائلز)</h4>
-                    <span className="text-[10px] text-slate-500">Porcelain 60×60 / 60×120</span>
-                  </div>
-                </div>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Porcelain tiles in rooms, Chinese/Spanish glazed wall tiles in bathrooms up to 8ft height, polymer bond adhesive &amp; matching grout.
-                </p>
-              </div>
-
-              {/* Marble & Granite */}
-              <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center font-bold">
-                    🏛️
-                  </div>
-                  <div>
-                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Marble &amp; Granite (ماربل)</h4>
-                    <span className="text-[10px] text-slate-500">Staircase &amp; Counters</span>
-                  </div>
-                </div>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Badal / Ziarat white marble steps with bullnose edge, granite kitchen counter slabs, vanity tops, window sills &amp; threshold plates.
-                </p>
-              </div>
-
-              {/* Chips / Terrazzo */}
-              <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
-                    ✨
-                  </div>
-                  <div>
-                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Chips &amp; Terrazzo (چپس)</h4>
-                    <span className="text-[10px] text-slate-500">Roof Terrace &amp; Garage</span>
-                  </div>
-                </div>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Waterproof marble chips on rooftop terrace and garage with multi-stage machine grinding, crystallization, and chemical polish.
-                </p>
-              </div>
-
-              {/* Windows */}
-              <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
-                    🪟
-                  </div>
-                  <div>
-                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Windows &amp; Glazing (کھڑکیاں)</h4>
-                    <span className="text-[10px] text-slate-500">1.6mm / 2mm Aluminium</span>
-                  </div>
-                </div>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Powder-coated architectural aluminium sections (or UPVC), 5mm/8mm tinted tempered safety glass, and stainless steel wire mesh.
-                </p>
-              </div>
-
-              {/* Doors */}
-              <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold">
-                    🚪
-                  </div>
-                  <div>
-                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Doors &amp; Chowkhats (دروازے)</h4>
-                    <span className="text-[10px] text-slate-500">Ash Wood &amp; Semi-Solid</span>
-                  </div>
-                </div>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Solid ash wood main door, semi-solid grooved bedroom doors, waterproof PVC bathroom doors, 16-gauge steel chowkhats, mortise locks &amp; handles.
-                </p>
-              </div>
-
-              {/* Complete Kitchen Setup */}
-              <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-orange-50 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold">
-                    🍳
-                  </div>
-                  <div>
-                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Kitchen Setup (کچن سیٹ اپ)</h4>
-                    <span className="text-[10px] text-slate-500">UV / Acrylic High Gloss</span>
-                  </div>
-                </div>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Modular UV/Acrylic cabinets with soft-close hydraulic fittings, quartz/granite countertop, double-bowl sink with swivel mixer, hood &amp; hob.
-                </p>
-              </div>
-
-              {/* Full Bathroom Construction */}
-              <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 flex items-center justify-center font-bold">
-                    🚿
-                  </div>
-                  <div>
-                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Bathroom Setup (باتھ روم)</h4>
-                    <span className="text-[10px] text-slate-500">Sanitary &amp; Concealed PPRC</span>
-                  </div>
-                </div>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Master/Porta commodes, vanity basins, concealed PPRC pipes (pressure tested), Grohe/Faisal mixer taps, shower sets, and anti-fog mirrors.
-                </p>
-              </div>
-
-              {/* Electrical */}
-              <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-yellow-50 dark:bg-yellow-950/60 text-yellow-600 dark:text-yellow-400 flex items-center justify-center font-bold">
-                    ⚡
-                  </div>
-                  <div>
-                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Electrical &amp; Wiring (الیکٹریکل)</h4>
-                    <span className="text-[10px] text-slate-500">Pakistan Cables Copper</span>
-                  </div>
-                </div>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Pakistan Cables pure copper wiring, recessed LED panel lights, ceiling fans, distribution boards with Schneider/Hager breakers.
-                </p>
-              </div>
-
-              {/* Paint & False Ceiling */}
-              <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-[#059669] flex items-center justify-center font-bold">
-                    🎨
-                  </div>
-                  <div>
-                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">Paint &amp; False Ceiling (پینٹ)</h4>
-                    <span className="text-[10px] text-slate-500">Gypsum Cove &amp; Matt Paint</span>
-                  </div>
-                </div>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Gypsum board false ceiling with cove light troughs, acrylic wall putty, primer undercoat, and 3 coats of premium matt finish emulsion.
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* PRO TOOLS BANNER */}
-        <div className="p-5 sm:p-6 rounded-3xl bg-slate-900 text-white border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
-          <div>
-            <span className="text-xs sm:text-sm font-black text-emerald-400 uppercase tracking-wider block">
-              Professional Contractor Tools
-            </span>
-            <p className="text-xs text-slate-300 mt-0.5">
-              Export formal BOQ PDFs, track vendor purchases in Khata, and invite team members.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={() => {
-                if (!isAuthenticated) {
-                  openLoginModal();
-                } else {
-                  openCheckoutModal();
-                }
-              }}
-              className="px-5 py-2.5 rounded-xl bg-[#059669] hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center gap-2"
-            >
-              <Download className="w-4 h-4" />
-              <span>Export BOQ Summary</span>
-            </button>
-          </div>
-        </div>
-      </div>
+    </div>
   );
 }
