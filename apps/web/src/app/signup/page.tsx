@@ -3,28 +3,60 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Calculator, Lock, Mail, User, CheckCircle2, ArrowRight, ShieldCheck } from "lucide-react";
+import {
+  Calculator,
+  Lock,
+  Mail,
+  User,
+  Phone,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  Check,
+  X
+} from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
-import { validateEmail, validatePassword } from "@/lib/auth/validation";
+import { validateEmail, validatePassword, validatePhone, validateFullName } from "@/lib/auth/validation";
 
 export default function SignupPage() {
   const router = useRouter();
   const { signup } = useAuthStore();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [verificationSent, setVerificationSent] = useState(false);
+
+  // Real-time password requirement indicators
+  const hasMinLength = password.length >= 8;
+  const hasLetter = /[A-Za-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
+    const nameCheck = validateFullName(fullName);
+    if (!nameCheck.valid) {
+      setError(nameCheck.error || "Please enter your full name.");
+      setLoading(false);
+      return;
+    }
+
     const emailCheck = validateEmail(email);
     if (!emailCheck.valid) {
       setError(emailCheck.error || "Please enter a valid email address.");
+      setLoading(false);
+      return;
+    }
+
+    const phoneCheck = validatePhone(phone);
+    if (!phoneCheck.valid) {
+      setError(phoneCheck.error || "Please enter a valid Pakistani mobile number (e.g. 0300-1234567).");
       setLoading(false);
       return;
     }
@@ -38,8 +70,9 @@ export default function SignupPage() {
 
     try {
       const res = await signup({
-        fullName,
-        email,
+        fullName: fullName.trim(),
+        email: email.trim().toLowerCase(),
+        phone: phone.trim(),
         password
       });
 
@@ -79,7 +112,7 @@ export default function SignupPage() {
           <div className="pt-2">
             <Link
               href="/login"
-              className="inline-flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs tracking-wide shadow-lg shadow-emerald-950/40 transition-all"
+              className="inline-flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs tracking-wide shadow-lg shadow-emerald-950/40 transition-all cursor-pointer"
             >
               <span>Go to Sign In</span>
               <ArrowRight className="w-4 h-4" />
@@ -105,11 +138,12 @@ export default function SignupPage() {
 
         <form onSubmit={handleSignup} className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-4 shadow-xl">
           {error && (
-            <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-800/50 text-xs text-rose-300">
+            <div className="p-3.5 rounded-xl bg-rose-950/60 border border-rose-800/50 text-xs text-rose-300">
               {error}
             </div>
           )}
 
+          {/* Full Name */}
           <div>
             <label className="text-xs font-medium text-slate-300 block mb-1.5">Full Name</label>
             <div className="relative">
@@ -117,7 +151,7 @@ export default function SignupPage() {
               <input
                 type="text"
                 required
-                placeholder="Umer Sheikh"
+                placeholder="e.g. Umer Sheikh"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
@@ -125,6 +159,7 @@ export default function SignupPage() {
             </div>
           </div>
 
+          {/* Email Address */}
           <div>
             <label className="text-xs font-medium text-slate-300 block mb-1.5">Email Address</label>
             <div className="relative">
@@ -140,26 +175,69 @@ export default function SignupPage() {
             </div>
           </div>
 
+          {/* Phone Number */}
+          <div>
+            <label className="text-xs font-medium text-slate-300 block mb-1.5">Phone Number (Pakistan)</label>
+            <div className="relative">
+              <Phone className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="tel"
+                required
+                placeholder="0300-1234567 or +92 300 1234567"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+            <p className="text-[10px] text-slate-500 mt-1">Used for project updates & payment receipts</p>
+          </div>
+
+          {/* Password */}
           <div>
             <label className="text-xs font-medium text-slate-300 block mb-1.5">Password</label>
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 required
-                minLength={6}
-                placeholder="At least 6 characters"
+                placeholder="At least 8 characters"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-10 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 cursor-pointer"
+                aria-label="Toggle password visibility"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
+
+            {/* Real-time Password Requirements */}
+            {password.length > 0 && (
+              <div className="mt-2 p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1 text-[11px]">
+                <div className={`flex items-center gap-1.5 ${hasMinLength ? "text-emerald-400" : "text-slate-500"}`}>
+                  {hasMinLength ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
+                  <span>At least 8 characters</span>
+                </div>
+                <div className={`flex items-center gap-1.5 ${hasLetter ? "text-emerald-400" : "text-slate-500"}`}>
+                  {hasLetter ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
+                  <span>At least one letter (a-z)</span>
+                </div>
+                <div className={`flex items-center gap-1.5 ${hasNumber ? "text-emerald-400" : "text-slate-500"}`}>
+                  {hasNumber ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
+                  <span>At least one number (0-9)</span>
+                </div>
+              </div>
+            )}
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-950/50 transition-all disabled:opacity-50 mt-2"
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-950/50 transition-all disabled:opacity-50 mt-2 cursor-pointer"
           >
             <span>{loading ? "Creating account..." : "Sign Up"}</span>
             <ArrowRight className="w-4 h-4" />

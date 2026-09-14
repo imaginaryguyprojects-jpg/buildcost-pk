@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { useProjectStore } from "@/stores/projectStore";
 import {
@@ -16,10 +16,12 @@ import {
   EyeOff,
   RefreshCw,
   AlertCircle,
-  ArrowLeft
+  ArrowLeft,
+  Fingerprint
 } from "lucide-react";
 import { PAK_CITIES } from "@buildcost/config";
 import { validateEmail } from "@/lib/auth/validation";
+import { getBiometricStatus, BiometricStatus } from "@/lib/auth/biometricService";
 
 export function LoginGatingModal() {
   const {
@@ -28,6 +30,7 @@ export function LoginGatingModal() {
     pendingAction,
     clearPendingAction,
     login,
+    loginWithBiometrics,
     signup,
     resetPassword,
     resendVerificationEmail,
@@ -38,6 +41,18 @@ export function LoginGatingModal() {
   const [mode, setMode] = useState<"login" | "signup" | "forgot">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [biometricStatus, setBiometricStatus] = useState<BiometricStatus | null>(null);
+
+  useEffect(() => {
+    if (loginModalOpen) {
+      getBiometricStatus().then((status) => {
+        setBiometricStatus(status);
+        if (status.storedEmail && !email) {
+          setEmail(status.storedEmail);
+        }
+      });
+    }
+  }, [loginModalOpen]);
   const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -254,6 +269,51 @@ export function LoginGatingModal() {
           </div>
         ) : (
           <form onSubmit={handleAuthSubmit} className="space-y-3.5">
+            {/* Quick Biometric Unlock */}
+            {mode === "login" && biometricStatus?.isAvailable && (biometricStatus?.isEnabled || biometricStatus?.hasStoredCredentials) && (
+              <div className="pb-1">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setLoading(true);
+                    setError(null);
+                    try {
+                      const res = await loginWithBiometrics();
+                      if (res.success) {
+                        if (pendingAction) {
+                          if (pendingAction.actionName === "save_calculation") {
+                            saveCalculation(pendingAction.payload);
+                            showToast("Calculation saved to your account!", "success");
+                          } else if (pendingAction.actionName === "save_project") {
+                            addProject(pendingAction.payload);
+                            showToast("Project saved to your account!", "success");
+                          }
+                          clearPendingAction();
+                        }
+                        closeLoginModal();
+                      } else {
+                        setError(res.error || "Biometric authentication failed.");
+                      }
+                    } catch (e: any) {
+                      setError(e.message || "Biometric error.");
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  className="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-750 border border-emerald-500/40 hover:border-emerald-500 text-emerald-300 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all"
+                >
+                  <Fingerprint className="w-4 h-4 text-emerald-400 animate-pulse" />
+                  <span>Unlock with Fingerprint {biometricStatus.storedEmail ? `(${biometricStatus.storedEmail})` : ""}</span>
+                </button>
+
+                <div className="flex items-center gap-2 my-2.5">
+                  <div className="h-px bg-slate-800 flex-1" />
+                  <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">or sign in below</span>
+                  <div className="h-px bg-slate-800 flex-1" />
+                </div>
+              </div>
+            )}
+
             {mode === "signup" && (
               <div>
                 <label className="text-[11px] font-semibold text-slate-300 block mb-1">Full Name</label>

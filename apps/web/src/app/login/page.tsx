@@ -1,23 +1,57 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Calculator, Lock, Mail, ArrowRight, Eye, EyeOff, RefreshCw, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Calculator, Lock, Mail, ArrowRight, Eye, EyeOff, RefreshCw, AlertCircle, CheckCircle2, Fingerprint } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { validateEmail } from "@/lib/auth/validation";
+import { getBiometricStatus, BiometricStatus } from "@/lib/auth/biometricService";
+import { BiometricPromptModal } from "@/components/auth/BiometricPromptModal";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, resendVerificationEmail, showToast } = useAuthStore();
+  const { login, loginWithBiometrics, resendVerificationEmail, showToast } = useAuthStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [bioLoading, setBioLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [needsVerification, setNeedsVerification] = useState(false);
   const [resendSuccess, setResendSuccess] = useState<string | null>(null);
+
+  // Biometric state
+  const [biometricStatus, setBiometricStatus] = useState<BiometricStatus | null>(null);
+  const [showBioPrompt, setShowBioPrompt] = useState(false);
+  const [pendingBioEmail, setPendingBioEmail] = useState("");
+
+  useEffect(() => {
+    getBiometricStatus().then((status) => {
+      setBiometricStatus(status);
+      if (status.storedEmail && !email) {
+        setEmail(status.storedEmail);
+      }
+    });
+  }, []);
+
+  const handleBiometricLogin = async () => {
+    setBioLoading(true);
+    setError(null);
+    try {
+      const res = await loginWithBiometrics();
+      if (res.success) {
+        router.push("/dashboard");
+      } else {
+        setError(res.error || "Biometric authentication failed. Please sign in with your password.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Biometric verification error.");
+    } finally {
+      setBioLoading(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +75,13 @@ export default function LoginPage() {
     try {
       const res = await login(email, password);
       if (res.success) {
-        router.push("/dashboard");
+        // If biometric hardware is available on this device and not yet enabled, prompt user
+        if (biometricStatus?.isAvailable && !biometricStatus?.isEnabled) {
+          setPendingBioEmail(email);
+          setShowBioPrompt(true);
+        } else {
+          router.push("/dashboard");
+        }
       } else {
         setError(res.error || "Invalid credentials. Please verify your email and password.");
         if (res.needsVerification) {
@@ -161,6 +201,29 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {/* Quick Biometric Unlock Button */}
+          {biometricStatus?.isAvailable && (biometricStatus?.isEnabled || biometricStatus?.hasStoredCredentials) && (
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={handleBiometricLogin}
+                disabled={bioLoading}
+                className="w-full py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-750 border border-emerald-500/40 hover:border-emerald-500 text-emerald-300 font-extrabold text-xs shadow-lg shadow-emerald-950/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                <Fingerprint className="w-5 h-5 text-emerald-400 animate-pulse" />
+                <span>
+                  {bioLoading ? "Verifying..." : `Unlock with Fingerprint ${biometricStatus.storedEmail ? `(${biometricStatus.storedEmail})` : ""}`}
+                </span>
+              </button>
+
+              <div className="flex items-center gap-3 my-3">
+                <div className="h-px bg-slate-800 flex-1" />
+                <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">or password</span>
+                <div className="h-px bg-slate-800 flex-1" />
+              </div>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={loading}
@@ -180,6 +243,21 @@ export default function LoginPage() {
           </div>
         </form>
       </div>
+
+      {/* Biometric Enable Prompt Modal */}
+      <BiometricPromptModal
+        isOpen={showBioPrompt}
+        email={pendingBioEmail}
+        onClose={() => {
+          setShowBioPrompt(false);
+          router.push("/dashboard");
+        }}
+        onSuccess={() => {
+          showToast("Fingerprint login enabled!", "success");
+          setShowBioPrompt(false);
+          router.push("/dashboard");
+        }}
+      />
     </div>
   );
 }

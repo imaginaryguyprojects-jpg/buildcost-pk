@@ -787,7 +787,21 @@ export const useProjectStore = create<ProjectStoreState>()(
     }),
 
     {
-      name: "buildcost_store_v5"
+      name: "buildcost_store_v5",
+      onRehydrateStorage: () => (state) => {
+        if (typeof window !== "undefined" && state) {
+          try {
+            import("@capacitor/preferences").then(({ Preferences }) => {
+              if (state.projects && state.projects.length > 0) {
+                Preferences.set({
+                  key: "buildcost_cached_projects_count",
+                  value: String(state.projects.length)
+                });
+              }
+            });
+          } catch {}
+        }
+      }
     }
   )
 );

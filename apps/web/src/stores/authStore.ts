@@ -4,6 +4,7 @@ import { UserProfile, UserSettings } from "@buildcost/types";
 import { SUPER_ADMIN_EMAILS, isSuperAdminEmail } from "@buildcost/config";
 import { createClient } from "../lib/supabase/client";
 import { validateEmail, validatePassword } from "../lib/auth/validation";
+import { authenticateWithBiometrics, getStoredBiometricEmail } from "../lib/auth/biometricService";
 
 export { SUPER_ADMIN_EMAILS, isSuperAdminEmail };
 
@@ -59,6 +60,7 @@ interface AuthState {
     email: string,
     password: string
   ) => Promise<{ success: boolean; error?: string; needsVerification?: boolean; email?: string }>;
+  loginWithBiometrics: () => Promise<{ success: boolean; error?: string }>;
   signup: (data: {
     fullName: string;
     email: string;
@@ -618,6 +620,68 @@ export const useAuthStore = create<AuthState>()(
             success: false,
             error: err.message || "Failed to resend email. Please try again in a moment."
           };
+        }
+      },
+
+      loginWithBiometrics: async () => {
+        try {
+          const authResult = await authenticateWithBiometrics(
+            "Unlock BuildCost PK",
+            "Verify your identity to access your projects and estimates"
+          );
+
+          if (!authResult.success) {
+            return { success: false, error: authResult.error || "Biometric authentication failed." };
+          }
+
+          const storedEmail = await getStoredBiometricEmail();
+
+          // 1. If we have a cached user in state matching stored email, activate immediately
+          const currentUser = get().user;
+          if (currentUser && (!storedEmail || currentUser.email.toLowerCase() === storedEmail.toLowerCase())) {
+            set({ isAuthenticated: true });
+            get().showToast(`Welcome back, ${currentUser.fullName || "Builder"}!`, "success");
+            return { success: true };
+          }
+
+          // 2. Try restoring Supabase session if available
+          try {
+            const supabase = createClient();
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user) {
+              await get().initializeAuth();
+              set({ isAuthenticated: true });
+              get().showToast("Biometric sign-in successful.", "success");
+              return { success: true };
+            }
+          } catch {
+            // Supabase offline fallback
+          }
+
+          // 3. Fallback: If stored email exists, restore local session
+          if (storedEmail) {
+            const fallbackUser: UserProfile = {
+              id: "bio_" + Math.random().toString(36).substring(2, 9),
+              email: storedEmail,
+              fullName: storedEmail.split("@")[0].toUpperCase(),
+              cityId: "isb",
+              role: "user",
+              plan: "free",
+              subscriptionTier: "free",
+              subscriptionStatus: "FREE",
+              is_pro: false,
+              emailConfirmed: true,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
+            set({ user: fallbackUser, isAuthenticated: true });
+            get().showToast(`Unlocked successfully as ${storedEmail}.`, "success");
+            return { success: true };
+          }
+
+          return { success: false, error: "No stored credentials found for biometric login." };
+        } catch (err: any) {
+          return { success: false, error: err.message || "Biometric login failed." };
         }
       },
 

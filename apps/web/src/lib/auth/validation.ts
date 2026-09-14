@@ -97,3 +97,35 @@ export function validatePassword(password: string): ValidationResult {
 
   return { valid: true };
 }
+
+export function validatePhone(phone: string): ValidationResult {
+  if (!phone || typeof phone !== "string") {
+    return { valid: false, error: "Phone number is required." };
+  }
+
+  const clean = phone.replace(/[\s\-\(\)]/g, "");
+  // Matches 03XXXXXXXXX (11 digits) or +923XXXXXXXXX / 923XXXXXXXXX (12/13 digits)
+  const pkPhoneRegex = /^(?:(?:\+92|0092|92)?3\d{9}|03\d{9})$/;
+  if (!pkPhoneRegex.test(clean)) {
+    return {
+      valid: false,
+      error: "Please enter a valid Pakistani mobile number (e.g. 0300-1234567 or +92 300 1234567)."
+    };
+  }
+
+  return { valid: true };
+}
+
+export function validateFullName(name: string): ValidationResult {
+  if (!name || typeof name !== "string") {
+    return { valid: false, error: "Full Name is required." };
+  }
+
+  const trimmed = name.trim();
+  if (trimmed.length < 2) {
+    return { valid: false, error: "Full Name must be at least 2 characters long." };
+  }
+
+  return { valid: true };
+}
+

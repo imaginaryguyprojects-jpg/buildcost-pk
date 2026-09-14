@@ -12,6 +12,7 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
+import android.webkit.JavascriptInterface;
 import android.webkit.MimeTypeMap;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -21,6 +22,10 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import androidx.biometric.BiometricManager;
+import androidx.biometric.BiometricPrompt;
+import androidx.core.content.ContextCompat;
+import java.util.concurrent.Executor;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -252,6 +257,9 @@ public class MainActivity extends AppCompatActivity {
         String defaultUA = settings.getUserAgentString();
         settings.setUserAgentString(defaultUA + " BuildCostApp/1.3.0-offline (Android)");
 
+        // Register Native Biometric Authentication Bridge
+        webView.addJavascriptInterface(new BiometricBridge(this), "AndroidBiometrics");
+
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public void onProgressChanged(WebView view, int newProgress) {
@@ -404,5 +412,112 @@ public class MainActivity extends AppCompatActivity {
 
         builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
         builder.show();
+    }
+
+    public static class BiometricBridge {
+        private final MainActivity activity;
+
+        public BiometricBridge(MainActivity activity) {
+            this.activity = activity;
+        }
+
+        @JavascriptInterface
+        public boolean isBiometricAvailable() {
+            try {
+                BiometricManager biometricManager = BiometricManager.from(activity);
+                int canAuthenticate = biometricManager.canAuthenticate(
+                        BiometricManager.Authenticators.BIOMETRIC_STRONG |
+                        BiometricManager.Authenticators.BIOMETRIC_WEAK |
+                        BiometricManager.Authenticators.DEVICE_CREDENTIAL
+                );
+                return canAuthenticate == BiometricManager.BIOMETRIC_SUCCESS;
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
+        @JavascriptInterface
+        public void saveSecureToken(String key, String value) {
+            try {
+                SharedPreferences prefs = activity.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                prefs.edit().putString("sec_" + key, value).apply();
+            } catch (Exception ignored) {}
+        }
+
+        @JavascriptInterface
+        public String getSecureToken(String key) {
+            try {
+                SharedPreferences prefs = activity.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                return prefs.getString("sec_" + key, null);
+            } catch (Exception e) {
+                return null;
+            }
+        }
+
+        @JavascriptInterface
+        public void removeSecureToken(String key) {
+            try {
+                SharedPreferences prefs = activity.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                prefs.edit().remove("sec_" + key).apply();
+            } catch (Exception ignored) {}
+        }
+
+        @JavascriptInterface
+        public boolean authenticate(String title, String subtitle) {
+            final boolean[] resultHolder = new boolean[]{false};
+            final Object lock = new Object();
+
+            activity.runOnUiThread(() -> {
+                try {
+                    Executor executor = ContextCompat.getMainExecutor(activity);
+                    BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
+                            .setTitle(title != null && !title.isEmpty() ? title : "Unlock BuildCost PK")
+                            .setSubtitle(subtitle != null && !subtitle.isEmpty() ? subtitle : "Confirm fingerprint or screen lock")
+                            .setNegativeButtonText("Cancel")
+                            .build();
+
+                    BiometricPrompt biometricPrompt = new BiometricPrompt(activity, executor,
+                            new BiometricPrompt.AuthenticationCallback() {
+                                @Override
+                                public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
+                                    super.onAuthenticationSucceeded(result);
+                                    synchronized (lock) {
+                                        resultHolder[0] = true;
+                                        lock.notifyAll();
+                                    }
+                                }
+
+                                @Override
+                                public void onAuthenticationError(int errorCode, CharSequence errString) {
+                                    super.onAuthenticationError(errorCode, errString);
+                                    synchronized (lock) {
+                                        resultHolder[0] = false;
+                                        lock.notifyAll();
+                                    }
+                                }
+
+                                @Override
+                                public void onAuthenticationFailed() {
+                                    super.onAuthenticationFailed();
+                                }
+                            });
+
+                    biometricPrompt.authenticate(promptInfo);
+                } catch (Exception e) {
+                    synchronized (lock) {
+                        resultHolder[0] = false;
+                        lock.notifyAll();
+                    }
+                }
+            });
+
+            synchronized (lock) {
+                try {
+                    lock.wait(60000);
+                } catch (InterruptedException ignored) {}
+            }
+
+            return resultHolder[0];
+        }
     }
 }
