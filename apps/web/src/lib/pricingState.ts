@@ -42,7 +42,7 @@ export const fallbackSubscriptionPlans: SubscriptionPlan[] = [
     description: "Full engineering suite, unlimited projects, contractor BOQs, and live market rates",
     price: 200,
     priceMonthlyPkr: 200,
-    priceAnnualPkr: 500,
+    priceAnnualPkr: 799,
     currency: "PKR",
     billingPeriod: "monthly",
     maxProjects: 100,

@@ -72,3 +72,83 @@ export interface BuildingHeightParameters {
   floors: FloorHeightConfiguration[];
 }
 
+// -------------------------------------------------------------
+// VERSION 3.0.0: PRO EXACT CONSTRUCTION CALCULATION TYPES
+// -------------------------------------------------------------
+export interface ProBathroomItem {
+  id: string;
+  name: string;
+  lengthFt: number;
+  widthFt: number;
+  heightMode: "auto" | "manual";
+  heightFt: number;
+}
+
+export type ProFoundationType = "automatic" | "strip" | "isolated" | "raft" | "other";
+
+export interface ProConstructionInputs {
+  isProEnabled: boolean;
+  
+  // A. Wall Height
+  wallHeightMode: "auto" | "manual";
+  manualWallHeightFt: number; // default 10 ft
+  
+  // B. Bathrooms
+  bathroomCountMode: "auto" | "manual";
+  manualBathroomCount: number; // 1, 2, 3, 4, 5, 6+
+  bathrooms: ProBathroomItem[];
+  applySameBathroomSize: boolean;
+  
+  // C. Foundation
+  foundationMode: "auto" | "manual";
+  foundationDepthFt: number; // e.g. 4 ft
+  foundationWidthFt: number; // e.g. 3 ft
+  foundationType: ProFoundationType;
+  
+  // D. Columns
+  columnMode: "auto" | "manual";
+  manualColumnCount: number;
+  columnWidthFt: number; // e.g. 0.75 ft (9 in) or 1.0 ft
+  columnDepthFt: number; // e.g. 1.0 ft
+  columnHeightMode: "auto" | "manual";
+  manualColumnHeightFt: number;
+  
+  // E. Beams
+  beamMode: "auto" | "manual";
+  manualBeamCount: number;
+  beamWidthFt: number; // e.g. 0.75 ft (9 in)
+  beamDepthFt: number; // e.g. 1.25 ft (15 in)
+  beamLengthMode: "auto" | "manual";
+  manualBeamTotalLengthFt: number;
+}
+
+export interface ProDetailedEstimate {
+  constructionAreaSqft: number;
+  wallAreaSqft: number;
+  wallVolumeCft: number;
+  foundationVolumeCft: number;
+  excavationVolumeCft: number;
+  numberOfBathrooms: number;
+  numberOfColumns: number;
+  numberOfBeams: number;
+  breakdown: {
+    wallsCost: number;
+    foundationCost: number;
+    columnsCost: number;
+    beamsCost: number;
+    slabsCost: number;
+    bathroomsCost: number;
+    plasterCost: number;
+    brickworkCost: number;
+    bricksCost: number;
+    cementCost: number;
+    sandCost: number;
+    crushCost: number;
+    steelCost: number;
+    labourCost: number;
+    transportCost: number;
+    wastageCost: number;
+    otherCost: number;
+  };
+}
+

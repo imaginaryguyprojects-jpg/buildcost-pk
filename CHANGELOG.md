@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.0.0] - 2026-09-14
+
+### Added
+- **PRO Exact Construction Calculation Engine**:
+  - High-precision engineering module replacing empirical allowances with exact geometric calculations.
+  - Zero double-counting architecture: pure brickwork masonry is isolated from concrete columns, beams, slabs, and foundations.
+  - **Exact Wall Height**: Auto (10 ft default) or manual specification (8–20 ft) dynamically sizing wall volume, brick count, mortar, plaster area, and labour.
+  - **Dynamic Bathrooms Engine**: Floor-level bathroom counts, individual Length × Width dimensions, and one-click "Apply same size to all bathrooms" toggle.
+  - **Bunyad (Foundation) Sub-Structure**: Depth, trench width, and type (Strip, Isolated, Raft) with structural civil engineering disclaimers.
+  - **Structural Columns & Beams**: Configurable column count, cross-sections (e.g., 9"×9", 9"×12", 12"×12"), beam running feet, and steel reinforcement factors.
+- **Interactive 2D CAD Blueprint Diagram**:
+  - Vector SVG architectural plan dynamically rendered from user dimensions and floor selections.
+  - Layer toggles for Structural Columns, Beams, Bathroom Partitions, Engineering Grid, and Dimension Callouts.
+  - Interactive Pan/Zoom controls, viewport reset, and scale indicator.
+- **PRO Detailed Estimate & Real-Time Dynamic Donut Chart**:
+  - Comprehensive itemized bill with zero static percentages, powered directly by true material volumes and local market rates.
+  - Full material takeoffs: Bricks, Cement, Sand, Crush, Grade 60 Rebar, Labour, Transport, Wastage, and Other.
+- **PRO Feature Lock & Upgrade Experience**:
+  - Direct modals and gating banners highlighting PRO value with official launch pricing (PKR 200/month, PKR 799/year).
+  - One-click "Save Calculation" storing and restoring all advanced PRO structural parameters to local project state.
+- **Play Store Production Assets**:
+  - 512×512 px official app icon and 1024×500 px Google Play feature graphic.
+  - Comprehensive Public Privacy Policy at `/privacy`.
+  - Android native bundle `versionCode 7`, `versionName "3.0.0"`.
+
+---
+
+## [2.1.0] - 2026-09-10
+
+### Added
+- **PDF & Print Estimate Sharing**:
+  - Instant client-ready quotation generation in branded PDF and print-ready formats.
+- **Over-The-Air (OTA) Hot-Patching Engine**:
+  - In-app automatic update checker and delta bundle extraction.
+- **Offline First Mobile PWA & Native Capacitor Shell**:
+  - Standalone offline Android bundle with zero internet dependencies.
+
+---
+
 ## [1.2.0] - 2026-09-09
 
 ### Added

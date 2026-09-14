@@ -17,3 +17,4 @@ export * from "./what_if_simulator";
 export * from "./additional_calculators";
 export * from "./transport_logistics";
 export * from "./rate_resolver";
+export * from "./advanced_pro_structure";

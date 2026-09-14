@@ -1,4 +1,4 @@
-export const APP_VERSION = "1.2.0";
+export const APP_VERSION = "3.0.0";
 export const APP_RELEASE_DATE = "September 2026";
 
 export const BRAND_CONFIG = {

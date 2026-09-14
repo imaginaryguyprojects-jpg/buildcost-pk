@@ -57,7 +57,7 @@ type CalcMode = "grey" | "finishing" | "labour" | "full" | "scenario" | "rates";
 export default function CalculatorHubPage() {
   const { selectedCityId, setSelectedCityId, materialRates } = useProjectStore();
   const { user, isSuperAdmin, openUpgradeModal } = useAuthStore();
-  const isPro = Boolean(user?.is_pro || isSuperAdmin() || user?.plan === "pro");
+  const isPro = Boolean(user?.is_pro || isSuperAdmin() || user?.plan === "pro" || user?.plan === "business");
 
   const handleSharePdfOrPrint = () => {
     if (!isPro) {

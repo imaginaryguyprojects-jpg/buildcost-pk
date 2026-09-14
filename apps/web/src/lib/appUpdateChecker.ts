@@ -14,8 +14,8 @@ export interface UpdateCheckResult {
 
 export const CURRENT_CLIENT_INFO = {
   platform: "android",
-  version: "2.1.0",
-  versionCode: 6
+  version: "3.0.0",
+  versionCode: 7
 };
 
 

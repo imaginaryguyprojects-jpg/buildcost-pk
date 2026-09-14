@@ -38,8 +38,14 @@ import {
 } from "lucide-react";
 
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
-import { PAKISTANI_CITIES } from "@buildcost/config";
-import { calculateGreyStructureEstimate, calculateFullHouseEstimate } from "@buildcost/calculations";
+import { PAKISTANI_CITIES, DEFAULT_LAUNCH_PRICE_CONFIG } from "@buildcost/config";
+import {
+  calculateGreyStructureEstimate,
+  calculateFullHouseEstimate,
+  calculateAdvancedGreyStructure
+} from "@buildcost/calculations";
+import { ProConstructionInputs, ProBathroomItem, ProDetailedEstimate } from "@buildcost/types";
+import { ProConstructionSection } from "@/components/calculator/ProConstructionSection";
 import { formatPKR, formatLakhCrore, formatNumber } from "@/lib/formatters";
 import { useAuthStore } from "@/stores/authStore";
 import { useProjectStore } from "@/stores/projectStore";
@@ -88,10 +94,44 @@ const CITY_BENCHMARKS: Record<string, { cement: number; steel: number; brick: nu
 
 export function PrimaryPropertyCalculator() {
   const { isAuthenticated, user, isSuperAdmin, openLoginModal, openUpgradeModal, openProjectUpgradeModal, openCheckoutModal, showToast } = useAuthStore();
-  const { selectedCityId: globalCityId, setSelectedCityId: setGlobalCityId } = useProjectStore();
+  const { selectedCityId: globalCityId, setSelectedCityId: setGlobalCityId, saveCalculation } = useProjectStore();
   const [isMounted, setIsMounted] = useState(false);
 
-  const isPro = Boolean(user?.is_pro || isSuperAdmin() || user?.plan === "pro");
+  const isPro = Boolean(user?.is_pro || isSuperAdmin() || user?.plan === "pro" || user?.plan === "business");
+
+  // Advanced PRO Construction Inputs (Version 3.0.0)
+  const [proInputs, setProInputs] = useState<ProConstructionInputs>({
+    isProEnabled: isPro,
+    wallHeightMode: "auto",
+    manualWallHeightFt: 10,
+    bathroomCountMode: "auto",
+    manualBathroomCount: 2,
+    bathrooms: [
+      { id: "bath_1", name: "Bathroom 1", lengthFt: 8, widthFt: 6, heightMode: "auto", heightFt: 10 },
+      { id: "bath_2", name: "Bathroom 2", lengthFt: 8, widthFt: 6, heightMode: "auto", heightFt: 10 }
+    ],
+    applySameBathroomSize: true,
+    foundationMode: "auto",
+    foundationType: "strip",
+    foundationDepthFt: 4.0,
+    foundationWidthFt: 3.0,
+    columnMode: "auto",
+    manualColumnCount: 16,
+    columnWidthFt: 1.0,
+    columnDepthFt: 1.0,
+    columnHeightMode: "auto",
+    manualColumnHeightFt: 10,
+    beamMode: "auto",
+    manualBeamCount: 20,
+    beamWidthFt: 0.75,
+    beamDepthFt: 1.25,
+    beamLengthMode: "auto",
+    manualBeamTotalLengthFt: 300
+  });
+
+  useEffect(() => {
+    setProInputs((prev) => ({ ...prev, isProEnabled: isPro }));
+  }, [isPro]);
 
   const handleSharePdfOrPrint = () => {
     if (!isPro) {
@@ -99,6 +139,115 @@ export function PrimaryPropertyCalculator() {
     } else {
       window.print();
     }
+  };
+
+  const handleSaveCalculation = () => {
+    if (!isAuthenticated) {
+      openLoginModal();
+      return;
+    }
+    saveCalculation({
+      projectId: "default",
+      calculatorType: "property_calculator_v3",
+      inputs: {
+        selectedCityId,
+        marlaStandardType,
+        plotSize,
+        plotUnit,
+        coveredAreaSqft,
+        floors: effectiveFloors,
+        constructionScope,
+        qualityTier,
+        proInputs: isPro ? proInputs : undefined
+      },
+      result: {
+        materialsCost:
+          calculationResult.cementCost +
+          calculationResult.steelCost +
+          calculationResult.bricksCost +
+          calculationResult.sandCost +
+          calculationResult.crushCost,
+        labourCost: calculationResult.labourCost,
+        equipmentCost: 0,
+        transportCost: calculationResult.transportCost,
+        finishingCost: calculationResult.finishingCost,
+        contingencyCost: calculationResult.wastageCost,
+        otherCost: 0,
+        grandTotal: calculationResult.totalCost,
+        totalCoveredAreaSqft: coveredAreaSqft,
+        costPerSqft: calculationResult.costPerSqft,
+        materials: [
+          {
+            materialId: "cement",
+            materialName: "Cement",
+            category: "Grey Structure",
+            rawQuantity: calculationResult.cementBags,
+            wastagePercent: 5,
+            wastageQuantity: Math.round(calculationResult.cementBags * 0.05),
+            finalQuantity: calculationResult.cementBags,
+            unit: "bags",
+            unitRate: activeRates.cementBagRate,
+            cost: calculationResult.cementCost
+          },
+          {
+            materialId: "steel",
+            materialName: "Deformed Steel Rebar",
+            category: "Grey Structure",
+            rawQuantity: calculationResult.steelKg,
+            wastagePercent: 4,
+            wastageQuantity: Math.round(calculationResult.steelKg * 0.04),
+            finalQuantity: calculationResult.steelKg,
+            unit: "kg",
+            unitRate: activeRates.steelKgRate,
+            cost: calculationResult.steelCost
+          },
+          {
+            materialId: "bricks",
+            materialName: "Awwal Red Clay Bricks",
+            category: "Grey Structure",
+            rawQuantity: calculationResult.bricksCount,
+            wastagePercent: 5,
+            wastageQuantity: Math.round(calculationResult.bricksCount * 0.05),
+            finalQuantity: calculationResult.bricksCount,
+            unit: "bricks",
+            unitRate: activeRates.brickRate,
+            cost: calculationResult.bricksCost
+          },
+          {
+            materialId: "sand",
+            materialName: "Chenab/Ravi Sand",
+            category: "Grey Structure",
+            rawQuantity: calculationResult.sandCft,
+            wastagePercent: 5,
+            wastageQuantity: Math.round(calculationResult.sandCft * 0.05),
+            finalQuantity: calculationResult.sandCft,
+            unit: "cft",
+            unitRate: activeRates.sandCftRate,
+            cost: calculationResult.sandCost
+          },
+          {
+            materialId: "crush",
+            materialName: "Margalla Bajri / Crush",
+            category: "Grey Structure",
+            rawQuantity: calculationResult.crushCft,
+            wastagePercent: 5,
+            wastageQuantity: Math.round(calculationResult.crushCft * 0.05),
+            finalQuantity: calculationResult.crushCft,
+            unit: "cft",
+            unitRate: activeRates.crushCftRate,
+            cost: calculationResult.crushCost
+          }
+        ],
+        labour: [],
+        assumptions: []
+      },
+      ratesSnapshot: {
+        cement: { rate: activeRates.cementBagRate, source: selectedCity.name, verifiedAt: new Date().toISOString() },
+        steel: { rate: activeRates.steelKgRate, source: selectedCity.name, verifiedAt: new Date().toISOString() },
+        brick: { rate: activeRates.brickRate, source: selectedCity.name, verifiedAt: new Date().toISOString() }
+      }
+    });
+    showToast("Calculation saved to your project library!", "success");
   };
 
 
@@ -274,7 +423,7 @@ export function PrimaryPropertyCalculator() {
     const safeCovered = Math.max(50, coveredAreaSqft || autoSuggestedCoveredArea);
     const safeFloors = Math.max(1, effectiveFloors);
 
-    // 1. Grey structure civil engineering estimate
+    // 1. Standard Grey structure civil engineering estimate
     const greyEst = calculateGreyStructureEstimate({
       coveredAreaSqft: safeCovered,
       numberOfFloors: safeFloors,
@@ -290,26 +439,58 @@ export function PrimaryPropertyCalculator() {
       rates: activeRates
     });
 
+    // 3. PRO Exact Construction Calculation (Version 3.0.0)
+    const advancedPro = calculateAdvancedGreyStructure({
+      coveredAreaSqft: safeCovered,
+      numberOfFloors: safeFloors,
+      plotAreaMarla: Math.max(0.1, plotAreaInMarlas),
+      rates: activeRates,
+      proInputs: {
+        ...proInputs,
+        isProEnabled: isPro
+      }
+    });
+
     const isGreyOnly = constructionScope === "grey";
-    const totalCost = isGreyOnly ? greyEst.costs.grandTotal : fullEst.summary.totalProjectEstimate;
+    const greyGrandTotal = isPro ? advancedPro.totalCost : greyEst.costs.grandTotal;
+    const finishingEstimate = Math.max(0, fullEst.summary.totalProjectEstimate - greyEst.costs.grandTotal);
+    const totalCost = isGreyOnly ? greyGrandTotal : (greyGrandTotal + finishingEstimate);
     const costPerSqft = Math.round(totalCost / safeCovered);
 
-    // Itemized costs
-    const cementCost = greyEst.materials.cement.finalQuantity * activeRates.cementBagRate;
-    const steelCost = greyEst.materials.steel.finalQuantity * activeRates.steelKgRate;
-    const bricksCost = greyEst.materials.bricks.finalQuantity * activeRates.brickRate;
-    const sandCost = greyEst.materials.sand.finalQuantity * activeRates.sandCftRate;
-    const crushCost = greyEst.materials.crush.finalQuantity * activeRates.crushCftRate;
-    const labourCost = greyEst.costs.labourCost;
-    const transportCost = greyEst.costs.transportCost;
-    const wastageCost = Math.round((cementCost + steelCost + bricksCost + sandCost + crushCost) * 0.045);
-    const finishingCost = isGreyOnly ? 0 : Math.round(totalCost - greyEst.costs.grandTotal);
+    // Itemized quantities & costs (reconciled based on PRO or Standard)
+    const cementBags = isPro ? advancedPro.materials.cement.finalQuantity : greyEst.materials.cement.finalQuantity;
+    const cementCost = Math.round(cementBags * activeRates.cementBagRate);
+
+    const steelKg = isPro ? advancedPro.materials.steel.finalQuantity : greyEst.materials.steel.finalQuantity;
+    const steelCost = Math.round(steelKg * activeRates.steelKgRate);
+
+    const bricksCount = isPro ? advancedPro.materials.bricks.finalQuantity : greyEst.materials.bricks.finalQuantity;
+    const bricksCost = Math.round(bricksCount * activeRates.brickRate);
+
+    const sandCft = isPro ? advancedPro.materials.sand.finalQuantity : greyEst.materials.sand.finalQuantity;
+    const sandCost = Math.round(sandCft * activeRates.sandCftRate);
+
+    const crushCft = isPro ? advancedPro.materials.crush.finalQuantity : greyEst.materials.crush.finalQuantity;
+    const crushCost = Math.round(crushCft * activeRates.crushCftRate);
+
+    const labourCost = isPro ? advancedPro.costs.labourCost : greyEst.costs.labourCost;
+    const transportCost = isPro ? advancedPro.costs.transportCost : greyEst.costs.transportCost;
+    const wastageCost = isPro ? advancedPro.costs.wastageCost : Math.round((cementCost + steelCost + bricksCost + sandCost + crushCost) * 0.045);
+    const finishingCost = isGreyOnly ? 0 : finishingEstimate;
 
     // Specific Grey Breakdown Elements
-    const brickMasonryCost = greyEst.elementsBreakdown.brickMasonryCost;
-    const plasterCost = Math.round(greyEst.costs.grandTotal * 0.12);
-    const roofSlabCost = greyEst.elementsBreakdown.roofSlabsCost + greyEst.elementsBreakdown.beamsAndLintelsCost;
-    const foundationCost = greyEst.elementsBreakdown.foundationCost + greyEst.elementsBreakdown.plinthAndDpcCost;
+    const brickMasonryCost = isPro
+      ? advancedPro.detailedEstimate.breakdown.brickworkCost
+      : greyEst.elementsBreakdown.brickMasonryCost;
+    const plasterCost = isPro
+      ? advancedPro.detailedEstimate.breakdown.plasterCost
+      : Math.round(greyEst.costs.grandTotal * 0.12);
+    const roofSlabCost = isPro
+      ? (advancedPro.detailedEstimate.breakdown.slabsCost + advancedPro.detailedEstimate.breakdown.beamsCost)
+      : (greyEst.elementsBreakdown.roofSlabsCost + greyEst.elementsBreakdown.beamsAndLintelsCost);
+    const foundationCost = isPro
+      ? advancedPro.detailedEstimate.breakdown.foundationCost
+      : (greyEst.elementsBreakdown.foundationCost + greyEst.elementsBreakdown.plinthAndDpcCost);
 
     // Timeline in months
     const estimatedDurationMonths =
@@ -341,19 +522,19 @@ export function PrimaryPropertyCalculator() {
     return {
       totalCost,
       costPerSqft,
-      greyStructureCost: greyEst.costs.grandTotal,
+      greyStructureCost: greyGrandTotal,
       finishingCost,
       estimatedDurationMonths,
-      cementBags: greyEst.materials.cement.finalQuantity,
+      cementBags,
       cementCost,
-      steelKg: greyEst.materials.steel.finalQuantity,
-      steelTons: (greyEst.materials.steel.finalQuantity / 1000).toFixed(2),
+      steelKg,
+      steelTons: (steelKg / 1000).toFixed(2),
       steelCost,
-      bricksCount: greyEst.materials.bricks.finalQuantity,
+      bricksCount,
       bricksCost,
-      sandCft: greyEst.materials.sand.finalQuantity,
+      sandCft,
       sandCost,
-      crushCft: greyEst.materials.crush.finalQuantity,
+      crushCft,
       crushCost,
       labourCost,
       transportCost,
@@ -365,7 +546,9 @@ export function PrimaryPropertyCalculator() {
       brickMasonryCost,
       plasterCost,
       roofSlabCost,
-      foundationCost
+      foundationCost,
+      proDetailedEstimate: advancedPro.detailedEstimate,
+      isProMode: isPro
     };
   }, [
     coveredAreaSqft,
@@ -374,11 +557,13 @@ export function PrimaryPropertyCalculator() {
     activeRates,
     qualityTier,
     constructionScope,
-    plotAreaInMarlas
+    plotAreaInMarlas,
+    isPro,
+    proInputs
   ]);
 
   // Breakdown Sub-tab state
-  const [breakdownView, setBreakdownView] = useState<"grey" | "finishing">("grey");
+  const [breakdownView, setBreakdownView] = useState<"grey" | "finishing" | "pro_exact">("grey");
 
   const scrollToResults = () => {
     const el = document.getElementById("calculation-results-anchor");
@@ -791,8 +976,22 @@ export function PrimaryPropertyCalculator() {
         </div>
       </div>
 
-      {/* 3. HERO ACTION BUTTON: Smaller, Sleeker, Elegant */}
-      <div className="flex items-center justify-center py-1">
+      {/* PRO — EXACT CONSTRUCTION CALCULATION SUITE (Version 3.0.0) */}
+      <ProConstructionSection
+        inputs={proInputs}
+        onChange={setProInputs}
+        isPro={isPro}
+        onProLockClick={(title) => openUpgradeModal(title)}
+        proMonthlyPrice={DEFAULT_LAUNCH_PRICE_CONFIG.monthlyPrice}
+        proAnnualPrice={DEFAULT_LAUNCH_PRICE_CONFIG.annualPrice}
+        coveredAreaSqft={coveredAreaSqft}
+        floors={effectiveFloors}
+        plotWidthFt={plotDimensionMode === "custom" ? customWidthFt : Math.round(Math.sqrt(plotAreaSqft * 0.5))}
+        plotLengthFt={plotDimensionMode === "custom" ? customLengthFt : Math.round(Math.sqrt(plotAreaSqft * 2))}
+      />
+
+      {/* 3. HERO ACTION BUTTONS */}
+      <div className="flex flex-wrap items-center justify-center gap-3 py-1">
         <button
           type="button"
           onClick={() => {
@@ -802,8 +1001,17 @@ export function PrimaryPropertyCalculator() {
           className="px-8 py-3.5 rounded-2xl bg-[#059669] hover:bg-emerald-700 active:scale-[0.98] text-white font-black text-sm sm:text-base shadow-lg shadow-emerald-800/20 flex items-center justify-center gap-3 transition-all cursor-pointer tracking-wide group"
         >
           <Calculator className="w-5 h-5 text-emerald-100 group-hover:rotate-6 transition-transform" />
-          <span>Calculate Free Estimate</span>
+          <span>{isPro ? "Recalculate PRO Estimate" : "Calculate Estimate"}</span>
           <ArrowRight className="w-4 h-4 text-emerald-200 group-hover:translate-x-1 transition-transform" />
+        </button>
+
+        <button
+          type="button"
+          onClick={handleSaveCalculation}
+          className="px-6 py-3.5 rounded-2xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 font-bold text-sm border-2 border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-2 transition-all cursor-pointer"
+        >
+          <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          <span>Save Calculation</span>
         </button>
       </div>
 
@@ -989,7 +1197,7 @@ export function PrimaryPropertyCalculator() {
           </div>
 
           {/* Phase Sub-Tabs */}
-          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold self-start sm:self-auto">
+          <div className="flex flex-wrap bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold self-start sm:self-auto gap-1">
             <button
               type="button"
               onClick={() => setBreakdownView("grey")}
@@ -1014,11 +1222,203 @@ export function PrimaryPropertyCalculator() {
             >
               <span>Finishing &amp; Furnishing (فنشنگ)</span>
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (!isPro) {
+                  openUpgradeModal("PRO Detailed Estimate Breakdown");
+                  return;
+                }
+                setBreakdownView("pro_exact");
+              }}
+              className={cn(
+                "px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer",
+                breakdownView === "pro_exact"
+                  ? "bg-emerald-600 text-white shadow-xs font-extrabold"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              )}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>PRO Detailed Estimate</span>
+              {!isPro && <Lock className="w-3 h-3 text-amber-400 ml-0.5" />}
+            </button>
           </div>
         </div>
 
-        {/* TAB 1: GREY STRUCTURE PHASE CARDS */}
-        {breakdownView === "grey" ? (
+        {/* PRO EXACT DETAILED ESTIMATE VIEW */}
+        {breakdownView === "pro_exact" ? (
+          <div className="bg-white dark:bg-slate-900 border-2 border-emerald-500/50 rounded-3xl p-5 sm:p-7 space-y-6 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-black">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>PRO Detailed Estimate — Zero Double-Counting</span>
+                    <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full bg-emerald-600 text-white">PRO VERIFIED</span>
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Exact civil engineering quantity breakdown partitioning walls, bunyad, columns, beams, slabs &amp; bathrooms.
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-[11px] text-slate-400 font-bold uppercase block">Total Grey Structure</span>
+                <span className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                  {formatPKR(calculationResult.proDetailedEstimate ? calculationResult.proDetailedEstimate.breakdown.wallsCost + calculationResult.proDetailedEstimate.breakdown.foundationCost + calculationResult.proDetailedEstimate.breakdown.columnsCost + calculationResult.proDetailedEstimate.breakdown.beamsCost + calculationResult.proDetailedEstimate.breakdown.slabsCost + calculationResult.proDetailedEstimate.breakdown.bathroomsCost + calculationResult.proDetailedEstimate.breakdown.labourCost + calculationResult.proDetailedEstimate.breakdown.transportCost + calculationResult.proDetailedEstimate.breakdown.wastageCost : calculationResult.totalCost)}
+                </span>
+              </div>
+            </div>
+
+            {/* Traceable Element Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 text-xs">
+              {/* 1. Walls */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
+                <div className="flex justify-between font-bold">
+                  <span className="text-slate-700 dark:text-slate-300">Exterior &amp; Main Walls:</span>
+                  <span className="text-slate-900 dark:text-white font-mono font-black">{formatPKR(calculationResult.proDetailedEstimate?.breakdown.wallsCost || 0)}</span>
+                </div>
+                <div className="text-[11px] text-slate-500 space-y-0.5">
+                  <div>Net Masonry Volume: {calculationResult.proDetailedEstimate?.wallVolumeCft || 0} CFT</div>
+                  <div>Wall Height: {proInputs.wallHeightMode === "manual" ? proInputs.manualWallHeightFt : 10} ft</div>
+                </div>
+              </div>
+
+              {/* 2. Bathrooms */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
+                <div className="flex justify-between font-bold">
+                  <span className="text-slate-700 dark:text-slate-300">Bathrooms (4.5&quot; Partitions):</span>
+                  <span className="text-slate-900 dark:text-white font-mono font-black">{formatPKR(calculationResult.proDetailedEstimate?.breakdown.bathroomsCost || 0)}</span>
+                </div>
+                <div className="text-[11px] text-slate-500 space-y-0.5">
+                  <div>Count: {calculationResult.proDetailedEstimate?.numberOfBathrooms || 2} Bathrooms</div>
+                  <div>Custom room footprints with dedicated mortar</div>
+                </div>
+              </div>
+
+              {/* 3. Foundation */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
+                <div className="flex justify-between font-bold">
+                  <span className="text-slate-700 dark:text-slate-300">Foundation (Bunyad):</span>
+                  <span className="text-slate-900 dark:text-white font-mono font-black">{formatPKR(calculationResult.proDetailedEstimate?.breakdown.foundationCost || 0)}</span>
+                </div>
+                <div className="text-[11px] text-slate-500 space-y-0.5">
+                  <div>Type: {proInputs.foundationType.toUpperCase()} ({proInputs.foundationDepthFt} ft depth)</div>
+                  <div>Excavation: {calculationResult.proDetailedEstimate?.excavationVolumeCft || 0} CFT</div>
+                </div>
+              </div>
+
+              {/* 4. Columns */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
+                <div className="flex justify-between font-bold">
+                  <span className="text-slate-700 dark:text-slate-300">RCC Columns (Satoon):</span>
+                  <span className="text-slate-900 dark:text-white font-mono font-black">{formatPKR(calculationResult.proDetailedEstimate?.breakdown.columnsCost || 0)}</span>
+                </div>
+                <div className="text-[11px] text-slate-500 space-y-0.5">
+                  <div>Nodes: {calculationResult.proDetailedEstimate?.numberOfColumns || 16} Columns</div>
+                  <div>Cross-section: {Math.round(proInputs.columnWidthFt * 12)}&quot; × {Math.round(proInputs.columnDepthFt * 12)}&quot; RCC</div>
+                </div>
+              </div>
+
+              {/* 5. Beams */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
+                <div className="flex justify-between font-bold">
+                  <span className="text-slate-700 dark:text-slate-300">RCC Beams (Tir &amp; Ties):</span>
+                  <span className="text-slate-900 dark:text-white font-mono font-black">{formatPKR(calculationResult.proDetailedEstimate?.breakdown.beamsCost || 0)}</span>
+                </div>
+                <div className="text-[11px] text-slate-500 space-y-0.5">
+                  <div>Total Length: {proInputs.beamLengthMode === "manual" ? proInputs.manualBeamTotalLengthFt : "Auto framed"} ft</div>
+                  <div>Cross-section: {Math.round(proInputs.beamWidthFt * 12)}&quot; × {Math.round(proInputs.beamDepthFt * 12)}&quot; RCC</div>
+                </div>
+              </div>
+
+              {/* 6. Roof Slabs */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
+                <div className="flex justify-between font-bold">
+                  <span className="text-slate-700 dark:text-slate-300">RCC Roof Slabs (Lenter):</span>
+                  <span className="text-slate-900 dark:text-white font-mono font-black">{formatPKR(calculationResult.proDetailedEstimate?.breakdown.slabsCost || 0)}</span>
+                </div>
+                <div className="text-[11px] text-slate-500 space-y-0.5">
+                  <div>5.5-inch 1:2:4 monolithic casting</div>
+                  <div>Area: {formatNumber(coveredAreaSqft)} sq ft</div>
+                </div>
+              </div>
+
+              {/* 7. Plaster */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
+                <div className="flex justify-between font-bold">
+                  <span className="text-slate-700 dark:text-slate-300">Plaster (Internal &amp; External):</span>
+                  <span className="text-slate-900 dark:text-white font-mono font-black">{formatPKR(calculationResult.proDetailedEstimate?.breakdown.plasterCost || 0)}</span>
+                </div>
+                <div className="text-[11px] text-slate-500 space-y-0.5">
+                  <div>Dual-coat cement mortar</div>
+                  <div>Exposed Wall Area: ~{calculationResult.proDetailedEstimate?.wallAreaSqft || 0} sq ft</div>
+                </div>
+              </div>
+
+              {/* 8. Labour & Shuttering */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
+                <div className="flex justify-between font-bold">
+                  <span className="text-slate-700 dark:text-slate-300">Labour &amp; Shuttering:</span>
+                  <span className="text-slate-900 dark:text-white font-mono font-black">{formatPKR(calculationResult.proDetailedEstimate?.breakdown.labourCost || 0)}</span>
+                </div>
+                <div className="text-[11px] text-slate-500 space-y-0.5">
+                  <div>Steel-fixing, wood shuttering, mistry &amp; mazdoor</div>
+                  <div>Foundation trench excavation labour included</div>
+                </div>
+              </div>
+
+              {/* 9. Transport & Wastage */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
+                <div className="flex justify-between font-bold">
+                  <span className="text-slate-700 dark:text-slate-300">Logistics &amp; Wastage:</span>
+                  <span className="text-slate-900 dark:text-white font-mono font-black">
+                    {formatPKR((calculationResult.proDetailedEstimate?.breakdown.transportCost || 0) + (calculationResult.proDetailedEstimate?.breakdown.wastageCost || 0) + (calculationResult.proDetailedEstimate?.breakdown.otherCost || 0))}
+                  </span>
+                </div>
+                <div className="text-[11px] text-slate-500 space-y-0.5">
+                  <div>Transport: {formatPKR(calculationResult.proDetailedEstimate?.breakdown.transportCost || 0)}</div>
+                  <div>Wastage: {formatPKR(calculationResult.proDetailedEstimate?.breakdown.wastageCost || 0)}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quantitative Materials Table */}
+            <div className="pt-2">
+              <h5 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
+                Calculated Material Quantities (No Double-Counting)
+              </h5>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs text-center">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase block">Cement</span>
+                  <strong className="text-sm text-slate-900 dark:text-white font-mono">{formatNumber(calculationResult.cementBags)}</strong>
+                  <span className="text-[10px] text-slate-500 block">Bags</span>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase block">Rebar Steel</span>
+                  <strong className="text-sm text-slate-900 dark:text-white font-mono">{formatNumber(calculationResult.steelKg)}</strong>
+                  <span className="text-[10px] text-slate-500 block">Kg ({calculationResult.steelTons} Tons)</span>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase block">Awwal Bricks</span>
+                  <strong className="text-sm text-slate-900 dark:text-white font-mono">{formatNumber(calculationResult.bricksCount)}</strong>
+                  <span className="text-[10px] text-slate-500 block">Pcs</span>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase block">Sand</span>
+                  <strong className="text-sm text-slate-900 dark:text-white font-mono">{formatNumber(calculationResult.sandCft)}</strong>
+                  <span className="text-[10px] text-slate-500 block">CFT</span>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase block">Crush (Bajri)</span>
+                  <strong className="text-sm text-slate-900 dark:text-white font-mono">{formatNumber(calculationResult.crushCft)}</strong>
+                  <span className="text-[10px] text-slate-500 block">CFT</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : breakdownView === "grey" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* 1. Brick Masonry */}
               <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-3">
