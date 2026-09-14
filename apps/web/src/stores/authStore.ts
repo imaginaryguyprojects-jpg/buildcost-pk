@@ -55,7 +55,10 @@ interface AuthState {
   loginAsSuperAdmin: (email?: string) => void;
 
   // Auth Operations
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (
+    email: string,
+    password: string
+  ) => Promise<{ success: boolean; error?: string; needsVerification?: boolean; email?: string }>;
   signup: (data: {
     fullName: string;
     email: string;
@@ -64,6 +67,9 @@ interface AuthState {
     companyName?: string;
     cityId?: string;
   }) => Promise<{ success: boolean; error?: string; needsVerification?: boolean; message?: string }>;
+  resetPassword: (email: string) => Promise<{ success: boolean; error?: string; message?: string }>;
+  updatePassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>;
+  resendVerificationEmail: (email: string) => Promise<{ success: boolean; error?: string; message?: string }>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<{ success: boolean; error?: string }>;
   updateProfile: (updates: Partial<UserProfile>) => void;
@@ -190,28 +196,36 @@ export const useAuthStore = create<AuthState>()(
             return;
           }
 
-          // Strict email confirmation verification
-          const isConfirmed = !!(session.user.email_confirmed_at || session.user.confirmed_at);
+          const normalizedEmail = (session.user.email || "").toLowerCase().trim();
+          const isAdmin = isSuperAdminEmail(normalizedEmail);
+
+          // Email confirmation check (Super Admin always bypasses)
+          const isConfirmed = isAdmin || !!(session.user.email_confirmed_at || session.user.confirmed_at);
           if (!isConfirmed) {
             await supabase.auth.signOut();
             set({ user: null, isAuthenticated: false });
             return;
           }
 
-          // Fetch verified user profile directly from Supabase
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", session.user.id)
-            .maybeSingle();
+          // Fetch verified user profile safely from Supabase
+          let profile: any = null;
+          try {
+            const { data } = await supabase
+              .from("profiles")
+              .select("*")
+              .eq("id", session.user.id)
+              .maybeSingle();
+            profile = data;
+          } catch {
+            // Ignore database schema mismatch
+          }
 
-          const normalizedEmail = (session.user.email || "").toLowerCase().trim();
-          const isAdmin =
-            isSuperAdminEmail(normalizedEmail) ||
+          const hasAdminRole =
+            isAdmin ||
             profile?.role === "admin" ||
             profile?.role === "superadmin";
 
-          let isPro = isAdmin;
+          let isPro = hasAdminRole;
           if (!isPro && profile?.is_pro === true) {
             const exp = profile.pro_expires_at;
             isPro = !exp || new Date(exp).getTime() > Date.now();
@@ -227,12 +241,12 @@ export const useAuthStore = create<AuthState>()(
             phone: profile?.phone || session.user.user_metadata?.phone,
             companyName: profile?.company_name || session.user.user_metadata?.company,
             cityId: profile?.city_id || "isb",
-            role: isAdmin ? "superadmin" : ((profile?.role as any) || "user"),
+            role: hasAdminRole ? "superadmin" : ((profile?.role as any) || "user"),
             plan: isPro ? "pro" : "free",
             subscriptionTier: isPro ? "pro" : "free",
             subscriptionStatus: isPro ? "PRO_ACTIVE" : "FREE",
             is_pro: isPro,
-            emailConfirmed: true,
+            emailConfirmed: isConfirmed,
             createdAt: profile?.created_at || session.user.created_at,
             updatedAt: profile?.updated_at || new Date().toISOString(),
           };
@@ -316,9 +330,10 @@ export const useAuthStore = create<AuthState>()(
       clearToast: () => set({ lastToast: null }),
 
       login: async (email, password) => {
-        const emailCheck = validateEmail(email);
+        const cleanEmail = (email || "").trim().toLowerCase();
+        const emailCheck = validateEmail(cleanEmail);
         if (!emailCheck.valid) {
-          return { success: false, error: emailCheck.error };
+          return { success: false, error: emailCheck.error || "Please enter a valid email address." };
         }
 
         if (!password) {
@@ -328,40 +343,68 @@ export const useAuthStore = create<AuthState>()(
         try {
           const supabase = createClient();
           const { data, error } = await supabase.auth.signInWithPassword({
-            email: email.trim().toLowerCase(),
+            email: cleanEmail,
             password
           });
 
           if (error || !data?.user) {
+            const errMsg = error?.message || "Invalid credentials.";
+            const isUnconfirmed =
+              (error as any)?.code === "email_not_confirmed" ||
+              errMsg.toLowerCase().includes("email not confirmed");
+
+            if (isUnconfirmed) {
+              return {
+                success: false,
+                needsVerification: true,
+                email: cleanEmail,
+                error:
+                  "Your email address is not verified yet. Please check your inbox or spam folder, or click below to receive a new link."
+              };
+            }
+
             return {
               success: false,
-              error: error?.message || "Invalid email or password. Please try again."
+              error:
+                errMsg === "Invalid login credentials"
+                  ? "Incorrect email or password. Please verify your details or use 'Forgot Password?'."
+                  : errMsg
             };
           }
 
-          // Strict Email Confirmation Check
-          const isConfirmed = !!(data.user.email_confirmed_at || data.user.confirmed_at);
+          const isAdmin = isSuperAdminEmail(cleanEmail);
+          const isConfirmed = isAdmin || !!(data.user.email_confirmed_at || data.user.confirmed_at);
+
           if (!isConfirmed) {
             await supabase.auth.signOut();
             return {
               success: false,
+              needsVerification: true,
+              email: cleanEmail,
               error:
-                "Your email address is not verified yet. Please check your inbox or spam folder to confirm your email before signing in."
+                "Your email address is not verified yet. Please check your inbox or spam folder, or click below to receive a new link."
             };
           }
 
-          // Fetch verified user profile from Supabase database
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", data.user.id)
-            .maybeSingle();
+          // Fetch verified user profile safely
+          let profile: any = null;
+          try {
+            const { data: prof } = await supabase
+              .from("profiles")
+              .select("*")
+              .eq("id", data.user.id)
+              .maybeSingle();
+            profile = prof;
+          } catch {
+            // Ignore schema differences
+          }
 
-          const normalizedEmail = (data.user.email || email).toLowerCase().trim();
-          const isAdmin = isSuperAdminEmail(normalizedEmail) || profile?.role === "admin" || profile?.role === "superadmin";
+          const hasAdminRole =
+            isAdmin ||
+            profile?.role === "admin" ||
+            profile?.role === "superadmin";
 
-          // Verify PRO subscription status directly from database
-          let isPro = isAdmin;
+          let isPro = hasAdminRole;
           if (!isPro && profile?.is_pro === true) {
             const exp = profile.pro_expires_at;
             isPro = !exp || new Date(exp).getTime() > Date.now();
@@ -369,12 +412,15 @@ export const useAuthStore = create<AuthState>()(
 
           const verifiedUser: UserProfile = {
             id: data.user.id,
-            email: normalizedEmail,
-            fullName: profile?.full_name || data.user.user_metadata?.full_name || normalizedEmail.split("@")[0],
+            email: cleanEmail,
+            fullName:
+              profile?.full_name ||
+              data.user.user_metadata?.full_name ||
+              cleanEmail.split("@")[0],
             phone: profile?.phone || data.user.user_metadata?.phone,
             companyName: profile?.company_name || data.user.user_metadata?.company,
             cityId: profile?.city_id || "isb",
-            role: isAdmin ? "superadmin" : ((profile?.role as any) || "user"),
+            role: hasAdminRole ? "superadmin" : ((profile?.role as any) || "user"),
             plan: isPro ? "pro" : "free",
             subscriptionTier: isPro ? "pro" : "free",
             subscriptionStatus: isPro ? "PRO_ACTIVE" : "FREE",
@@ -390,7 +436,10 @@ export const useAuthStore = create<AuthState>()(
             loginModalOpen: false,
           });
 
-          get().showToast(isAdmin ? `⚡ Welcome Admin: ${verifiedUser.fullName}` : `Welcome back, ${verifiedUser.fullName}!`, "success");
+          get().showToast(
+            hasAdminRole ? `⚡ Welcome Admin: ${verifiedUser.fullName}` : `Welcome back, ${verifiedUser.fullName}!`,
+            "success"
+          );
           return { success: true };
         } catch (err: any) {
           return {
@@ -401,19 +450,19 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signup: async (data) => {
-        const emailCheck = validateEmail(data.email);
+        const cleanEmail = (data.email || "").trim().toLowerCase();
+        const emailCheck = validateEmail(cleanEmail);
         if (!emailCheck.valid) {
-          return { success: false, error: emailCheck.error };
+          return { success: false, error: emailCheck.error || "Please enter a valid email address." };
         }
 
         const passCheck = validatePassword(data.password);
         if (!passCheck.valid) {
-          return { success: false, error: passCheck.error };
+          return { success: false, error: passCheck.error || "Password must be at least 8 characters." };
         }
 
         try {
           const supabase = createClient();
-          const cleanEmail = data.email.trim().toLowerCase();
           const { data: resData, error } = await supabase.auth.signUp({
             email: cleanEmail,
             password: data.password,
@@ -435,17 +484,18 @@ export const useAuthStore = create<AuthState>()(
             return { success: false, error: "Signup could not be completed. Please try again." };
           }
 
-          // Check if email confirmation is required
-          const isConfirmed = !!(resData.user.email_confirmed_at || resData.user.confirmed_at);
-          if (!isConfirmed) {
+          const isAdmin = isSuperAdminEmail(cleanEmail);
+          const isConfirmed = isAdmin || !!(resData.user.email_confirmed_at || resData.user.confirmed_at);
+
+          // If email confirmation is required and user has no active session
+          if (!isConfirmed && !resData.session) {
             return {
               success: true,
               needsVerification: true,
-              message: `Account created successfully! We sent a confirmation link to ${cleanEmail}. Please verify your email before signing in.`
+              message: `Account registered! We sent a confirmation link to ${cleanEmail}. Please verify your email before signing in.`
             };
           }
 
-          const isAdmin = isSuperAdminEmail(cleanEmail);
           const newUser: UserProfile = {
             id: resData.user.id,
             email: cleanEmail,
@@ -470,12 +520,103 @@ export const useAuthStore = create<AuthState>()(
             onboardingModalOpen: !isAdmin,
           });
 
-          get().showToast("Account created successfully!", "success");
+          get().showToast("Account created successfully! Welcome to BuildCost.", "success");
           return { success: true };
         } catch (err: any) {
           return {
             success: false,
             error: err.message || "Failed to create account. Please check your connection."
+          };
+        }
+      },
+
+      resetPassword: async (email: string) => {
+        const cleanEmail = (email || "").trim().toLowerCase();
+        const emailCheck = validateEmail(cleanEmail);
+        if (!emailCheck.valid) {
+          return { success: false, error: emailCheck.error || "Please enter a valid email address." };
+        }
+
+        try {
+          const supabase = createClient();
+          const redirectUrl =
+            typeof window !== "undefined"
+              ? `${window.location.origin}/reset-password`
+              : "https://buildcost-pk-web.vercel.app/reset-password";
+
+          const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+            redirectTo: redirectUrl
+          });
+
+          if (error) {
+            return { success: false, error: error.message };
+          }
+
+          return {
+            success: true,
+            message: `Password reset instructions sent to ${cleanEmail}. Please check your Inbox and Spam folder.`
+          };
+        } catch (err: any) {
+          return {
+            success: false,
+            error: err.message || "Unable to send reset email. Please verify your connection."
+          };
+        }
+      },
+
+      updatePassword: async (newPassword: string) => {
+        const passCheck = validatePassword(newPassword);
+        if (!passCheck.valid) {
+          return { success: false, error: passCheck.error || "Password must be at least 8 characters with letters and numbers." };
+        }
+
+        try {
+          const supabase = createClient();
+          const { data, error } = await supabase.auth.updateUser({
+            password: newPassword
+          });
+
+          if (error || !data?.user) {
+            return { success: false, error: error?.message || "Failed to update password." };
+          }
+
+          await get().initializeAuth();
+          get().showToast("Password updated successfully! You are now signed in.", "success");
+          return { success: true };
+        } catch (err: any) {
+          return {
+            success: false,
+            error: err.message || "Failed to update password. Please check your connection."
+          };
+        }
+      },
+
+      resendVerificationEmail: async (email: string) => {
+        const cleanEmail = (email || "").trim().toLowerCase();
+        const emailCheck = validateEmail(cleanEmail);
+        if (!emailCheck.valid) {
+          return { success: false, error: emailCheck.error || "Please enter a valid email address." };
+        }
+
+        try {
+          const supabase = createClient();
+          const { error } = await supabase.auth.resend({
+            type: "signup",
+            email: cleanEmail
+          });
+
+          if (error) {
+            return { success: false, error: error.message };
+          }
+
+          return {
+            success: true,
+            message: `Verification link sent to ${cleanEmail}! Please check your Inbox and Spam folder.`
+          };
+        } catch (err: any) {
+          return {
+            success: false,
+            error: err.message || "Failed to resend email. Please try again in a moment."
           };
         }
       },

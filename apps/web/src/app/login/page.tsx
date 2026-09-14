@@ -3,22 +3,27 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Calculator, Lock, Mail, ArrowRight } from "lucide-react";
+import { Calculator, Lock, Mail, ArrowRight, Eye, EyeOff, RefreshCw, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { validateEmail } from "@/lib/auth/validation";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuthStore();
+  const { login, resendVerificationEmail, showToast } = useAuthStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState<string | null>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setResendSuccess(null);
 
     const emailCheck = validateEmail(email);
     if (!emailCheck.valid) {
@@ -39,11 +44,33 @@ export default function LoginPage() {
         router.push("/dashboard");
       } else {
         setError(res.error || "Invalid credentials. Please verify your email and password.");
+        if (res.needsVerification) {
+          setNeedsVerification(true);
+        }
       }
     } catch (err: any) {
       setError(err.message || "Failed to sign in. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!email) return;
+    setResending(true);
+    setResendSuccess(null);
+    try {
+      const res = await resendVerificationEmail(email);
+      if (res.success) {
+        setResendSuccess(res.message || "Verification email re-sent! Please check your Inbox and Spam folder.");
+        showToast("Verification link dispatched!", "success");
+      } else {
+        setError(res.error || "Could not resend email. Please try again in a few moments.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to resend verification link.");
+    } finally {
+      setResending(false);
     }
   };
 
@@ -62,8 +89,29 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-4 shadow-xl">
           {error && (
-            <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-800/50 text-xs text-rose-300">
-              {error}
+            <div className="p-3.5 rounded-xl bg-rose-950/60 border border-rose-800/50 text-xs text-rose-300 space-y-2">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                <span>{error}</span>
+              </div>
+              {needsVerification && (
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resending}
+                  className="w-full mt-2 py-2 px-3 rounded-lg bg-rose-900/50 hover:bg-rose-800/60 text-white font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${resending ? "animate-spin" : ""}`} />
+                  <span>{resending ? "Sending Link..." : "Resend Verification Email"}</span>
+                </button>
+              )}
+            </div>
+          )}
+
+          {resendSuccess && (
+            <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-800/50 text-xs text-emerald-300 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{resendSuccess}</span>
             </div>
           )}
 
@@ -76,7 +124,10 @@ export default function LoginPage() {
                 required
                 placeholder="name@company.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setNeedsVerification(false);
+                }}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
               />
             </div>
@@ -92,20 +143,28 @@ export default function LoginPage() {
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 required
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-10 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 cursor-pointer"
+                aria-label="Toggle password visibility"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-950/50 transition-all disabled:opacity-50 mt-2"
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-950/50 transition-all disabled:opacity-50 mt-2 cursor-pointer"
           >
             <span>{loading ? "Signing in..." : "Sign In to Dashboard"}</span>
             <ArrowRight className="w-4 h-4" />

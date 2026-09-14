@@ -27,12 +27,14 @@ interface WelcomeAuthGateProps {
 
 export function WelcomeAuthGate({ onGuestAccess }: WelcomeAuthGateProps) {
   const router = useRouter();
-  const { user, isAuthenticated, login, signup, showToast } = useAuthStore();
+  const { user, isAuthenticated, login, signup, resendVerificationEmail, showToast } = useAuthStore();
 
   const [activeTab, setActiveTab] = useState<"signin" | "signup">("signin");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [needsVerification, setNeedsVerification] = useState(false);
 
   // Form states
   const [email, setEmail] = useState("");
@@ -63,11 +65,31 @@ export function WelcomeAuthGate({ onGuestAccess }: WelcomeAuthGateProps) {
         showToast("Signed in successfully!", "success");
       } else {
         setErrorMessage(res.error || "Invalid credentials. Please check your email and password.");
+        if (res.needsVerification) {
+          setNeedsVerification(true);
+        }
       }
     } catch (err: any) {
       setErrorMessage(err?.message || "Sign in failed. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!email) return;
+    setResending(true);
+    try {
+      const res = await resendVerificationEmail(email);
+      if (res.success) {
+        showToast("Verification link dispatched! Please check your Inbox and Spam.", "success");
+      } else {
+        showToast(res.error || "Could not resend email.", "error");
+      }
+    } catch {
+      showToast("Failed to resend email.", "error");
+    } finally {
+      setResending(false);
     }
   };
 
@@ -250,8 +272,18 @@ export function WelcomeAuthGate({ onGuestAccess }: WelcomeAuthGateProps) {
                 </div>
 
                 {errorMessage && (
-                  <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300">
-                    {errorMessage}
+                  <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300 space-y-2">
+                    <p>{errorMessage}</p>
+                    {needsVerification && (
+                      <button
+                        type="button"
+                        onClick={handleResend}
+                        disabled={resending}
+                        className="w-full py-1.5 px-3 rounded-xl bg-rose-200 dark:bg-rose-900/60 hover:bg-rose-300 dark:hover:bg-rose-800 text-rose-900 dark:text-rose-100 font-bold text-[11px] transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        <span>{resending ? "Sending..." : "Resend Verification Email"}</span>
+                      </button>
+                    )}
                   </div>
                 )}
 
