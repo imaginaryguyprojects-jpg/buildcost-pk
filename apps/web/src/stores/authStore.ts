@@ -60,6 +60,7 @@ interface AuthState {
     email: string,
     password: string
   ) => Promise<{ success: boolean; error?: string; needsVerification?: boolean; email?: string }>;
+  loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   loginWithBiometrics: () => Promise<{ success: boolean; error?: string }>;
   signup: (data: {
     fullName: string;
@@ -385,6 +386,38 @@ export const useAuthStore = create<AuthState>()(
 
       clearToast: () => set({ lastToast: null }),
 
+      loginWithGoogle: async () => {
+        try {
+          const supabase = createClient();
+          const redirectUrl =
+            typeof window !== "undefined"
+              ? `${window.location.origin}/auth/callback`
+              : "https://buildcost-pk.vercel.app/auth/callback";
+
+          const { error } = await supabase.auth.signInWithOAuth({
+            provider: "google",
+            options: {
+              redirectTo: redirectUrl,
+              queryParams: {
+                access_type: "offline",
+                prompt: "consent",
+              },
+            },
+          });
+
+          if (error) {
+            return { success: false, error: error.message };
+          }
+
+          return { success: true };
+        } catch (err: any) {
+          return {
+            success: false,
+            error: err.message || "Failed to initiate Google sign-in. Please check your network connection.",
+          };
+        }
+      },
+
       login: async (email, password) => {
         const cleanEmail = (email || "").trim().toLowerCase();
         const emailCheck = validateEmail(cleanEmail);
@@ -404,12 +437,6 @@ export const useAuthStore = create<AuthState>()(
           });
 
           if (error || !data?.user) {
-            // Whitelisted Super Admin: bypass Supabase password failure and activate God Mode directly
-            if (isSuperAdminEmail(cleanEmail)) {
-              get().loginAsSuperAdmin(cleanEmail);
-              return { success: true };
-            }
-
             const errMsg = error?.message || "Invalid credentials.";
             const isUnconfirmed =
               (error as any)?.code === "email_not_confirmed" ||
@@ -718,25 +745,12 @@ export const useAuthStore = create<AuthState>()(
             // Supabase offline fallback
           }
 
-          // 3. Fallback: If stored email exists, restore local session
+          // 3. Fallback: If stored email exists but session expired, prompt user to log in with password once
           if (storedEmail) {
-            const fallbackUser: UserProfile = {
-              id: "bio_" + Math.random().toString(36).substring(2, 9),
-              email: storedEmail,
-              fullName: storedEmail.split("@")[0].toUpperCase(),
-              cityId: "isb",
-              role: "user",
-              plan: "free",
-              subscriptionTier: "free",
-              subscriptionStatus: "FREE",
-              is_pro: false,
-              emailConfirmed: true,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
+            return {
+              success: false,
+              error: "Biometric session expired. Please sign in with your password to reconnect your account.",
             };
-            set({ user: fallbackUser, isAuthenticated: true });
-            get().showToast(`Unlocked successfully as ${storedEmail}.`, "success");
-            return { success: true };
           }
 
           return { success: false, error: "No stored credentials found for biometric login." };

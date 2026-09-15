@@ -32,6 +32,11 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
+  // Allow auth callback routes to pass directly through
+  if (pathname.startsWith("/auth/")) {
+    return response;
+  }
+
   // 1. Check for Super Admin God Mode cookie or header bypass
   const cookieAdminEmail = decodeURIComponent(
     request.cookies.get("buildcost_admin_email")?.value || ""
