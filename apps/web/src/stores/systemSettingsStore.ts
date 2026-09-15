@@ -264,7 +264,7 @@ export const INITIAL_PAYMENT_ACCOUNTS: PaymentAccount[] = [
   {
     id: "pa_bank_1",
     type: "bank_transfer",
-    title: "Meezan Bank Raast & IBAN",
+    title: "United Bank Limited (UBL)",
     accountTitle: BUSINESS_CONFIG.bankTransfer.accountName,
     bankName: BUSINESS_CONFIG.bankTransfer.bankName,
     accountNumber: BUSINESS_CONFIG.bankTransfer.accountNumber,
@@ -1282,11 +1282,19 @@ export const useSystemSettingsStore = create<SystemSettingsState>()(
         }
         const defaultBank = state.paymentAccounts.find((a) => a.type === "bank_transfer" && a.isDefault) || state.paymentAccounts.find((a) => a.type === "bank_transfer");
         if (defaultBank) {
+          // Auto-migrate legacy bank account to official UBL account
+          if (defaultBank.iban === "PK72MEZN0002010108928371" || defaultBank.bankName?.includes("Meezan")) {
+            defaultBank.title = "United Bank Limited (UBL)";
+            defaultBank.bankName = "United Bank Limited (UBL)";
+            defaultBank.accountTitle = "Umer Shahzad";
+            defaultBank.accountNumber = "0109000259689144";
+            defaultBank.iban = "PK51UNIL0109000259689144";
+          }
           state.bankTransfer = {
-            bankName: defaultBank.bankName || "Corporate Bank",
-            accountName: defaultBank.accountTitle,
-            accountNumber: defaultBank.accountNumber,
-            iban: defaultBank.iban
+            bankName: defaultBank.bankName || "United Bank Limited (UBL)",
+            accountName: defaultBank.accountTitle || "Umer Shahzad",
+            accountNumber: defaultBank.accountNumber || "0109000259689144",
+            iban: defaultBank.iban || "PK51UNIL0109000259689144"
           };
         }
 

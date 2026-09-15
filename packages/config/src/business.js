@@ -66,9 +66,9 @@ exports.BUSINESS_CONFIG = {
     },
     // Configurable Corporate Bank Account
     bankTransfer: {
-        bankName: "Meezan Bank Limited (I-8 Markaz Islamabad)",
-        accountName: "BuildCost Technologies (Pvt) Ltd",
-        accountNumber: "0002010108928371",
-        iban: "PK72MEZN0002010108928371"
+        bankName: "United Bank Limited (UBL)",
+        accountName: "Umer Shahzad",
+        accountNumber: "0109000259689144",
+        iban: "PK51UNIL0109000259689144"
     }
 };

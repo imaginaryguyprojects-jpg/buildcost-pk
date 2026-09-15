@@ -115,14 +115,20 @@ VALUES
 (
     'pm_bank_transfer',
     'bank_transfer',
-    'Meezan Bank Raast / IBAN Transfer',
-    'BuildCost Technologies (Pvt) Ltd',
-    '02010108928371',
-    'Meezan Bank Limited (I-8 Markaz Islamabad)',
-    'PK72MEZN0002010108928371',
-    'Transfer via online banking or Raast instant pay to Meezan Bank. Provide transaction reference number and screenshot.'
+    'United Bank Limited (UBL) Raast / IBAN Transfer',
+    'Umer Shahzad',
+    '0109000259689144',
+    'United Bank Limited (UBL)',
+    'PK51UNIL0109000259689144',
+    'Transfer via online banking or Raast instant pay to United Bank Limited (UBL). Provide transaction reference number and screenshot.'
 )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    title = EXCLUDED.title,
+    account_name = EXCLUDED.account_name,
+    account_number = EXCLUDED.account_number,
+    bank_name = EXCLUDED.bank_name,
+    iban = EXCLUDED.iban,
+    instructions = EXCLUDED.instructions;
 
 -- 3. CUSTOMER USER SUBSCRIPTIONS
 CREATE TABLE IF NOT EXISTS subscriptions (
