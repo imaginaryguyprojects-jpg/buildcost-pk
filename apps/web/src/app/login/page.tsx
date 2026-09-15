@@ -242,6 +242,65 @@ export default function LoginPage() {
             </span>
           </div>
         </form>
+
+        {/* Super-Admin Whitelist (God Mode) 1-Tap Direct Bypass */}
+        <div className="p-4 rounded-2xl bg-slate-900/80 border border-amber-500/30 space-y-3 shadow-lg">
+          <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-amber-400">
+            <span className="flex items-center gap-1.5">
+              <Lock className="w-3.5 h-3.5 text-amber-400" />
+              <span>Executive God-Mode Whitelist</span>
+            </span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-black border border-amber-500/40">
+              1-Tap Bypass
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                const { loginAsSuperAdmin } = useAuthStore.getState();
+                loginAsSuperAdmin("umershahzad0@gmail.com");
+                router.push("/admin");
+              }}
+              className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-emerald-500/50 transition-all text-left group flex items-center justify-between"
+            >
+              <div>
+                <div className="text-xs font-bold text-white group-hover:text-emerald-400 transition-colors">
+                  Umer Shahzad
+                </div>
+                <div className="text-[10px] font-mono text-emerald-500 truncate max-w-[130px]">
+                  umershahzad0@gmail.com
+                </div>
+              </div>
+              <span className="text-[10px] font-black uppercase px-2 py-1 rounded-lg bg-emerald-600 text-white shadow-xs">
+                Unlock
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                const { loginAsSuperAdmin } = useAuthStore.getState();
+                loginAsSuperAdmin("imaginary.guy.project@gmail.com");
+                router.push("/admin");
+              }}
+              className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-amber-500/50 transition-all text-left group flex items-center justify-between"
+            >
+              <div>
+                <div className="text-xs font-bold text-white group-hover:text-amber-400 transition-colors">
+                  Primary Admin
+                </div>
+                <div className="text-[10px] font-mono text-amber-500 truncate max-w-[130px]">
+                  imaginary.guy.project...
+                </div>
+              </div>
+              <span className="text-[10px] font-black uppercase px-2 py-1 rounded-lg bg-amber-500 text-slate-950 shadow-xs">
+                Unlock
+              </span>
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Biometric Enable Prompt Modal */}

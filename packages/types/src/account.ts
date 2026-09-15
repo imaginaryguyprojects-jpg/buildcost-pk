@@ -164,6 +164,8 @@ export interface HouseLayout {
   isPro?: boolean;
   isVisible?: boolean;
   isSystemPreset: boolean;
+  imageUrl?: string;
+  tags?: string[];
   createdAt: string;
 }
 

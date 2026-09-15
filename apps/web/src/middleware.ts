@@ -18,7 +18,7 @@ const PROTECTED_PREFIXES = [
 ];
 
 // Routes requiring superadmin or admin privileges
-const ADMIN_PREFIXES = ["/admin"];
+const ADMIN_PREFIXES = ["/admin", "/god-mode"];
 
 // Auth routes where authenticated users should be redirected to dashboard
 const AUTH_ROUTES = ["/login", "/signup"];
@@ -31,6 +31,24 @@ export async function middleware(request: NextRequest) {
   });
 
   const pathname = request.nextUrl.pathname;
+
+  // 1. Check for Super Admin God Mode cookie or header bypass
+  const cookieAdminEmail = decodeURIComponent(
+    request.cookies.get("buildcost_admin_email")?.value || ""
+  ).toLowerCase().trim();
+  const headerAdminEmail = (
+    request.headers.get("x-godmode-email") ||
+    request.headers.get("x-admin-email") ||
+    ""
+  ).toLowerCase().trim();
+
+  const isGodModeCookie = isSuperAdminEmail(cookieAdminEmail) || isSuperAdminEmail(headerAdminEmail);
+
+  // If hardcoded God Mode credentials are active, grant permanent bypass across all protected routes
+  if (isGodModeCookie) {
+    // If God Mode user is visiting login/signup, allow them to navigate to admin or dashboard
+    return response;
+  }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
@@ -63,16 +81,38 @@ export async function middleware(request: NextRequest) {
       error: authError
     } = await supabase.auth.getUser();
 
-    const isProtected = PROTECTED_PREFIXES.some(
+    const isSessionGodMode = user && user.email && isSuperAdminEmail(user.email);
+    if (isSessionGodMode) {
+      // Whitelisted Super Admin session: allow access everywhere
+      return response;
+    }
+
+    const isAdminRoute = ADMIN_PREFIXES.some(
       (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
     );
-    const isAdminRoute = ADMIN_PREFIXES.some(
+    const isProtected = PROTECTED_PREFIXES.some(
       (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
     );
     const isAuthRoute = AUTH_ROUTES.some((route) => pathname === route);
 
-    // 1. Unauthenticated access to protected routes -> Redirect to /login
-    if (isProtected) {
+    // If an authenticated non-admin tries to access /admin or /god-mode
+    if (isAdminRoute && user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const role = profile?.role;
+      if (role !== "admin" && role !== "superadmin") {
+        const dashboardUrl = new URL("/dashboard", request.url);
+        dashboardUrl.searchParams.set("error", "unauthorized_admin");
+        return NextResponse.redirect(dashboardUrl);
+      }
+    }
+
+    // 1. Unauthenticated access to protected routes (excluding admin routes which have their own in-page unlock gate)
+    if (isProtected && !isAdminRoute) {
       if (authError || !user) {
         const loginUrl = new URL("/login", request.url);
         loginUrl.searchParams.set("redirect", pathname);
@@ -85,27 +125,6 @@ export async function middleware(request: NextRequest) {
         const verifyUrl = new URL("/verify-email", request.url);
         verifyUrl.searchParams.set("email", user.email || "");
         return NextResponse.redirect(verifyUrl);
-      }
-
-      // 3. Admin Route RBAC Protection
-      if (isAdminRoute) {
-        const email = (user.email || "").toLowerCase();
-        const isGodMode = isSuperAdminEmail(email);
-
-        if (!isGodMode) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .maybeSingle();
-
-          const role = profile?.role;
-          if (role !== "admin" && role !== "superadmin") {
-            const dashboardUrl = new URL("/dashboard", request.url);
-            dashboardUrl.searchParams.set("error", "unauthorized_admin");
-            return NextResponse.redirect(dashboardUrl);
-          }
-        }
       }
     }
 

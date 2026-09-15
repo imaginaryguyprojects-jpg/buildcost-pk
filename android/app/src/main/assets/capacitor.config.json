@@ -1,0 +1,11 @@
+{
+	"appId": "pk.buildcost.app",
+	"appName": "BuildCost-PK",
+	"webDir": "android/app/src/main/assets/www",
+	"bundledWebRuntime": false,
+	"server": {
+		"androidScheme": "https",
+		"cleartext": false
+	},
+	"android": {}
+}

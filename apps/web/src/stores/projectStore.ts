@@ -136,6 +136,9 @@ interface ProjectStoreState {
   toggleLayoutFavorite: (id: string) => void;
   toggleLayoutPro: (id: string) => void;
   toggleLayoutVisibility: (id: string) => void;
+  addLayout: (layout: Omit<HouseLayout, "id">) => HouseLayout;
+  updateLayout: (id: string, updates: Partial<HouseLayout>) => void;
+  deleteLayout: (id: string) => void;
 
   // Vendors
   addVendor: (vendor: Omit<Vendor, "id" | "createdAt">) => Vendor;
@@ -600,6 +603,26 @@ export const useProjectStore = create<ProjectStoreState>()(
           layouts: state.layouts.map((l) =>
             l.id === id ? { ...l, isVisible: l.isVisible === false ? true : false } : l
           )
+        }));
+      },
+      addLayout: (layoutData) => {
+        const newLayout: HouseLayout = {
+          ...layoutData,
+          id: `lay_${Date.now()}`
+        };
+        set((state) => ({
+          layouts: [newLayout, ...state.layouts]
+        }));
+        return newLayout;
+      },
+      updateLayout: (id, updates) => {
+        set((state) => ({
+          layouts: state.layouts.map((l) => (l.id === id ? { ...l, ...updates } : l))
+        }));
+      },
+      deleteLayout: (id) => {
+        set((state) => ({
+          layouts: state.layouts.filter((l) => l.id !== id)
         }));
       },
 

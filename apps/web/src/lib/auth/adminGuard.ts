@@ -27,16 +27,14 @@ export async function verifyAdminSession(
 ): Promise<AdminAuthResult> {
   try {
     // 1. Direct Whitelist Bypass via secure header or verified admin cookie
-    const headerEmail = (
+    const rawHeader =
       request.headers.get("x-godmode-email") ||
       request.headers.get("x-admin-email") ||
-      ""
-    ).toLowerCase().trim();
+      "";
+    const headerEmail = decodeURIComponent(rawHeader).toLowerCase().trim();
 
-    const cookieEmail = (
-      request.cookies.get("buildcost_admin_email")?.value ||
-      ""
-    ).toLowerCase().trim();
+    const rawCookie = request.cookies.get("buildcost_admin_email")?.value || "";
+    const cookieEmail = decodeURIComponent(rawCookie).toLowerCase().trim();
 
     const godEmail = headerEmail || cookieEmail;
     if (godEmail && isSuperAdminEmail(godEmail)) {

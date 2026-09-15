@@ -45,7 +45,13 @@ import {
   ShieldAlert,
   RefreshCw,
   Lock,
-  Unlock
+  Unlock,
+  Plus,
+  Trash2,
+  Sun,
+  Moon,
+  Monitor,
+  Edit2
 } from "lucide-react";
 import { useProjectStore } from "@/stores/projectStore";
 import { useAuthStore } from "@/stores/authStore";
@@ -110,15 +116,21 @@ export default function AdminDashboardPage() {
     setSelectedCityId,
     layouts,
     toggleLayoutPro,
-    toggleLayoutVisibility
+    toggleLayoutVisibility,
+    addLayout,
+    updateLayout,
+    deleteLayout,
+    theme,
+    setTheme
   } = useProjectStore();
-  const { showToast, upgradeToPro, user, isSuperAdmin, loginAsSuperAdmin } = useAuthStore();
+  const { showToast, upgradeToPro, user, isSuperAdmin, loginAsSuperAdmin, settings, updateSettings } = useAuthStore();
   const {
     payments,
     paymentAccounts,
     auditEntries,
     approvePayment,
     rejectPayment,
+    revokePaymentPro,
     updatePaymentStatus,
     getAdminContactUserWhatsAppUrl,
     businessName,
@@ -150,6 +162,9 @@ export default function AdminDashboardPage() {
     "payments" | "accounts" | "users" | "rates" | "layouts" | "activity" | "settings" | "analytics"
   >("payments");
 
+  // User breakdown sub-tab
+  const [userSubTab, setUserSubTab] = useState<"all" | "free_list" | "pro_list">("all");
+
   // Read URL ?tab= parameter if present on load
   React.useEffect(() => {
     if (typeof window !== "undefined") {
@@ -166,26 +181,45 @@ export default function AdminDashboardPage() {
 
   // Platform User Management State
   const [platformUsers, setPlatformUsers] = useState([
-    { id: "usr_1", name: "Muhammad Tariq", email: "tariq.civil@gmail.com", role: "user", plan: "pro", phone: "0300-8541299", company: "Tariq Construction", projectsCount: 4, joined: "Aug 15, 2026", status: "active" },
-    { id: "usr_2", name: "Engr. Asad Malik", email: "asad.engr@gmail.com", role: "user", plan: "pro", phone: "0321-4829101", company: "Malik Builders", projectsCount: 7, joined: "Aug 20, 2026", status: "active" },
-    { id: "usr_3", name: "Zubair Ahmad", email: "zubair.ahmad@outlook.com", role: "user", plan: "free", phone: "0345-9120482", company: "Private Homeowner", projectsCount: 1, joined: "Aug 28, 2026", status: "active" },
-    { id: "usr_4", name: "Umer Shahzad", email: "umershahzad0@gmail.com", role: "superadmin", plan: "pro", phone: "0300-5155604", company: "BuildCost PK Master Control", projectsCount: 12, joined: "Aug 01, 2026", status: "active" },
-    { id: "usr_5", name: "Primary Super Admin", email: "imaginary.guy.project@gmail.com", role: "superadmin", plan: "pro", phone: "0345-5074541", company: "BuildCost PK Master Control", projectsCount: 15, joined: "Aug 01, 2026", status: "active" },
-    { id: "usr_6", name: "Hassan Raza", email: "hassan.raza.contractor@gmail.com", role: "user", plan: "free", phone: "0333-5129988", company: "Raza & Sons", projectsCount: 2, joined: "Sep 02, 2026", status: "active" },
-    { id: "usr_7", name: "Kamran Akram", email: "kamran.akram99@gmail.com", role: "user", plan: "free", phone: "0312-9988776", company: "Civil Works Pvt", projectsCount: 0, joined: "Sep 09, 2026", status: "active" },
+    { id: "usr_1", name: "Muhammad Tariq", email: "tariq.civil@gmail.com", role: "user", plan: "pro", phone: "0300-8541299", company: "Tariq Construction", projectsCount: 4, joined: "Aug 15, 2026", status: "active", proExpiresAt: "Aug 15, 2027", lastTrx: "TRX #EP94827103841 (Rs. 1,999 via Easypaisa)" },
+    { id: "usr_2", name: "Engr. Asad Malik", email: "asad.engr@gmail.com", role: "user", plan: "pro", phone: "0321-4829101", company: "Malik Builders", projectsCount: 7, joined: "Aug 20, 2026", status: "active", proExpiresAt: "Aug 20, 2027", lastTrx: "TRX #MEZN88392019 (Rs. 19,990 via Bank)" },
+    { id: "usr_3", name: "Zubair Ahmad", email: "zubair.ahmad@outlook.com", role: "user", plan: "free", phone: "0345-9120482", company: "Private Homeowner", projectsCount: 1, joined: "Aug 28, 2026", status: "active", proExpiresAt: "-", lastTrx: "None" },
+    { id: "usr_4", name: "Umer Shahzad", email: "umershahzad0@gmail.com", role: "superadmin", plan: "pro", phone: "0300-5155604", company: "BuildCost PK Master Control", projectsCount: 12, joined: "Aug 01, 2026", status: "active", proExpiresAt: "Permanent (God Mode)", lastTrx: "Executive Override" },
+    { id: "usr_5", name: "Primary Super Admin", email: "imaginary.guy.project@gmail.com", role: "superadmin", plan: "pro", phone: "0345-5074541", company: "BuildCost PK Master Control", projectsCount: 15, joined: "Aug 01, 2026", status: "active", proExpiresAt: "Permanent (God Mode)", lastTrx: "Executive Override" },
+    { id: "usr_6", name: "Hassan Raza", email: "hassan.raza.contractor@gmail.com", role: "user", plan: "free", phone: "0333-5129988", company: "Raza & Sons", projectsCount: 2, joined: "Sep 02, 2026", status: "active", proExpiresAt: "-", lastTrx: "None" },
+    { id: "usr_7", name: "Kamran Akram", email: "kamran.akram99@gmail.com", role: "user", plan: "free", phone: "0312-9988776", company: "Civil Works Pvt", projectsCount: 0, joined: "Sep 09, 2026", status: "active", proExpiresAt: "-", lastTrx: "None" },
   ]);
   const [userSearch, setUserSearch] = useState("");
   const [userPlanFilter, setUserPlanFilter] = useState<"all" | "pro" | "free">("all");
   const [userStatusFilter, setUserStatusFilter] = useState<"all" | "active" | "suspended">("all");
 
-  // Layouts Manager Filters
+  // Layouts Manager Filters & Upload Modal
   const [layoutCategoryFilter, setLayoutCategoryFilter] = useState<string>("all");
   const [layoutPlanFilter, setLayoutPlanFilter] = useState<"all" | "free" | "pro">("all");
+  const [layoutModalOpen, setLayoutModalOpen] = useState(false);
+  const [editingLayout, setEditingLayout] = useState<any | null>(null);
+  const [layoutTitle, setLayoutTitle] = useState("");
+  const [layoutPlotCategory, setLayoutPlotCategory] = useState("5_marla");
+  const [layoutWidth, setLayoutWidth] = useState(25);
+  const [layoutDepth, setLayoutDepth] = useState(45);
+  const [layoutPlotArea, setLayoutPlotArea] = useState(1125);
+  const [layoutCoveredArea, setLayoutCoveredArea] = useState(1950);
+  const [layoutBedrooms, setLayoutBedrooms] = useState(3);
+  const [layoutBathrooms, setLayoutBathrooms] = useState(3);
+  const [layoutFloors, setLayoutFloors] = useState(2);
+  const [layoutCarPorch, setLayoutCarPorch] = useState(true);
+  const [layoutIsPro, setLayoutIsPro] = useState(false);
+  const [layoutIsVisible, setLayoutIsVisible] = useState(true);
+  const [layoutDescription, setLayoutDescription] = useState("");
+  const [layoutImageUrl, setLayoutImageUrl] = useState("");
+
   const [analyticsRange, setAnalyticsRange] = useState<"today" | "7d" | "30d" | "3m" | "1y">("30d");
   const [paymentFilter, setPaymentFilter] = useState<"all" | "pending" | "under_review" | "approved" | "rejected" | "expired" | "refunded">("all");
   const [selectedPayment, setSelectedPayment] = useState<PaymentSubmission | null>(null);
   const [rejectingPayment, setRejectingPayment] = useState<PaymentSubmission | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [revokingPayment, setRevokingPayment] = useState<PaymentSubmission | null>(null);
+  const [revokeReason, setRevokeReason] = useState("");
 
   const [auditLogs, setAuditLogs] = useState<AuditEntry[]>(INITIAL_AUDIT_LOGS);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -295,6 +329,131 @@ export default function AdminDashboardPage() {
     showToast(`Payment TRX #${rejectingPayment.trxId} marked as rejected.`, "info");
     setRejectingPayment(null);
     setSelectedPayment(null);
+  };
+
+  const handleOpenRevokeModal = (p: PaymentSubmission) => {
+    setRevokingPayment(p);
+    setRevokeReason("Subscription cancelled: payment chargeback or direct administrator revocation.");
+  };
+
+  const handleConfirmRevoke = async () => {
+    if (!revokingPayment) return;
+    await revokePaymentPro(
+      revokingPayment.id,
+      revokeReason.trim() || "PRO subscription manually revoked by Super Admin",
+      "Umer Sheikh (Super Admin)"
+    );
+    // Instant status sync with local users
+    setPlatformUsers((prev) =>
+      prev.map((u) => (u.email === revokingPayment.userEmail ? { ...u, plan: "free" } : u))
+    );
+    showToast(`PRO status revoked for ${revokingPayment.userName}. Reverted to Free plan.`, "info");
+    setRevokingPayment(null);
+    setSelectedPayment(null);
+  };
+
+  const handleOpenAddLayout = () => {
+    setEditingLayout(null);
+    setLayoutTitle("");
+    setLayoutPlotCategory("5_marla");
+    setLayoutWidth(25);
+    setLayoutDepth(45);
+    setLayoutPlotArea(1125);
+    setLayoutCoveredArea(1950);
+    setLayoutBedrooms(3);
+    setLayoutBathrooms(3);
+    setLayoutFloors(2);
+    setLayoutCarPorch(true);
+    setLayoutIsPro(false);
+    setLayoutIsVisible(true);
+    setLayoutDescription("Modern residential layout plan optimized for Pakistani housing societies.");
+    setLayoutImageUrl("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=600&q=80");
+    setLayoutModalOpen(true);
+  };
+
+  const handleOpenEditLayout = (l: any) => {
+    setEditingLayout(l);
+    setLayoutTitle(l.title);
+    setLayoutPlotCategory(l.plotCategory);
+    setLayoutWidth(l.plotWidthFt || 25);
+    setLayoutDepth(l.plotDepthFt || 45);
+    setLayoutPlotArea(l.plotAreaSqft || 1125);
+    setLayoutCoveredArea(l.coveredAreaSqft || 1950);
+    setLayoutBedrooms(l.bedrooms || 3);
+    setLayoutBathrooms(l.bathrooms || 3);
+    setLayoutFloors(l.floors || 2);
+    setLayoutCarPorch(l.hasCarPorch ?? true);
+    setLayoutIsPro(Boolean(l.isPro));
+    setLayoutIsVisible(l.isVisible !== false);
+    setLayoutDescription(l.description || "");
+    setLayoutImageUrl(l.imageUrl || "");
+    setLayoutModalOpen(true);
+  };
+
+  const handleSaveLayout = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!layoutTitle.trim()) {
+      showToast("Layout title is required", "error");
+      return;
+    }
+
+    if (editingLayout) {
+      updateLayout(editingLayout.id, {
+        title: layoutTitle.trim(),
+        plotCategory: layoutPlotCategory as any,
+        plotWidthFt: Number(layoutWidth),
+        plotDepthFt: Number(layoutDepth),
+        plotAreaSqft: Number(layoutPlotArea),
+        coveredAreaSqft: Number(layoutCoveredArea),
+        bedrooms: Number(layoutBedrooms),
+        bathrooms: Number(layoutBathrooms),
+        floors: Number(layoutFloors),
+        hasCarPorch: layoutCarPorch,
+        isPro: layoutIsPro,
+        isVisible: layoutIsVisible,
+        description: layoutDescription.trim(),
+        imageUrl: layoutImageUrl.trim()
+      });
+      showToast(`Updated layout "${layoutTitle}" successfully!`, "success");
+    } else {
+      addLayout({
+        title: layoutTitle.trim(),
+        plotCategory: layoutPlotCategory as any,
+        plotWidthFt: Number(layoutWidth),
+        plotDepthFt: Number(layoutDepth),
+        plotAreaSqft: Number(layoutPlotArea),
+        coveredAreaSqft: Number(layoutCoveredArea),
+        bedrooms: Number(layoutBedrooms),
+        bathrooms: Number(layoutBathrooms),
+        floors: Number(layoutFloors),
+        hasCarPorch: layoutCarPorch,
+        hasDrawingRoom: true,
+        hasTvLounge: true,
+        hasServantRoom: false,
+        hasDirtyKitchen: false,
+        isCornerPlot: false,
+        description: layoutDescription.trim(),
+        planData: {
+          groundFloor: []
+        },
+        imageUrl: layoutImageUrl.trim() || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=600&q=80",
+        tags: [layoutPlotCategory, layoutIsPro ? "pro" : "free"],
+        isFavorite: false,
+        isPro: layoutIsPro,
+        isVisible: layoutIsVisible,
+        isSystemPreset: false,
+        createdAt: new Date().toISOString()
+      });
+      showToast(`Uploaded new layout "${layoutTitle}"!`, "success");
+    }
+    setLayoutModalOpen(false);
+  };
+
+  const handleDeleteLayout = (id: string, title: string) => {
+    if (window.confirm(`Are you sure you want to delete architectural layout "${title}"?`)) {
+      deleteLayout(id);
+      showToast(`Deleted layout "${title}"`, "info");
+    }
   };
 
   const handleSaveAllSettings = async () => {
@@ -921,6 +1080,18 @@ export default function AdminDashboardPage() {
                               </button>
                             )}
 
+                            {/* [Revoke PRO] Action Button (Instant Status Sync) */}
+                            {p.status === "approved" && (
+                              <button
+                                onClick={() => handleOpenRevokeModal(p)}
+                                className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-xs flex items-center gap-1 transition-colors"
+                                title="Revoke PRO Access and Revert User to Free Plan"
+                              >
+                                <ShieldAlert className="w-3 h-3" />
+                                <span>Revoke PRO</span>
+                              </button>
+                            )}
+
                             {/* [Under Review] Toggle */}
                             {p.status === "pending" && (
                               <button
@@ -1062,7 +1233,15 @@ export default function AdminDashboardPage() {
                 >
                   Close
                 </button>
-                {selectedPayment.status !== "approved" && (
+                {selectedPayment.status === "approved" ? (
+                  <button
+                    onClick={() => handleOpenRevokeModal(selectedPayment)}
+                    className="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-xs flex items-center gap-1.5"
+                  >
+                    <ShieldAlert className="w-3.5 h-3.5" />
+                    <span>Revoke PRO</span>
+                  </button>
+                ) : (
                   <>
                     <button
                       onClick={() => handleOpenRejectModal(selectedPayment)}
@@ -1136,6 +1315,58 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
+      {/* REVOKE PRO REASON MODAL */}
+      {revokingPayment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 border border-rose-500/30 rounded-3xl max-w-md w-full p-6 shadow-2xl relative space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-sm font-bold text-rose-600 flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-rose-600" />
+                <span>Revoke PRO Subscription</span>
+              </h3>
+              <button
+                onClick={() => setRevokingPayment(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              You are revoking PRO access for <strong>{revokingPayment.userName}</strong> (TRX #{revokingPayment.trxId}). Their account will immediately revert to the Free tier with project and PDF export restrictions reinstated.
+            </p>
+
+            <div>
+              <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                Revocation Justification / Audit Reason *
+              </label>
+              <textarea
+                rows={3}
+                value={revokeReason}
+                onChange={(e) => setRevokeReason(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white"
+                placeholder="e.g. Bank chargeback / refund initiated; subscription cancelled on customer request"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                onClick={() => setRevokingPayment(null)}
+                className="px-3 py-1.5 rounded-xl text-slate-500 hover:text-slate-700 text-xs font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmRevoke}
+                className="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-xs"
+              >
+                Confirm Revoke PRO
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* TAB: PAYMENT & PAYOUT ACCOUNTS (GOD-MODE CRUD) */}
       {activeTab === "accounts" && (
         <PaymentAccountsManager />
@@ -1190,9 +1421,20 @@ export default function AdminDashboardPage() {
                   Authoritative civil construction rates for Pakistan. Edits require mandatory audit reason.
                 </p>
               </div>
-              <span className="text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full">
-                Active City: {PAKISTANI_CITIES.find((c) => c.id === selectedCityId)?.name || selectedCityId}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Select City:</span>
+                <select
+                  value={selectedCityId}
+                  onChange={(e) => setSelectedCityId(e.target.value)}
+                  className="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  {PAKISTANI_CITIES.map((city) => (
+                    <option key={city.id} value={city.id}>
+                      {city.name} ({city.province})
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="overflow-x-auto">
@@ -1721,6 +1963,65 @@ export default function AdminDashboardPage() {
                     placeholder="e.g. Build smarter. Estimate better."
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-slate-900 dark:text-white font-semibold"
                   />
+                </div>
+              </div>
+            </div>
+
+            {/* Section 5: Dynamic UI Theme & Global Visual Controls (Module C) */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-emerald-600" />
+                  <span>Dynamic UI Theme &amp; Visual Controls</span>
+                </h3>
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                  Current: {theme === "dark" ? "Dark Mode" : "Light Mode"}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500">
+                Override system theme styling and toggle high-contrast display across client viewports and admin console.
+              </p>
+
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTheme("light");
+                    showToast("Switched to Light Theme", "info");
+                  }}
+                  className={`p-3 rounded-2xl border flex items-center justify-center gap-2 text-xs font-bold transition-all ${
+                    theme === "light"
+                      ? "bg-amber-500/10 border-amber-500 text-amber-600 shadow-xs"
+                      : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  <Sun className="w-4 h-4 text-amber-500" />
+                  <span>Light Theme</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTheme("dark");
+                    showToast("Switched to Dark Theme", "info");
+                  }}
+                  className={`p-3 rounded-2xl border flex items-center justify-center gap-2 text-xs font-bold transition-all ${
+                    theme === "dark"
+                      ? "bg-emerald-500/10 border-emerald-500 text-emerald-500 shadow-xs"
+                      : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  <Moon className="w-4 h-4 text-emerald-500" />
+                  <span>Dark Theme</span>
+                </button>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 text-[11px] text-slate-500 dark:text-slate-400 space-y-1">
+                <div className="font-bold text-slate-700 dark:text-slate-200">
+                  Global Theme Synchronization:
+                </div>
+                <div>
+                  Changes apply immediately via client HTML DOM class sync and persist across sessions via Zustand storage.
                 </div>
               </div>
             </div>
@@ -2346,8 +2647,17 @@ export default function AdminDashboardPage() {
       {activeTab === "users" && (
         <div className="space-y-6">
           {/* User Breakdown Stats Cards */}
+          {/* User Breakdown Stats Cards (Interactive Click-to-Filter) */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+            <button
+              type="button"
+              onClick={() => setUserSubTab("all")}
+              className={`text-left border rounded-2xl p-4 shadow-xs transition-all ${
+                userSubTab === "all"
+                  ? "bg-slate-100 dark:bg-slate-800 border-slate-400 dark:border-slate-600 ring-2 ring-slate-500/20"
+                  : "bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-slate-300"
+              }`}
+            >
               <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
                 Total Registered Users
               </span>
@@ -2357,9 +2667,17 @@ export default function AdminDashboardPage() {
               <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
                 +42 new this week
               </span>
-            </div>
+            </button>
 
-            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+            <button
+              type="button"
+              onClick={() => setUserSubTab("pro_list")}
+              className={`text-left border rounded-2xl p-4 shadow-xs transition-all ${
+                userSubTab === "pro_list"
+                  ? "bg-amber-500/10 border-amber-500 ring-2 ring-amber-500/30"
+                  : "bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-amber-500/40"
+              }`}
+            >
               <span className="text-[10px] uppercase font-bold text-amber-600 dark:text-amber-400 block mb-1">
                 Paid PRO Subscribers
               </span>
@@ -2369,9 +2687,17 @@ export default function AdminDashboardPage() {
               <span className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold">
                 16.0% conversion rate
               </span>
-            </div>
+            </button>
 
-            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+            <button
+              type="button"
+              onClick={() => setUserSubTab("free_list")}
+              className={`text-left border rounded-2xl p-4 shadow-xs transition-all ${
+                userSubTab === "free_list"
+                  ? "bg-emerald-500/10 border-emerald-500 ring-2 ring-emerald-500/30"
+                  : "bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/40"
+              }`}
+            >
               <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
                 Free Tier Users
               </span>
@@ -2381,9 +2707,13 @@ export default function AdminDashboardPage() {
               <span className="text-[11px] text-slate-400">
                 84.0% of userbase
               </span>
-            </div>
+            </button>
 
-            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+            <button
+              type="button"
+              onClick={() => setUserSubTab("all")}
+              className="text-left bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-xs hover:border-cyan-500/40 transition-all"
+            >
               <span className="text-[10px] uppercase font-bold text-cyan-600 dark:text-cyan-400 block mb-1">
                 Super Admins Whitelisted
               </span>
@@ -2393,203 +2723,452 @@ export default function AdminDashboardPage() {
               <span className="text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold">
                 Full God-Mode bypass
               </span>
-            </div>
+            </button>
           </div>
 
-          {/* Search, Filters & Controls */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-xs space-y-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Users className="w-5 h-5 text-emerald-600" />
-                  <span>Module B: User Accounts &amp; 1-Click Role Override</span>
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Search users by name, email, or Pakistani phone number. Instantly grant PRO access or suspend accounts.
-                </p>
-              </div>
+          {/* Module B Sub-Tabs Selector */}
+          <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setUserSubTab("all")}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                userSubTab === "all"
+                  ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>All Users Directory ({platformUsers.length})</span>
+            </button>
 
-              <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setUserSubTab("free_list")}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                userSubTab === "free_list"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              <UserX className="w-3.5 h-3.5" />
+              <span>Free Plan Users ({platformUsers.filter((u) => u.plan === "free").length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setUserSubTab("pro_list")}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                userSubTab === "pro_list"
+                  ? "bg-amber-500 text-slate-950 shadow-xs"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Paid PRO Subscribers ({platformUsers.filter((u) => u.plan === "pro").length})</span>
+            </button>
+          </div>
+
+          {/* SUB-VIEW 1: FREE PLAN USERS QUEUE */}
+          {userSubTab === "free_list" && (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <UserX className="w-5 h-5 text-emerald-600" />
+                    <span>Free Plan Users Queue &amp; Instant PRO Upgrade</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Free accounts have restricted quotas (2 projects, 3 monthly PDF exports). Upgrade high-intent contractors to PRO with 1-click.
+                  </p>
+                </div>
+
                 <div className="relative">
                   <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
                     value={userSearch}
                     onChange={(e) => setUserSearch(e.target.value)}
-                    placeholder="Search email, name or phone..."
+                    placeholder="Search free users..."
                     className="pl-9 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 w-64"
                   />
                 </div>
-
-                <select
-                  value={userPlanFilter}
-                  onChange={(e: any) => setUserPlanFilter(e.target.value)}
-                  className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none"
-                >
-                  <option value="all">All Plans</option>
-                  <option value="pro">Paid PRO Only</option>
-                  <option value="free">Free Users Only</option>
-                </select>
-
-                <select
-                  value={userStatusFilter}
-                  onChange={(e: any) => setUserStatusFilter(e.target.value)}
-                  className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none"
-                >
-                  <option value="all">All Statuses</option>
-                  <option value="active">Active</option>
-                  <option value="suspended">Suspended</option>
-                </select>
               </div>
-            </div>
 
-            {/* Users Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 text-[11px] uppercase tracking-wider font-bold">
-                    <th className="pb-3 pl-2">User Details</th>
-                    <th className="pb-3">Contact</th>
-                    <th className="pb-3">Role</th>
-                    <th className="pb-3">Plan Tier</th>
-                    <th className="pb-3">Projects</th>
-                    <th className="pb-3">Joined</th>
-                    <th className="pb-3">Status</th>
-                    <th className="pb-3 pr-2 text-right">Admin Override</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                  {platformUsers
-                    .filter((u) => {
-                      const matchSearch =
-                        u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
-                        u.email.toLowerCase().includes(userSearch.toLowerCase()) ||
-                        u.phone.toLowerCase().includes(userSearch.toLowerCase());
-                      const matchPlan = userPlanFilter === "all" || u.plan === userPlanFilter;
-                      const matchStatus = userStatusFilter === "all" || u.status === userStatusFilter;
-                      return matchSearch && matchPlan && matchStatus;
-                    })
-                    .map((u) => {
-                      const isSuper = isSuperAdminEmail(u.email);
-                      return (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 text-[11px] uppercase tracking-wider font-bold">
+                      <th className="pb-3 pl-2">User Details</th>
+                      <th className="pb-3">Contact</th>
+                      <th className="pb-3">Current Plan</th>
+                      <th className="pb-3">Projects Saved</th>
+                      <th className="pb-3">Registered On</th>
+                      <th className="pb-3 pr-2 text-right">Instant Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                    {platformUsers
+                      .filter((u) => u.plan === "free")
+                      .filter((u) => {
+                        return (
+                          u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
+                          u.email.toLowerCase().includes(userSearch.toLowerCase()) ||
+                          u.phone.toLowerCase().includes(userSearch.toLowerCase())
+                        );
+                      })
+                      .map((u) => (
                         <tr key={u.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
                           <td className="py-3 pl-2">
-                            <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                              <span>{u.name}</span>
-                              {isSuper && (
-                                <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold text-[9px] uppercase border border-amber-500/30">
-                                  God Mode
-                                </span>
-                              )}
-                            </div>
+                            <div className="font-bold text-slate-900 dark:text-white">{u.name}</div>
                             <div className="text-[11px] text-slate-400">{u.company}</div>
                           </td>
-
                           <td className="py-3">
                             <div className="font-mono text-[11px] text-slate-700 dark:text-slate-300">{u.email}</div>
                             <div className="text-[11px] text-slate-400">{u.phone}</div>
                           </td>
-
                           <td className="py-3">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                              u.role === "superadmin"
-                                ? "bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
-                                : u.role === "admin"
-                                ? "bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800"
-                                : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
-                            }`}>
-                              {u.role}
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                              Free Tier
                             </span>
                           </td>
-
-                          <td className="py-3">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                              u.plan === "pro"
-                                ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
-                                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
-                            }`}>
-                              {u.plan}
-                            </span>
-                          </td>
-
                           <td className="py-3 font-mono font-bold text-slate-800 dark:text-slate-200">
-                            {u.projectsCount}
+                            {u.projectsCount} / 2 limit
                           </td>
-
-                          <td className="py-3 text-slate-400 text-[11px]">
-                            {u.joined}
-                          </td>
-
-                          <td className="py-3">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                              u.status === "active"
-                                ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600"
-                                : "bg-rose-50 dark:bg-rose-950/40 text-rose-600"
-                            }`}>
-                              {u.status}
-                            </span>
-                          </td>
-
+                          <td className="py-3 text-slate-400 text-[11px]">{u.joined}</td>
                           <td className="py-3 pr-2 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              {/* 1-Click PRO Upgrade/Downgrade */}
-                              <button
-                                type="button"
-                                disabled={isSuper}
-                                onClick={() => {
-                                  const nextPlan = u.plan === "pro" ? "free" : "pro";
-                                  setPlatformUsers((prev) =>
-                                    prev.map((item) => (item.id === u.id ? { ...item, plan: nextPlan } : item))
-                                  );
-                                  showToast(
-                                    nextPlan === "pro"
-                                      ? `🎉 Granted PRO access to ${u.name}`
-                                      : `Revoked PRO access for ${u.name}`,
-                                    "success"
-                                  );
-                                }}
-                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                                  u.plan === "pro"
-                                    ? "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
-                                    : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs"
-                                }`}
-                              >
-                                {u.plan === "pro" ? "Demote to Free" : "Grant PRO"}
-                              </button>
-
-                              {/* 1-Click Suspend/Unsuspend */}
-                              <button
-                                type="button"
-                                disabled={isSuper}
-                                onClick={() => {
-                                  const nextStatus = u.status === "active" ? "suspended" : "active";
-                                  setPlatformUsers((prev) =>
-                                    prev.map((item) => (item.id === u.id ? { ...item, status: nextStatus } : item))
-                                  );
-                                  showToast(
-                                    nextStatus === "suspended"
-                                      ? `⚠️ Account suspended: ${u.name}`
-                                      : `Restored account: ${u.name}`,
-                                    nextStatus === "suspended" ? "warning" : "success"
-                                  );
-                                }}
-                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                                  u.status === "active"
-                                    ? "bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400"
-                                    : "bg-emerald-50 hover:bg-emerald-100 text-emerald-600"
-                                }`}
-                              >
-                                {u.status === "active" ? "Suspend" : "Restore"}
-                              </button>
-                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPlatformUsers((prev) =>
+                                  prev.map((item) =>
+                                    item.id === u.id
+                                      ? { ...item, plan: "pro", proExpiresAt: "Aug 15, 2027", lastTrx: "Executive Manual Upgrade (God Mode)" }
+                                      : item
+                                  )
+                                );
+                                showToast(`🎉 Upgraded ${u.name} to Paid PRO tier!`, "success");
+                              }}
+                              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 ml-auto"
+                            >
+                              <Sparkles className="w-3.5 h-3.5" />
+                              <span>Upgrade to PRO</span>
+                            </button>
                           </td>
                         </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* SUB-VIEW 2: PAID PRO SUBSCRIBERS LEDGER */}
+          {userSubTab === "pro_list" && (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-amber-500" />
+                    <span>Paid PRO Subscribers Active Roster &amp; Expiry Ledger</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Active subscribers with full access to unlimited projects, PDF exports, and 2D CAD floor plans.
+                  </p>
+                </div>
+
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    placeholder="Search PRO subscribers..."
+                    className="pl-9 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 w-64"
+                  />
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 text-[11px] uppercase tracking-wider font-bold">
+                      <th className="pb-3 pl-2">Subscriber Details</th>
+                      <th className="pb-3">Contact</th>
+                      <th className="pb-3">PRO Expiry Date</th>
+                      <th className="pb-3">Last Transaction History</th>
+                      <th className="pb-3">Projects</th>
+                      <th className="pb-3 pr-2 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                    {platformUsers
+                      .filter((u) => u.plan === "pro")
+                      .filter((u) => {
+                        return (
+                          u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
+                          u.email.toLowerCase().includes(userSearch.toLowerCase()) ||
+                          u.phone.toLowerCase().includes(userSearch.toLowerCase())
+                        );
+                      })
+                      .map((u) => {
+                        const isSuper = isSuperAdminEmail(u.email);
+                        return (
+                          <tr key={u.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                            <td className="py-3 pl-2">
+                              <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                                <span>{u.name}</span>
+                                {isSuper && (
+                                  <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold text-[9px] uppercase border border-amber-500/30">
+                                    God Mode
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[11px] text-slate-400">{u.company}</div>
+                            </td>
+                            <td className="py-3">
+                              <div className="font-mono text-[11px] text-slate-700 dark:text-slate-300">{u.email}</div>
+                              <div className="text-[11px] text-slate-400">{u.phone}</div>
+                            </td>
+                            <td className="py-3">
+                              <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                {u.proExpiresAt || "Active (1 Year)"}
+                              </span>
+                            </td>
+                            <td className="py-3">
+                              <span className="text-[11px] text-slate-600 dark:text-slate-300 font-mono">
+                                {u.lastTrx || "Verified Payment"}
+                              </span>
+                            </td>
+                            <td className="py-3 font-mono font-bold text-slate-800 dark:text-slate-200">
+                              {u.projectsCount} (Unlimited)
+                            </td>
+                            <td className="py-3 pr-2 text-right">
+                              <button
+                                type="button"
+                                disabled={isSuper}
+                                onClick={() => {
+                                  setPlatformUsers((prev) =>
+                                    prev.map((item) =>
+                                      item.id === u.id ? { ...item, plan: "free", proExpiresAt: "-" } : item
+                                    )
+                                  );
+                                  showToast(`Revoked PRO access for ${u.name}. Downgraded to Free tier.`, "warning");
+                                }}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                                  isSuper
+                                    ? "opacity-40 cursor-not-allowed bg-slate-100 text-slate-400"
+                                    : "bg-rose-600 hover:bg-rose-500 text-white shadow-xs"
+                                }`}
+                                title={isSuper ? "God Mode whitelist cannot be revoked" : "Revoke PRO subscription"}
+                              >
+                                Revoke PRO
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* SUB-VIEW 3: FULL USER MANAGEMENT TABLE & 1-CLICK ROLE OVERRIDE */}
+          {userSubTab === "all" && (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-xs space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Users className="w-5 h-5 text-emerald-600" />
+                    <span>Module B: User Accounts &amp; 1-Click Role Override</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Search users by name, email, or Pakistani phone number. Instantly grant PRO access or suspend accounts.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="relative">
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                      placeholder="Search email, name or phone..."
+                      className="pl-9 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 w-64"
+                    />
+                  </div>
+
+                  <select
+                    value={userPlanFilter}
+                    onChange={(e: any) => setUserPlanFilter(e.target.value)}
+                    className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none"
+                  >
+                    <option value="all">All Plans</option>
+                    <option value="pro">Paid PRO Only</option>
+                    <option value="free">Free Users Only</option>
+                  </select>
+
+                  <select
+                    value={userStatusFilter}
+                    onChange={(e: any) => setUserStatusFilter(e.target.value)}
+                    className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none"
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value="active">Active</option>
+                    <option value="suspended">Suspended</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Users Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 text-[11px] uppercase tracking-wider font-bold">
+                      <th className="pb-3 pl-2">User Details</th>
+                      <th className="pb-3">Contact</th>
+                      <th className="pb-3">Role</th>
+                      <th className="pb-3">Plan Tier</th>
+                      <th className="pb-3">Projects</th>
+                      <th className="pb-3">Joined</th>
+                      <th className="pb-3">Status</th>
+                      <th className="pb-3 pr-2 text-right">Admin Override</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                    {platformUsers
+                      .filter((u) => {
+                        const matchSearch =
+                          u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
+                          u.email.toLowerCase().includes(userSearch.toLowerCase()) ||
+                          u.phone.toLowerCase().includes(userSearch.toLowerCase());
+                        const matchPlan = userPlanFilter === "all" || u.plan === userPlanFilter;
+                        const matchStatus = userStatusFilter === "all" || u.status === userStatusFilter;
+                        return matchSearch && matchPlan && matchStatus;
+                      })
+                      .map((u) => {
+                        const isSuper = isSuperAdminEmail(u.email);
+                        return (
+                          <tr key={u.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                            <td className="py-3 pl-2">
+                              <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                                <span>{u.name}</span>
+                                {isSuper && (
+                                  <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold text-[9px] uppercase border border-amber-500/30">
+                                    God Mode
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[11px] text-slate-400">{u.company}</div>
+                            </td>
+
+                            <td className="py-3">
+                              <div className="font-mono text-[11px] text-slate-700 dark:text-slate-300">{u.email}</div>
+                              <div className="text-[11px] text-slate-400">{u.phone}</div>
+                            </td>
+
+                            <td className="py-3">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                u.role === "superadmin"
+                                  ? "bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
+                                  : u.role === "admin"
+                                  ? "bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800"
+                                  : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                              }`}>
+                                {u.role}
+                              </span>
+                            </td>
+
+                            <td className="py-3">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                                u.plan === "pro"
+                                  ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                              }`}>
+                                {u.plan}
+                              </span>
+                            </td>
+
+                            <td className="py-3 font-mono font-bold text-slate-800 dark:text-slate-200">
+                              {u.projectsCount}
+                            </td>
+
+                            <td className="py-3 text-slate-400 text-[11px]">
+                              {u.joined}
+                            </td>
+
+                            <td className="py-3">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                u.status === "active"
+                                  ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600"
+                                  : "bg-rose-50 dark:bg-rose-950/40 text-rose-600"
+                              }`}>
+                                {u.status}
+                              </span>
+                            </td>
+
+                            <td className="py-3 pr-2 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {/* 1-Click PRO Upgrade/Downgrade */}
+                                <button
+                                  type="button"
+                                  disabled={isSuper}
+                                  onClick={() => {
+                                    const nextPlan = u.plan === "pro" ? "free" : "pro";
+                                    setPlatformUsers((prev) =>
+                                      prev.map((item) => (item.id === u.id ? { ...item, plan: nextPlan } : item))
+                                    );
+                                    showToast(
+                                      nextPlan === "pro"
+                                        ? `🎉 Granted PRO access to ${u.name}`
+                                        : `Revoked PRO access for ${u.name}`,
+                                      "success"
+                                    );
+                                  }}
+                                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                                    u.plan === "pro"
+                                      ? "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                                      : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs"
+                                  }`}
+                                >
+                                  {u.plan === "pro" ? "Demote to Free" : "Grant PRO"}
+                                </button>
+
+                                {/* 1-Click Suspend/Unsuspend */}
+                                <button
+                                  type="button"
+                                  disabled={isSuper}
+                                  onClick={() => {
+                                    const nextStatus = u.status === "active" ? "suspended" : "active";
+                                    setPlatformUsers((prev) =>
+                                      prev.map((item) => (item.id === u.id ? { ...item, status: nextStatus } : item))
+                                    );
+                                    showToast(
+                                      nextStatus === "suspended"
+                                        ? `⚠️ Account suspended: ${u.name}`
+                                        : `Restored account: ${u.name}`,
+                                      nextStatus === "suspended" ? "warning" : "success"
+                                    );
+                                  }}
+                                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                                    u.status === "active"
+                                      ? "bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400"
+                                      : "bg-emerald-50 hover:bg-emerald-100 text-emerald-600"
+                                  }`}
+                                >
+                                  {u.status === "active" ? "Suspend" : "Restore"}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -2683,6 +3262,15 @@ export default function AdminDashboardPage() {
                   <option value="free">Free Only</option>
                   <option value="pro">PRO Only</option>
                 </select>
+
+                <button
+                  type="button"
+                  onClick={handleOpenAddLayout}
+                  className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Upload Layout</span>
+                </button>
               </div>
             </div>
 
@@ -2743,7 +3331,7 @@ export default function AdminDashboardPage() {
                         )}
                       </div>
 
-                      <div className="pt-3 border-t border-slate-200/80 dark:border-slate-700 flex items-center gap-2">
+                      <div className="pt-3 border-t border-slate-200/80 dark:border-slate-700 flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => {
@@ -2775,7 +3363,7 @@ export default function AdminDashboardPage() {
                               "info"
                             );
                           }}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                          className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
                             isVisible
                               ? "border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
                               : "border-cyan-500 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-950/40"
@@ -2783,11 +3371,247 @@ export default function AdminDashboardPage() {
                         >
                           {isVisible ? "Hide" : "Publish"}
                         </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditLayout(layout)}
+                          className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                          title="Edit Architectural Specifications"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteLayout(layout.id, layout.title)}
+                          className="p-1.5 rounded-xl border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                          title="Delete Layout"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   );
                 })}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ARCHITECTURAL LAYOUT UPLOAD / EDIT MODAL */}
+      {layoutModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-xl w-full p-6 shadow-2xl relative space-y-4 my-8">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Building className="w-5 h-5 text-emerald-600" />
+                <span>{editingLayout ? "Edit Architectural Layout" : "Upload Architectural House Layout"}</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setLayoutModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveLayout} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="sm:col-span-2">
+                  <label className="text-slate-700 dark:text-slate-300 font-bold block mb-1">
+                    Layout Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={layoutTitle}
+                    onChange={(e) => setLayoutTitle(e.target.value)}
+                    placeholder="e.g. 5 Marla Modern Spanish Double Storey Villa"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-slate-900 dark:text-white font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-slate-700 dark:text-slate-300 font-bold block mb-1">
+                    Plot Category
+                  </label>
+                  <select
+                    value={layoutPlotCategory}
+                    onChange={(e) => setLayoutPlotCategory(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-slate-900 dark:text-white font-semibold"
+                  >
+                    <option value="3_marla">3 Marla (675 sq ft)</option>
+                    <option value="5_marla">5 Marla (1,125 sq ft)</option>
+                    <option value="7_marla">7 Marla (1,575 sq ft)</option>
+                    <option value="10_marla">10 Marla (2,250 sq ft)</option>
+                    <option value="1_kanal">1 Kanal (4,500 sq ft)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-slate-700 dark:text-slate-300 font-bold block mb-1">
+                    Plot Width × Depth (ft)
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="number"
+                      value={layoutWidth}
+                      onChange={(e) => setLayoutWidth(Number(e.target.value))}
+                      placeholder="Width (e.g. 25)"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-slate-900 dark:text-white font-mono"
+                    />
+                    <input
+                      type="number"
+                      value={layoutDepth}
+                      onChange={(e) => setLayoutDepth(Number(e.target.value))}
+                      placeholder="Depth (e.g. 45)"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-slate-900 dark:text-white font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-slate-700 dark:text-slate-300 font-bold block mb-1">
+                    Plot Area (Sq Ft)
+                  </label>
+                  <input
+                    type="number"
+                    value={layoutPlotArea}
+                    onChange={(e) => setLayoutPlotArea(Number(e.target.value))}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-slate-900 dark:text-white font-mono font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-slate-700 dark:text-slate-300 font-bold block mb-1">
+                    Covered Area (Sq Ft)
+                  </label>
+                  <input
+                    type="number"
+                    value={layoutCoveredArea}
+                    onChange={(e) => setLayoutCoveredArea(Number(e.target.value))}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-slate-900 dark:text-white font-mono font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-slate-700 dark:text-slate-300 font-bold block mb-1">
+                    Bedrooms &amp; Bathrooms
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="number"
+                      min={1}
+                      max={12}
+                      value={layoutBedrooms}
+                      onChange={(e) => setLayoutBedrooms(Number(e.target.value))}
+                      placeholder="Beds"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-slate-900 dark:text-white font-mono"
+                    />
+                    <input
+                      type="number"
+                      min={1}
+                      max={12}
+                      value={layoutBathrooms}
+                      onChange={(e) => setLayoutBathrooms(Number(e.target.value))}
+                      placeholder="Baths"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-slate-900 dark:text-white font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-slate-700 dark:text-slate-300 font-bold block mb-1">
+                    Storeys / Floors
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={5}
+                    value={layoutFloors}
+                    onChange={(e) => setLayoutFloors(Number(e.target.value))}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-slate-900 dark:text-white font-mono"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="text-slate-700 dark:text-slate-300 font-bold block mb-1">
+                    Blueprint / Architectural Rendering URL
+                  </label>
+                  <input
+                    type="url"
+                    value={layoutImageUrl}
+                    onChange={(e) => setLayoutImageUrl(e.target.value)}
+                    placeholder="https://..."
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-slate-900 dark:text-white font-mono"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="text-slate-700 dark:text-slate-300 font-bold block mb-1">
+                    Description &amp; Society Compliance
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={layoutDescription}
+                    onChange={(e) => setLayoutDescription(e.target.value)}
+                    placeholder="e.g. Approved layout for Bahria Town, DHA, and LDA societies with dedicated front lawn..."
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-slate-900 dark:text-white"
+                  />
+                </div>
+
+                {/* Toggles */}
+                <div className="sm:col-span-2 flex items-center justify-between gap-4 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={layoutCarPorch}
+                      onChange={(e) => setLayoutCarPorch(e.target.checked)}
+                      className="w-4 h-4 text-emerald-600 rounded"
+                    />
+                    <span className="font-bold text-slate-700 dark:text-slate-200">Car Porch Included</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={layoutIsPro}
+                      onChange={(e) => setLayoutIsPro(e.target.checked)}
+                      className="w-4 h-4 text-amber-500 rounded"
+                    />
+                    <span className="font-bold text-amber-600 dark:text-amber-400">PRO Exclusive Gate</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={layoutIsVisible}
+                      onChange={(e) => setLayoutIsVisible(e.target.checked)}
+                      className="w-4 h-4 text-cyan-600 rounded"
+                    />
+                    <span className="font-bold text-cyan-600 dark:text-cyan-400">Publicly Published</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setLayoutModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-800 font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-xs flex items-center gap-1.5"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>{editingLayout ? "Save Specifications" : "Upload Layout"}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

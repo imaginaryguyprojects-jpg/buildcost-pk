@@ -144,6 +144,7 @@ interface SystemSettingsState {
   submitPaymentVerification: (submission: Omit<PaymentSubmission, "id" | "submittedAt" | "status">) => PaymentSubmission;
   approvePayment: (paymentId: string, adminName?: string) => void;
   rejectPayment: (paymentId: string, reason: string, adminName?: string) => void;
+  revokePaymentPro: (paymentId: string, reason?: string, adminName?: string) => Promise<void>;
   updatePaymentStatus: (paymentId: string, status: PaymentStatusType, reason?: string, adminName?: string) => void;
 
   // Promotions & Campaigns
@@ -1080,6 +1081,46 @@ export const useSystemSettingsStore = create<SystemSettingsState>()(
             auditEntries: [newAudit, ...state.auditEntries]
           };
         });
+      },
+
+      revokePaymentPro: async (paymentId, reason = "PRO subscription manually revoked by Super Admin", adminName = "Umer Sheikh (Admin)") => {
+        const now = new Date().toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" }) + " PKT";
+        set((state) => {
+          const target = state.payments.find((p) => p.id === paymentId);
+          const updatedPayments = state.payments.map((p) =>
+            p.id === paymentId
+              ? { ...p, status: "rejected" as const, rejectionReason: reason }
+              : p
+          );
+
+          const newAudit: SystemAuditEntry = {
+            id: `audit_${Date.now()}`,
+            adminName,
+            action: "Revoked PRO Access",
+            details: `Revoked PRO access for TRX #${target?.trxId || paymentId} (${target?.userName || "Customer"}). Status reverted to Free. Reason: ${reason}`,
+            timestamp: now
+          };
+
+          return {
+            payments: updatedPayments,
+            auditEntries: [newAudit, ...state.auditEntries]
+          };
+        });
+
+        // Server API sync
+        try {
+          await fetch("/api/admin/payments", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              paymentId,
+              status: "rejected",
+              reason
+            })
+          });
+        } catch {
+          // offline/fallback
+        }
       },
 
       updatePaymentStatus: (paymentId, status, reason, adminName = "Umer Sheikh (Admin)") => {

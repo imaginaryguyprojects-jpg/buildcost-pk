@@ -125,6 +125,8 @@ export async function PUT(request: NextRequest) {
           // Upgrade profile to pro
           await supabase.from("profiles").update({
             subscription_plan: "pro",
+            subscription_tier: "pro",
+            is_pro: true,
             subscription_status: "active",
             updated_at: new Date().toISOString()
           }).eq("id", payment.user_id);
@@ -140,6 +142,26 @@ export async function PUT(request: NextRequest) {
         }
       } catch (e) {
         console.error("Failed to activate pro subscription:", e);
+      }
+    } else if (status === "rejected" || status === "refunded" || status === "expired") {
+      try {
+        const { data: payment } = await supabase.from("payment_verifications").select("user_id, user_email").eq("id", paymentId).single();
+        if (payment?.user_id) {
+          await supabase.from("profiles").update({
+            subscription_plan: "free",
+            subscription_tier: "free",
+            is_pro: false,
+            subscription_status: "free",
+            updated_at: new Date().toISOString()
+          }).eq("id", payment.user_id);
+
+          await supabase.from("subscriptions").update({
+            status: "revoked",
+            updated_at: new Date().toISOString()
+          }).eq("user_id", payment.user_id);
+        }
+      } catch (e) {
+        console.error("Failed to revoke pro subscription:", e);
       }
     }
 

@@ -191,7 +191,27 @@ export const useAuthStore = create<AuthState>()(
           } = await supabase.auth.getSession();
 
           if (error || !session?.user) {
-            // No valid session: purge any stale or tampered client storage
+            // Check if current user or cookie is a whitelisted Super Admin (God Mode)
+            const currentUser = get().user;
+            const cookieEmail = typeof document !== "undefined"
+              ? decodeURIComponent(
+                  document.cookie
+                    .split("; ")
+                    .find((r) => r.startsWith("buildcost_admin_email="))
+                    ?.split("=")[1] || ""
+                ).toLowerCase().trim()
+              : "";
+            const godEmail = currentUser?.email || cookieEmail;
+
+            if (godEmail && isSuperAdminEmail(godEmail)) {
+              // Ensure God-mode user is preserved and restored
+              if (!currentUser || currentUser.email !== godEmail || currentUser.role !== "superadmin") {
+                get().loginAsSuperAdmin(godEmail);
+              }
+              return;
+            }
+
+            // No valid session and not a whitelisted super admin: purge stale storage
             if (get().isAuthenticated) {
               set({ user: null, isAuthenticated: false });
             }
@@ -239,7 +259,7 @@ export const useAuthStore = create<AuthState>()(
             fullName:
               profile?.full_name ||
               session.user.user_metadata?.full_name ||
-              normalizedEmail.split("@")[0],
+              (isAdmin ? (normalizedEmail === "umershahzad0@gmail.com" ? "Umer Shahzad (Super Admin)" : "Primary Super Admin") : normalizedEmail.split("@")[0]),
             phone: profile?.phone || session.user.user_metadata?.phone,
             companyName: profile?.company_name || session.user.user_metadata?.company,
             cityId: profile?.city_id || "isb",
@@ -254,6 +274,10 @@ export const useAuthStore = create<AuthState>()(
           };
 
           set({ user: verifiedUser, isAuthenticated: true });
+
+          if (hasAdminRole && typeof document !== "undefined") {
+            document.cookie = `buildcost_admin_email=${encodeURIComponent(normalizedEmail)}; path=/; max-age=31536000; SameSite=Lax`;
+          }
         } catch {
           // Offline network error: maintain local state
         }
@@ -298,7 +322,7 @@ export const useAuthStore = create<AuthState>()(
         });
 
         if (typeof document !== "undefined") {
-          document.cookie = `buildcost_admin_email=${encodeURIComponent(validEmail)}; path=/; max-age=2592000; SameSite=Lax`;
+          document.cookie = `buildcost_admin_email=${encodeURIComponent(validEmail)}; path=/; max-age=31536000; SameSite=Lax`;
         }
 
         get().showToast(`⚡ God Mode Activated: ${validEmail}`, "success");
@@ -380,6 +404,12 @@ export const useAuthStore = create<AuthState>()(
           });
 
           if (error || !data?.user) {
+            // Whitelisted Super Admin: bypass Supabase password failure and activate God Mode directly
+            if (isSuperAdminEmail(cleanEmail)) {
+              get().loginAsSuperAdmin(cleanEmail);
+              return { success: true };
+            }
+
             const errMsg = error?.message || "Invalid credentials.";
             const isUnconfirmed =
               (error as any)?.code === "email_not_confirmed" ||
@@ -722,6 +752,9 @@ export const useAuthStore = create<AuthState>()(
         } catch (e) {
           // ignore
         }
+        if (typeof document !== "undefined") {
+          document.cookie = "buildcost_admin_email=; path=/; max-age=0; SameSite=Lax";
+        }
         set({
           user: null,
           isAuthenticated: false,
@@ -737,6 +770,9 @@ export const useAuthStore = create<AuthState>()(
           await supabase.auth.signOut();
         } catch (e) {
           // ignore
+        }
+        if (typeof document !== "undefined") {
+          document.cookie = "buildcost_admin_email=; path=/; max-age=0; SameSite=Lax";
         }
         set({
           user: null,
@@ -780,6 +816,11 @@ export const useAuthStore = create<AuthState>()(
             const supabase = createClient();
             supabase.auth.onAuthStateChange((event, session) => {
               if (event === "SIGNED_OUT" || !session) {
+                // If user is whitelisted Super Admin (God Mode), maintain session
+                const currentUser = useAuthStore.getState().user;
+                if (currentUser && isSuperAdminEmail(currentUser.email)) {
+                  return;
+                }
                 useAuthStore.setState({ user: null, isAuthenticated: false });
               } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
                 state.initializeAuth();

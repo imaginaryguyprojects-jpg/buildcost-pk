@@ -1,7 +1,6 @@
 {
   "name": "buildcost-connect",
   "version": "3.0.0",
-
   "private": true,
   "description": "BuildCost Connect - Pakistan Construction Cost Intelligence Platform",
   "scripts": {
@@ -16,9 +15,11 @@
     "build:ota": "node scripts/build-ota-bundle.mjs"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "prettier": "^3.5.2",
     "turbo": "^2.4.4",
-    "typescript": "^5.7.3",
-    "prettier": "^3.5.2"
+    "typescript": "^5.7.3"
   },
   "packageManager": "pnpm@11.25.0",
   "engines": {
