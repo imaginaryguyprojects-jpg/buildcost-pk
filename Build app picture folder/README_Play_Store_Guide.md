@@ -29,5 +29,5 @@ https://buildcost-pk.vercel.app/privacy
 ```
 
 ### App Releases Location (in project root):
-- **Play Store Release Bundle (AAB)**: `BuildCost-PK-v3.0.0-release.aab`
-- **Direct Offline APK**: `BuildCost-PK-v3.0.0-offline.apk`
+- **Play Store Release Bundle (AAB)**: `BuildCost-PK-v3.0.1-release.aab`
+- **Direct Offline APK**: `BuildCost-PK-v3.0.1-offline.apk`
