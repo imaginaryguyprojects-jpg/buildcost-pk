@@ -295,9 +295,9 @@ export default function PrivacyPolicyPage() {
               Pak-Construction Calculator Support Desk
             </p>
             <p className="text-xs sm:text-sm text-emerald-800 dark:text-emerald-300">
-              <strong>Official Support Email:</strong>{" "}
-              <a href="mailto:support@buildcost.pk" className="underline hover:text-emerald-950 dark:hover:text-emerald-100">
-                support@buildcost.pk
+              <strong>Email:</strong>{" "}
+              <a href="mailto:umershahzad0@gmail.com" className="underline hover:text-emerald-950 dark:hover:text-emerald-100">
+                umershahzad0@gmail.com
               </a>
             </p>
             <p className="text-xs sm:text-sm text-emerald-800 dark:text-emerald-300">
@@ -305,9 +305,6 @@ export default function PrivacyPolicyPage() {
               <a href="https://buildcost-pk.vercel.app" target="_blank" rel="noopener noreferrer" className="underline hover:text-emerald-950 dark:hover:text-emerald-100">
                 https://buildcost-pk.vercel.app
               </a>
-            </p>
-            <p className="text-xs sm:text-sm text-emerald-800 dark:text-emerald-300">
-              <strong>Jurisdiction:</strong> Islamic Republic of Pakistan
             </p>
           </div>
         </section>
