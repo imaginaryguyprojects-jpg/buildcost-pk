@@ -4,15 +4,15 @@ plugins {
 
 android {
     namespace 'pk.buildcost.app'
-    compileSdk 34
-    buildToolsVersion '34.0.0'
+    compileSdk 36
+    buildToolsVersion '36.0.0'
 
     defaultConfig {
         applicationId "pk.buildcost.app"
         minSdk 24
-        targetSdk 34
-        versionCode 8
-        versionName "3.0.1"
+        targetSdk 36
+        versionCode 9
+        versionName "3.0.2"
 
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
