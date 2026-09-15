@@ -20,17 +20,18 @@ android {
 
     signingConfigs {
         release {
-            storeFile file('buildcost-release.jks')
-            storePassword 'buildcostpk2026'
-            keyAlias 'buildcost'
-            keyPassword 'buildcostpk2026'
+            storeFile file('release-key.jks')
+            storePassword 'BuildCost2026Secure!'
+            keyAlias 'buildcost-key'
+            keyPassword 'BuildCost2026Secure!'
         }
     }
 
     buildTypes {
         release {
-            minifyEnabled false
             signingConfig signingConfigs.release
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
             applicationIdSuffix ""
