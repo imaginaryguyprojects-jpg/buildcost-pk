@@ -18,10 +18,19 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        release {
+            storeFile file('buildcost-release.jks')
+            storePassword 'buildcostpk2026'
+            keyAlias 'buildcost'
+            keyPassword 'buildcostpk2026'
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
         }
         debug {
             applicationIdSuffix ""
