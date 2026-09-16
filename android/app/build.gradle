@@ -11,11 +11,21 @@ android {
         applicationId "pk.buildcost.app"
         minSdk 24
         targetSdk 36
-        versionCode 11
-        versionName "3.0.4"
-
+        versionCode 12
+        versionName "3.0.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        // Official Google Test AdMob IDs (can be overridden via gradle.properties or -PADMOB_*)
+        def admobAppId = project.findProperty("ADMOB_APP_ID") ?: "ca-app-pub-3940256099942544~3347511713"
+        def bannerAdId = project.findProperty("ADMOB_BANNER_ID") ?: "ca-app-pub-3940256099942544/9214589741"
+        def interstitialAdId = project.findProperty("ADMOB_INTERSTITIAL_ID") ?: "ca-app-pub-3940256099942544/1033173712"
+        def rewardedAdId = project.findProperty("ADMOB_REWARDED_ID") ?: "ca-app-pub-3940256099942544/5224354917"
+
+        resValue "string", "admob_app_id", admobAppId
+        buildConfigField "String", "ADMOB_BANNER_ID", "\"${bannerAdId}\""
+        buildConfigField "String", "ADMOB_INTERSTITIAL_ID", "\"${interstitialAdId}\""
+        buildConfigField "String", "ADMOB_REWARDED_ID", "\"${rewardedAdId}\""
     }
 
     buildFeatures {
@@ -68,4 +78,6 @@ dependencies {
     implementation 'androidx.webkit:webkit:1.11.0'
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
     implementation 'androidx.biometric:biometric:1.1.0'
+    implementation 'com.google.android.gms:play-services-ads:23.3.0'
+    implementation 'com.google.android.play:app-update:2.1.0'
 }

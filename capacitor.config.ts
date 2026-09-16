@@ -11,8 +11,8 @@ const config: CapacitorConfig = {
   },
   android: {
     buildOptions: {
-      versionCode: 11,
-      versionName: '3.0.4',
+      versionCode: 12,
+      versionName: '3.0.0',
     },
   },
 

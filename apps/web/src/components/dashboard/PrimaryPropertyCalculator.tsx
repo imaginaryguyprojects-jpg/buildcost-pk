@@ -46,6 +46,8 @@ import { GreyStructureBreakdownGrid } from "@/components/calculator/GreyStructur
 import { formatPKR, formatLakhCrore, formatNumber } from "@/lib/formatters";
 import { useAuthStore } from "@/stores/authStore";
 import { useProjectStore } from "@/stores/projectStore";
+import { useRecentCalculationsStore } from "@/stores/recentCalculationsStore";
+import { showInterstitialAd } from "@/lib/adsService";
 import { cn } from "@/lib/utils";
 
 export type PlotUnit = "marla" | "kanal" | "sqft";
@@ -387,7 +389,27 @@ export function PrimaryPropertyCalculator() {
 
   // Handlers
   const handleCalculateEstimate = () => {
-    showToast("Calculation updated with latest parameters!", "info");
+    try {
+      useRecentCalculationsStore.getState().addCalculation({
+        title: `${plotSize} ${plotUnit} ${selectedCity.name} Estimate`,
+        cityId: selectedCity.id,
+        cityName: selectedCity.name,
+        plotSize: `${plotSize} ${plotUnit}`,
+        plotSizeUnit: plotUnit,
+        coveredAreaSqFt: coveredAreaSqft,
+        floors: floorsSelection,
+        constructionType: constructionScope === "grey" ? "Grey Structure" : "Complete (Grey + Finishing)",
+        wallHeightFeet: proInputs.manualWallHeightFt || 10,
+        bathroomsCount: proInputs.bathrooms?.length || 3,
+        foundationType: proInputs.foundationType || "Strip Footing",
+        hasColumns: true,
+        hasBeams: true,
+        totalCostPkr: calculationResult.totalCost,
+        costPerSqFtPkr: calculationResult.costPerSqft,
+      });
+      showInterstitialAd("calculation_completed");
+    } catch (ignored) {}
+    showToast("Calculation updated with latest parameters & saved to Recent!", "success");
   };
 
   const handleReset = () => {

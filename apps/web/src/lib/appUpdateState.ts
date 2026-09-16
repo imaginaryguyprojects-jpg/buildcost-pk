@@ -15,15 +15,15 @@ export interface AppReleaseConfig {
 export const fallbackAppReleases: Record<string, AppReleaseConfig> = {
   android: {
     platform: "android",
-    latestVersion: "3.0.4",
-    latestVersionCode: 11,
-    minimumVersionCode: 10,
+    latestVersion: "3.0.0",
+    latestVersionCode: 12,
+    minimumVersionCode: 11,
     mandatoryUpdate: false,
     otaAvailable: false,
     otaBundleUrl: "",
     otaChannel: "production",
-    apkDownloadUrl: "https://github.com/imaginaryguyprojects-jpg/buildcost-pk/releases/download/v3.0.4/BuildCost-PK-v3.0.4-offline.apk",
-    releaseNotes: "BuildCost PK v3.0.4:\n• Critical fix for UI/CSS rendering and mobile WebView asset delivery\n• High-performance local asset routing with offline-first support\n• Instant splash transition preventing unstyled layout flash\n• Android API 34+ / SDK 36 optimizations",
+    apkDownloadUrl: "https://github.com/imaginaryguyprojects-jpg/buildcost-pk/releases/download/v3.0.0/BuildCost-PK-v3.0.0-offline.apk",
+    releaseNotes: "BuildCost.pk v3.0.0:\n• Advanced construction calculation with wall height, foundation, beams, columns, and bathrooms\n• Modern architectural layout plans (Free & Pro tiers)\n• Official Google AdMob monetization for Free users & ad-free Pro experience\n• Official Google Play In-App Updates (Flexible & Immediate)\n• Enhanced offline-first synchronization with real-time rate verification\n• Supabase authentication & security hardening",
     updatedAt: new Date().toISOString()
   },
 

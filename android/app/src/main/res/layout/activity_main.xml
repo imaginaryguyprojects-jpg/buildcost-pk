@@ -6,10 +6,20 @@
     android:background="@color/bg_light"
     tools:context=".MainActivity">
 
+    <!-- Anchored Adaptive Banner Container for FREE users -->
+    <FrameLayout
+        android:id="@+id/adBannerContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:background="#0F172A"
+        android:visibility="gone" />
+
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefresh"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:layout_above="@id/adBannerContainer">
 
         <WebView
             android:id="@+id/webView"

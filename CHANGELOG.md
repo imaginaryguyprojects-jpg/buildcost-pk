@@ -7,7 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [3.0.0] - 2026-09-14
+## [3.0.0] - 2026-09-17 (Version Code 12)
+
+### Added
+- **Google AdMob Monetization & Server-Side Entitlement**:
+  - Official Google Mobile Ads SDK (`play-services-ads:23.3.0`) integration.
+  - Anchored adaptive banner ads at screen bottom with layout anti-overlap protection.
+  - Natural transition interstitial ads with configurable 90-second cooldown frequency timer.
+  - Optional rewarded ads offering temporary single-calculation perks.
+  - Strict server-side PRO entitlement protection: zero ads displayed to verified PRO subscribers.
+- **Official Google Play In-App Updates**:
+  - `com.google.android.play:app-update:2.1.0` integration with Flexible and Immediate update flows.
+  - Fully compliant with Google Play security policies with zero silent APK sideloading.
+- **Dynamic Backend Synchronization Without Reinstall**:
+  - Synchronizes verified market rates, city benchmarks, and layout metadata automatically.
+  - Transparent timestamp indicators (*"Last Synced"* and *"Offline — Last synced data"*).
+  - Strict policy: cached figures are never fabricated as live rates while offline.
+- **Productivity Special Features**:
+  - Recent & Favorite Calculations with instant 1-click "Recalculate" populating all parameters.
+  - "Save to My Account" prompt on login for guest-created estimates.
+  - 4 Architectural floor plans (1 Free quality plan, 3+ Pro luxury villa designs).
+  - Diagnostic & Support Console with "Report a Problem" and "What's New in v3.0.0" dialogs.
+- **Production Build & Verification**:
+  - Signed release AAB (`BuildCost-PK-v3.0.0-release.aab`) and offline APK (`BuildCost-PK-v3.0.0-offline.apk`).
+  - Target SDK 36 (Android 16), Min SDK 24, Version Code 12.
+
+---
 
 ### Added
 - **PRO Exact Construction Calculation Engine**:

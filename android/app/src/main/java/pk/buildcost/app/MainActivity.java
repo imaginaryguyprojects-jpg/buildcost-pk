@@ -28,6 +28,7 @@ import androidx.core.content.ContextCompat;
 import java.util.concurrent.Executor;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Toast;
@@ -58,6 +59,10 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout offlineContainer;
     private Button btnRetry;
     private View splashContainer;
+    private FrameLayout adBannerContainer;
+
+    private AdMobManager adMobManager;
+    private PlayUpdateManager playUpdateManager;
 
     private ValueCallback<Uri[]> fileUploadCallback;
     private ActivityResultLauncher<Intent> filePickerLauncher;
@@ -74,6 +79,12 @@ public class MainActivity extends AppCompatActivity {
         setupWebView();
         setupBackNavigation();
 
+        adMobManager = new AdMobManager(this, adBannerContainer, webView);
+        adMobManager.initialize();
+
+        playUpdateManager = new PlayUpdateManager(this, webView);
+        playUpdateManager.initialize();
+
         loadTargetUrl();
         OtaUpdateManager.checkForUpdates(this, webView);
     }
@@ -85,6 +96,7 @@ public class MainActivity extends AppCompatActivity {
         offlineContainer = findViewById(R.id.offlineContainer);
         btnRetry = findViewById(R.id.btnRetry);
         splashContainer = findViewById(R.id.splashContainer);
+        adBannerContainer = findViewById(R.id.adBannerContainer);
 
         swipeRefresh.setColorSchemeColors(0xFF059669);
         swipeRefresh.setOnRefreshListener(() -> {
@@ -286,10 +298,13 @@ public class MainActivity extends AppCompatActivity {
 
         // Custom user agent identifier for offline Android app
         String defaultUA = settings.getUserAgentString();
-        settings.setUserAgentString(defaultUA + " BuildCostApp/3.0.4 (Android)");
+        settings.setUserAgentString(defaultUA + " BuildCostApp/3.0.0 (Android)");
 
-        // Register Native Biometric Authentication Bridge
+        // Register Native JavaScript Bridges
         webView.addJavascriptInterface(new BiometricBridge(this), "AndroidBiometrics");
+        webView.addJavascriptInterface(new AdsBridge(adMobManager), "AndroidAds");
+        webView.addJavascriptInterface(new PlayUpdateBridge(playUpdateManager), "AndroidUpdates");
+        webView.addJavascriptInterface(new AnalyticsBridge(this), "AndroidAnalytics");
 
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
@@ -558,5 +573,99 @@ public class MainActivity extends AppCompatActivity {
 
             return resultHolder[0];
         }
+    }
+
+    public static class AdsBridge {
+        private final AdMobManager adMobManager;
+
+        public AdsBridge(AdMobManager adMobManager) {
+            this.adMobManager = adMobManager;
+        }
+
+        @JavascriptInterface
+        public void showBanner() {
+            if (adMobManager != null) adMobManager.showBanner();
+        }
+
+        @JavascriptInterface
+        public void hideBanner() {
+            if (adMobManager != null) adMobManager.hideBanner();
+        }
+
+        @JavascriptInterface
+        public boolean showInterstitial(String trigger) {
+            return adMobManager != null && adMobManager.showInterstitial(trigger);
+        }
+
+        @JavascriptInterface
+        public void showRewarded(String featureId) {
+            if (adMobManager != null) adMobManager.showRewarded(featureId);
+        }
+
+        @JavascriptInterface
+        public void setProStatus(boolean isPro) {
+            if (adMobManager != null) adMobManager.setProEntitlement(isPro);
+        }
+
+        @JavascriptInterface
+        public boolean isPro() {
+            return adMobManager != null && adMobManager.isPro();
+        }
+    }
+
+    public static class PlayUpdateBridge {
+        private final PlayUpdateManager playUpdateManager;
+
+        public PlayUpdateBridge(PlayUpdateManager playUpdateManager) {
+            this.playUpdateManager = playUpdateManager;
+        }
+
+        @JavascriptInterface
+        public void checkForUpdate(boolean isMandatory) {
+            if (playUpdateManager != null) playUpdateManager.checkForUpdates(isMandatory);
+        }
+
+        @JavascriptInterface
+        public void startUpdate(int updateType) {
+            if (playUpdateManager != null) playUpdateManager.startUpdate(updateType);
+        }
+
+        @JavascriptInterface
+        public void completeUpdate() {
+            if (playUpdateManager != null) playUpdateManager.completeUpdate();
+        }
+    }
+
+    public static class AnalyticsBridge {
+        private final Context context;
+
+        public AnalyticsBridge(Context context) {
+            this.context = context;
+        }
+
+        @JavascriptInterface
+        public void logEvent(String eventName, String paramsJson) {
+            android.util.Log.i("BuildCostAnalytics", "[EVENT] " + eventName + ": " + (paramsJson != null ? paramsJson : "{}"));
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (adMobManager != null) adMobManager.onResume();
+        if (playUpdateManager != null) playUpdateManager.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (adMobManager != null) adMobManager.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (adMobManager != null) adMobManager.onDestroy();
+        if (playUpdateManager != null) playUpdateManager.onDestroy();
     }
 }

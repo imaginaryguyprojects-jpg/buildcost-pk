@@ -19,13 +19,21 @@ import {
   Lock,
   Sparkles,
   Mail,
-  Phone
+  Phone,
+  RefreshCw,
+  HelpCircle,
+  Bug,
+  Sparkle
 } from "lucide-react";
 import { PAK_CITIES, MARLA_STANDARDS } from "@buildcost/config";
+import { ReportProblemModal } from "@/components/modals/ReportProblemModal";
+import { WhatsNewModal } from "@/components/modals/WhatsNewModal";
+import { useOfflineSync } from "@/lib/offline/OfflineSyncManager";
 
 export default function SettingsPage() {
   const { theme, toggleTheme, selectedCityId, setSelectedCityId, marlaStandardId, setMarlaStandardId } = useProjectStore();
   const { user, isAuthenticated, updateProfile, deleteAccount, showToast, openLoginModal } = useAuthStore();
+  const { isOnline, isSyncing, statusLabel, triggerManualSync } = useOfflineSync();
 
   const [fullName, setFullName] = useState(user?.fullName || "Engr. Asad Malik");
   const [company, setCompany] = useState(user?.companyName || "Habib & Sons Construction");
@@ -33,6 +41,8 @@ export default function SettingsPage() {
   const [defaultQuality, setDefaultQuality] = useState("standard");
   const [defaultWastage, setDefaultWastage] = useState(5);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [whatsNewModalOpen, setWhatsNewModalOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
 
   const handleSaveProfile = (e: React.FormEvent) => {
@@ -264,6 +274,89 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {/* App Version, Play Updates & Diagnostics */}
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-lg">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div>
+            <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">Application Release</span>
+            <h3 className="text-base font-bold text-white mt-0.5">BuildCost.pk Mobile</h3>
+          </div>
+          <div className="text-right">
+            <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-xs font-mono font-bold text-emerald-400">
+              v3.0.0 (Code 12)
+            </span>
+            <span className="block text-[10px] text-slate-400 mt-1">Target: Android API 36</span>
+          </div>
+        </div>
+
+        {/* Dynamic Connection & Sync Status Indicator */}
+        <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-800/60 border border-slate-700/60">
+          <div className="flex items-center gap-2.5">
+            <div className={`w-2.5 h-2.5 rounded-full ${isSyncing ? "bg-amber-400 animate-ping" : isOnline ? "bg-emerald-400" : "bg-rose-400"}`} />
+            <div>
+              <div className="text-xs font-bold text-slate-200">{statusLabel}</div>
+              <div className="text-[10px] text-slate-400">
+                {isOnline ? "Market rates, layouts & PRO state auto-synced" : "Running locally from verified cached data"}
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => triggerManualSync()}
+            disabled={isSyncing || !isOnline}
+            className="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-xs font-semibold text-emerald-300 disabled:opacity-40 transition flex items-center gap-1.5"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin" : ""}`} />
+            <span>{isSyncing ? "Syncing..." : "Sync Rates"}</span>
+          </button>
+        </div>
+
+        {/* Feature & Support Action Buttons */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+          <button
+            type="button"
+            onClick={() => setWhatsNewModalOpen(true)}
+            className="p-3 rounded-2xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/80 hover:border-emerald-500/50 text-left transition flex items-center justify-between group"
+          >
+            <div>
+              <div className="text-xs font-bold text-slate-200 group-hover:text-emerald-400 transition">What's New</div>
+              <div className="text-[10px] text-slate-400">v3.0.0 Release Highlights</div>
+            </div>
+            <Sparkle className="w-4 h-4 text-emerald-400 shrink-0" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setReportModalOpen(true)}
+            className="p-3 rounded-2xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/80 hover:border-amber-500/50 text-left transition flex items-center justify-between group"
+          >
+            <div>
+              <div className="text-xs font-bold text-slate-200 group-hover:text-amber-400 transition">Report a Problem</div>
+              <div className="text-[10px] text-slate-400">Diagnostics & Bug Report</div>
+            </div>
+            <Bug className="w-4 h-4 text-amber-400 shrink-0" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== "undefined" && window.AndroidUpdates) {
+                window.AndroidUpdates.checkForUpdate(false);
+              } else {
+                showToast("You are running the latest BuildCost.pk version 3.0.0.", "info");
+              }
+            }}
+            className="p-3 rounded-2xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/80 hover:border-cyan-500/50 text-left transition flex items-center justify-between group"
+          >
+            <div>
+              <div className="text-xs font-bold text-slate-200 group-hover:text-cyan-400 transition">Play Store Update</div>
+              <div className="text-[10px] text-slate-400">Check In-App Release</div>
+            </div>
+            <RefreshCw className="w-4 h-4 text-cyan-400 shrink-0" />
+          </button>
+        </div>
+      </div>
+
       {/* 5. Danger Zone: Account Deletion (Section 99) */}
       <div className="bg-rose-950/20 border border-rose-900/40 rounded-3xl p-6 space-y-3">
         <div className="flex items-center gap-2 text-rose-400">
@@ -337,6 +430,10 @@ export default function SettingsPage() {
           </div>
         </div>
       )}
+
+      {/* Diagnostic & Release Modals */}
+      <ReportProblemModal isOpen={reportModalOpen} onClose={() => setReportModalOpen(false)} />
+      <WhatsNewModal isOpen={whatsNewModalOpen} onClose={() => setWhatsNewModalOpen(false)} />
     </div>
   );
 }

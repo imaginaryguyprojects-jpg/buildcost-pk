@@ -5,6 +5,7 @@ import { SUPER_ADMIN_EMAILS, isSuperAdminEmail } from "@buildcost/config";
 import { createClient } from "../lib/supabase/client";
 import { validateEmail, validatePassword } from "../lib/auth/validation";
 import { authenticateWithBiometrics, getStoredBiometricEmail } from "../lib/auth/biometricService";
+import { syncProStatusWithNative } from "../lib/adsService";
 
 export { SUPER_ADMIN_EMAILS, isSuperAdminEmail };
 
@@ -176,6 +177,7 @@ export const useAuthStore = create<AuthState>()(
                 }
               : null,
           }));
+          syncProStatusWithNative(isPro);
           get().showToast("🎉 BuildCost PRO access verified from database!", "success");
         } catch {
           // Network or offline: preserve existing verified state
@@ -774,6 +776,7 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: false,
           pendingAction: null,
         });
+        syncProStatusWithNative(false);
         get().showToast("Logged out successfully.", "info");
       },
 
