@@ -15,15 +15,15 @@ export interface AppReleaseConfig {
 export const fallbackAppReleases: Record<string, AppReleaseConfig> = {
   android: {
     platform: "android",
-    latestVersion: "3.0.0",
-    latestVersionCode: 7,
-    minimumVersionCode: 6,
+    latestVersion: "3.0.4",
+    latestVersionCode: 11,
+    minimumVersionCode: 10,
     mandatoryUpdate: false,
-    otaAvailable: true,
-    otaBundleUrl: "https://github.com/imaginaryguyprojects-jpg/buildcost-pk/releases/download/v3.0.0/buildcost-ota-latest.zip",
+    otaAvailable: false,
+    otaBundleUrl: "",
     otaChannel: "production",
-    apkDownloadUrl: "https://github.com/imaginaryguyprojects-jpg/buildcost-pk/releases/download/v3.0.0/BuildCost-PK-v3.0.0-offline.apk",
-    releaseNotes: "⚡ BuildCost Connect v2.1.0 Major Update:\n• Remote Site Photo Timeline with Live GPS Coordinates & Timestamp Watermark for Overseas Pakistanis\n• 1-Click WhatsApp Material Order Slips with Pakistani Vendor Presets (Cement, 60-Grade Sariya, Sand, Bajri, Bricks)\n• AI Construction Advisor & Fraud Prevention Chatbot (60-Grade Sariya verification, Cement fresh checks, Pre-slab checklists)\n• Voice Note Site Diary with Urdu / Roman Urdu mic dictation & auto-parsing\n• Background OTA live auto-update.",
+    apkDownloadUrl: "https://github.com/imaginaryguyprojects-jpg/buildcost-pk/releases/download/v3.0.4/BuildCost-PK-v3.0.4-offline.apk",
+    releaseNotes: "BuildCost PK v3.0.4:\n• Critical fix for UI/CSS rendering and mobile WebView asset delivery\n• High-performance local asset routing with offline-first support\n• Instant splash transition preventing unstyled layout flash\n• Android API 34+ / SDK 36 optimizations",
     updatedAt: new Date().toISOString()
   },
 

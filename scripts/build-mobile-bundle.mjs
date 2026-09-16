@@ -83,8 +83,8 @@ try {
 
   console.log('\n✓ Static export successfully compiled to apps/web/out/');
 
-  // 3. Post-process HTML files: ensure relative CSS and JS paths
-  console.log('Normalizing asset links to relative paths in HTML...');
+  // 3. Post-process HTML files: ensure clean root-relative asset paths for WebViewAssetLoader
+  console.log('Ensuring clean asset links for WebViewAssetLoader (https://appassets.androidplatform.net)...');
   function normalizeHtmlPaths(dir) {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
@@ -93,10 +93,9 @@ try {
         normalizeHtmlPaths(fullPath);
       } else if (entry.name.endsWith('.html')) {
         let content = fs.readFileSync(fullPath, 'utf8');
-        const relativeToRoot = path.relative(dir, outDir);
-        const prefix = relativeToRoot ? relativeToRoot.replace(/\\/g, '/') + '/' : './';
-        // Convert any root-relative /_next/ to relative prefix
-        content = content.replace(/(href|src)=["']\/_next\//g, `$1="${prefix}_next/`);
+        // Ensure all Next.js asset paths are clean root-relative for appassets.androidplatform.net
+        content = content.replace(/(href|src)=["']\.\/_next\//g, '$1="/_next/');
+        content = content.replace(/(href|src)=["']\.\.\/(_next|next)\//g, '$1="/$2/');
         fs.writeFileSync(fullPath, content, 'utf8');
       }
     }

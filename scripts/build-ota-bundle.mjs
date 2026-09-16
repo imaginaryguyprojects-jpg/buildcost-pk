@@ -10,7 +10,7 @@ const assetsWwwDir = path.join(rootDir, 'android', 'app', 'src', 'main', 'assets
 const outDir = path.join(rootDir, 'apps', 'web', 'out');
 const sourceDir = fs.existsSync(outDir) ? outDir : assetsWwwDir;
 const otaZip = path.join(rootDir, 'buildcost-ota-latest.zip');
-const versionedZip = path.join(rootDir, 'buildcost-ota-v3.0.0.zip');
+const versionedZip = path.join(rootDir, 'buildcost-ota-v3.0.4.zip');
 
 console.log('===============================================================');
 console.log('⚡ BuildCost Connect — Over-The-Air (OTA) Hot-Patch Packager');

@@ -4,6 +4,18 @@ const config: Config = {
   darkMode: "class",
   content: [
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
+    "../../packages/**/*.{js,ts,jsx,tsx}",
+  ],
+  safelist: [
+    { pattern: /bg-(emerald|slate|blue|amber|rose|cyan|orange|green)-(50|100|200|500|600|700|800|900|950)/ },
+    { pattern: /text-(emerald|slate|blue|amber|rose|cyan|orange|green)-(300|400|500|600|700|800|900)/ },
+    { pattern: /border-(emerald|slate|blue|amber|rose|cyan|orange|green)-(200|300|400|500|600|800|900)/ },
+    'animate-pulse',
+    'opacity-0',
+    'opacity-100',
+    'transition-opacity',
+    'duration-300',
+    'duration-200'
   ],
   theme: {
     extend: {

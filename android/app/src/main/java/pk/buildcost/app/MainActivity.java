@@ -57,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private LinearLayout offlineContainer;
     private Button btnRetry;
+    private View splashContainer;
 
     private ValueCallback<Uri[]> fileUploadCallback;
     private ActivityResultLauncher<Intent> filePickerLauncher;
@@ -83,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
         offlineContainer = findViewById(R.id.offlineContainer);
         btnRetry = findViewById(R.id.btnRetry);
+        splashContainer = findViewById(R.id.splashContainer);
 
         swipeRefresh.setColorSchemeColors(0xFF059669);
         swipeRefresh.setOnRefreshListener(() -> {
@@ -107,6 +109,16 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private WebResourceResponse createResponse(String mimeType, InputStream is) {
+        if (is == null) return null;
+        java.util.Map<String, String> headers = new java.util.HashMap<>();
+        headers.put("Access-Control-Allow-Origin", "*");
+        headers.put("Access-Control-Allow-Methods", "GET, OPTIONS");
+        headers.put("Access-Control-Allow-Headers", "*");
+        headers.put("Cache-Control", "no-cache");
+        return new WebResourceResponse(mimeType, "UTF-8", 200, "OK", headers, is);
+    }
+
     private void setupAssetLoader() {
         assetLoader = new WebViewAssetLoader.Builder()
                 .setDomain("appassets.androidplatform.net")
@@ -125,23 +137,23 @@ public class MainActivity extends AppCompatActivity {
                             // PRIORITY 1: Check OTA Live Hot-Patch file first (if applied)
                             File otaFile = OtaUpdateManager.getOtaFile(MainActivity.this, cleanPath);
                             if (otaFile != null && otaFile.isFile()) {
-                                return new WebResourceResponse(getMimeType(cleanPath), "UTF-8", new FileInputStream(otaFile));
+                                return createResponse(getMimeType(cleanPath), new FileInputStream(otaFile));
                             }
 
                             // Check OTA directory index
                             if (cleanPath.endsWith("/")) {
                                 File otaIndex = OtaUpdateManager.getOtaFile(MainActivity.this, cleanPath + "index.html");
                                 if (otaIndex != null && otaIndex.isFile()) {
-                                    return new WebResourceResponse("text/html", "UTF-8", new FileInputStream(otaIndex));
+                                    return createResponse("text/html", new FileInputStream(otaIndex));
                                 }
                             } else {
                                 File otaIndex = OtaUpdateManager.getOtaFile(MainActivity.this, cleanPath + "/index.html");
                                 if (otaIndex != null && otaIndex.isFile()) {
-                                    return new WebResourceResponse("text/html", "UTF-8", new FileInputStream(otaIndex));
+                                    return createResponse("text/html", new FileInputStream(otaIndex));
                                 }
                                 File otaHtml = OtaUpdateManager.getOtaFile(MainActivity.this, cleanPath + ".html");
                                 if (otaHtml != null && otaHtml.isFile()) {
-                                    return new WebResourceResponse("text/html", "UTF-8", new FileInputStream(otaHtml));
+                                    return createResponse("text/html", new FileInputStream(otaHtml));
                                 }
                             }
 
@@ -152,35 +164,49 @@ public class MainActivity extends AppCompatActivity {
                             // 1. Try exact asset file
                             try {
                                 InputStream is = am.open(assetPath);
-                                return new WebResourceResponse(getMimeType(assetPath), "UTF-8", is);
+                                return createResponse(getMimeType(assetPath), is);
                             } catch (IOException ignored) {}
+
+                            // Special Next.js chunk / css resolution (handles nested route relative paths)
+                            if (cleanPath.contains("_next/")) {
+                                try {
+                                    String sub = cleanPath.substring(cleanPath.indexOf("_next/"));
+                                    return createResponse(getMimeType(sub), am.open("www/" + sub));
+                                } catch (IOException ignored) {}
+                            }
+                            if (cleanPath.contains("next/")) {
+                                try {
+                                    String sub = cleanPath.substring(cleanPath.indexOf("next/"));
+                                    return createResponse(getMimeType(sub), am.open("www/" + sub));
+                                } catch (IOException ignored) {}
+                            }
 
                             // 2. Try directory index (e.g. /calculator/ -> www/calculator/index.html)
                             if (cleanPath.endsWith("/")) {
                                 try {
                                     InputStream is = am.open(assetPath + "index.html");
-                                    return new WebResourceResponse("text/html", "UTF-8", is);
+                                    return createResponse("text/html", is);
                                 } catch (IOException ignored) {}
                             } else {
                                 try {
                                     InputStream is = am.open(assetPath + "/index.html");
-                                    return new WebResourceResponse("text/html", "UTF-8", is);
+                                    return createResponse("text/html", is);
                                 } catch (IOException ignored) {}
                                 try {
                                     InputStream is = am.open(assetPath + ".html");
-                                    return new WebResourceResponse("text/html", "UTF-8", is);
+                                    return createResponse("text/html", is);
                                 } catch (IOException ignored) {}
                             }
 
                             // PRIORITY 3: Client-side SPA fallback (OTA index.html first, then bundled index.html)
                             File otaSpaFallback = OtaUpdateManager.getOtaFile(MainActivity.this, "index.html");
                             if (otaSpaFallback != null && otaSpaFallback.isFile()) {
-                                return new WebResourceResponse("text/html", "UTF-8", new FileInputStream(otaSpaFallback));
+                                return createResponse("text/html", new FileInputStream(otaSpaFallback));
                             }
 
                             try {
                                 InputStream is = am.open("www/index.html");
-                                return new WebResourceResponse("text/html", "UTF-8", is);
+                                return createResponse("text/html", is);
                             } catch (IOException ignored) {}
 
                         } catch (Exception e) {
@@ -250,12 +276,17 @@ public class MainActivity extends AppCompatActivity {
         settings.setSupportZoom(true);
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        try {
+            settings.setAllowFileAccessFromFileURLs(true);
+            settings.setAllowUniversalAccessFromFileURLs(true);
+        } catch (Exception ignored) {}
         settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
 
         // Custom user agent identifier for offline Android app
         String defaultUA = settings.getUserAgentString();
-        settings.setUserAgentString(defaultUA + " BuildCostApp/1.3.0-offline (Android)");
+        settings.setUserAgentString(defaultUA + " BuildCostApp/3.0.4 (Android)");
 
         // Register Native Biometric Authentication Bridge
         webView.addJavascriptInterface(new BiometricBridge(this), "AndroidBiometrics");
@@ -331,6 +362,14 @@ public class MainActivity extends AppCompatActivity {
                 super.onPageFinished(view, url);
                 swipeRefresh.setRefreshing(false);
                 progressBar.setVisibility(View.GONE);
+
+                // Smoothly fade out the splash screen once DOM has finished parsing and styling
+                if (splashContainer != null && splashContainer.getVisibility() == View.VISIBLE) {
+                    splashContainer.animate()
+                            .alpha(0f)
+                            .setDuration(350)
+                            .withEndAction(() -> splashContainer.setVisibility(View.GONE));
+                }
             }
 
             @Override

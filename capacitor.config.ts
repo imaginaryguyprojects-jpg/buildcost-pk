@@ -7,12 +7,12 @@ const config: CapacitorConfig = {
   bundledWebRuntime: false,
   server: {
     androidScheme: 'https',
-    cleartext: false,
+    cleartext: true,
   },
   android: {
     buildOptions: {
-      versionCode: 10,
-      versionName: '3.0.3',
+      versionCode: 11,
+      versionName: '3.0.4',
     },
   },
 

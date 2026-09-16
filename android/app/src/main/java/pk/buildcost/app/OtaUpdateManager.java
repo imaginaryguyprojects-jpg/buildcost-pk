@@ -43,18 +43,44 @@ public class OtaUpdateManager {
     private static final String KEY_APPLIED_OTA_VERSION = "applied_ota_version";
     private static final String KEY_APPLIED_OTA_CODE = "applied_ota_version_code";
 
+    public static final int BUNDLED_VERSION_CODE = 11;
+    public static final String BUNDLED_VERSION_NAME = "3.0.4";
+
     // Primary Production Supabase REST Endpoint
     public static final String SUPABASE_ENDPOINT = "https://wxcgpunqnxbezysulkdp.supabase.co/rest/v1/app_releases?platform=eq.android&select=*";
     public static final String SUPABASE_ANON_KEY = "sb_publishable_GXaFn5Ooa8X5okJXgKGTKg__gs6mmoh";
 
     // Secondary / Fallback Endpoints
-    public static final String WEB_ENDPOINT = "https://buildcost-pk.vercel.app/api/app-update?platform=android";
+    public static final String WEB_ENDPOINT = "https://buildcost-pk-web.vercel.app/api/app-update?platform=android";
     public static final String GITHUB_RELEASES_ENDPOINT = "https://api.github.com/repos/imaginaryguyprojects-jpg/buildcost-pk/releases/latest";
 
     private static final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     public static File getOtaDirectory(Context context) {
         return new File(context.getFilesDir(), "ota_hotpatch");
+    }
+
+    public static void cleanupLegacyOta(Context context) {
+        try {
+            SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            int appliedCode = prefs.getInt(KEY_APPLIED_OTA_CODE, 0);
+            if (appliedCode < BUNDLED_VERSION_CODE) {
+                Log.i(TAG, "Purging stale/downgraded OTA bundle (code " + appliedCode + " < APK build " + BUNDLED_VERSION_CODE + ")");
+                File otaDir = getOtaDirectory(context);
+                if (otaDir.exists()) deleteRecursive(otaDir);
+                File backupDir = new File(context.getFilesDir(), "ota_backup");
+                if (backupDir.exists()) deleteRecursive(backupDir);
+                File stagingDir = new File(context.getFilesDir(), "ota_staging");
+                if (stagingDir.exists()) deleteRecursive(stagingDir);
+
+                prefs.edit()
+                        .putString(KEY_APPLIED_OTA_VERSION, BUNDLED_VERSION_NAME)
+                        .putInt(KEY_APPLIED_OTA_CODE, BUNDLED_VERSION_CODE)
+                        .apply();
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Error cleaning legacy OTA: " + e.getMessage());
+        }
     }
 
     public static File getOtaFile(Context context, String relativePath) {
@@ -79,10 +105,13 @@ public class OtaUpdateManager {
 
     public static String getAppliedVersion(Context context) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        return prefs.getString(KEY_APPLIED_OTA_VERSION, "1.3.0-bundled");
+        return prefs.getString(KEY_APPLIED_OTA_VERSION, BUNDLED_VERSION_NAME);
     }
 
     public static void checkForUpdates(Context context, WebView webView) {
+        // First, ensure any outdated or broken hotpatches are purged
+        cleanupLegacyOta(context);
+
         executor.execute(() -> {
             try {
                 Log.d(TAG, "Checking for OTA Live Updates in background...");
@@ -94,17 +123,23 @@ public class OtaUpdateManager {
 
                 boolean otaAvailable = release.optBoolean("ota_available", false);
                 String otaBundleUrl = release.optString("ota_bundle_url", "").trim();
-                String latestVersion = release.optString("latest_version", "1.3.0");
-                int latestVersionCode = release.optInt("latest_version_code", 4);
+                String latestVersion = release.optString("latest_version", BUNDLED_VERSION_NAME);
+                int latestVersionCode = release.optInt("latest_version_code", BUNDLED_VERSION_CODE);
 
                 if (!otaAvailable || otaBundleUrl.isEmpty()) {
                     Log.d(TAG, "OTA live update is not flagged as active on server (ota_available=false).");
                     return;
                 }
 
+                // Strict guard: Never downgrade from bundled APK version
+                if (latestVersionCode <= BUNDLED_VERSION_CODE) {
+                    Log.d(TAG, "Remote OTA version (" + latestVersionCode + ") is not newer than bundled APK (" + BUNDLED_VERSION_CODE + "). Skipping.");
+                    return;
+                }
+
                 SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-                String currentAppliedVersion = prefs.getString(KEY_APPLIED_OTA_VERSION, "1.3.0-bundled");
-                int currentAppliedCode = prefs.getInt(KEY_APPLIED_OTA_CODE, 4);
+                String currentAppliedVersion = prefs.getString(KEY_APPLIED_OTA_VERSION, BUNDLED_VERSION_NAME);
+                int currentAppliedCode = prefs.getInt(KEY_APPLIED_OTA_CODE, BUNDLED_VERSION_CODE);
 
                 if (latestVersionCode <= currentAppliedCode && latestVersion.equals(currentAppliedVersion)) {
                     Log.d(TAG, "Current app is up to date with active OTA release: " + latestVersion);
@@ -309,12 +344,13 @@ public class OtaUpdateManager {
             String targetCanonicalPath = targetDir.getCanonicalPath();
 
             while ((entry = zis.getNextEntry()) != null) {
-                File file = new File(targetDir, entry.getName());
+                String entryName = entry.getName().replace('\\', '/');
+                File file = new File(targetDir, entryName);
                 String fileCanonicalPath = file.getCanonicalPath();
 
                 // Prevent Zip Slip vulnerability
                 if (!fileCanonicalPath.startsWith(targetCanonicalPath)) {
-                    throw new SecurityException("Zip Slip exploit detected: " + entry.getName());
+                    throw new SecurityException("Zip Slip exploit detected: " + entryName);
                 }
 
                 if (entry.isDirectory()) {
