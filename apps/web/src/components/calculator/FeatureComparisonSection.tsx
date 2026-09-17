@@ -166,7 +166,7 @@ export function FeatureComparisonSection({
           <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
             <span className="text-xs text-slate-500">Current Version</span>
             <div className="flex items-center gap-1.5">
-              <span className="font-extrabold text-xs text-slate-900 dark:text-white">3.0.0</span>
+              <span className="font-extrabold text-xs text-slate-900 dark:text-white">3.0.3</span>
               <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500 text-white">
                 Latest
               </span>
@@ -179,7 +179,7 @@ export function FeatureComparisonSection({
 
           <div className="space-y-2 pt-1">
             <div className="text-[11px] font-extrabold text-slate-800 dark:text-slate-200">
-              New features in v3.0.0:
+              New features in v3.0.3:
             </div>
             <div className="space-y-1.5">
               {V3_NEW_FEATURES.map((feat, idx) => (
@@ -215,9 +215,9 @@ export function FeatureComparisonSection({
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-emerald-500 text-white">
-                  v3.0.0 Release Notes
+                  v3.0.3 Release Notes
                 </span>
-                <span className="text-xs text-slate-400">BuildCode 7</span>
+                <span className="text-xs text-slate-400">BuildCode 13</span>
               </div>
               <button
                 type="button"
@@ -230,7 +230,7 @@ export function FeatureComparisonSection({
 
             <div className="space-y-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-h-72 overflow-y-auto pr-1">
               <p>
-                <strong>BuildCost Pakistan v3.0.0</strong> represents a major engineering leap with the introduction of the PRO Exact Construction Suite.
+                <strong>BuildCost Pakistan v3.0.3</strong> represents a major engineering leap with the introduction of the PRO Exact Construction Suite.
               </p>
               <ul className="space-y-1.5 list-disc pl-4">
                 <li>Exact wall height adjustment (8–20 ft) dynamically calculating masonry volume, bricks, plaster, and labour.</li>

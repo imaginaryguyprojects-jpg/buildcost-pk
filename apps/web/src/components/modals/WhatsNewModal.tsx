@@ -49,7 +49,7 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ isOpen, onClose })
         <div className="flex items-center justify-between pb-4 border-b border-slate-800">
           <div>
             <div className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 mb-1">
-              Version 3.0.0
+              Version 3.0.3
             </div>
             <h3 className="text-xl font-bold text-white">What's New in BuildCost.pk</h3>
           </div>

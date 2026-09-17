@@ -43,8 +43,8 @@ public class OtaUpdateManager {
     private static final String KEY_APPLIED_OTA_VERSION = "applied_ota_version";
     private static final String KEY_APPLIED_OTA_CODE = "applied_ota_version_code";
 
-    public static final int BUNDLED_VERSION_CODE = 12;
-    public static final String BUNDLED_VERSION_NAME = "3.0.0";
+    public static final int BUNDLED_VERSION_CODE = 13;
+    public static final String BUNDLED_VERSION_NAME = "3.0.3";
 
     // Primary Production Supabase REST Endpoint
     public static final String SUPABASE_ENDPOINT = "https://wxcgpunqnxbezysulkdp.supabase.co/rest/v1/app_releases?platform=eq.android&select=*";

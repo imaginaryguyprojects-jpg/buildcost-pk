@@ -1,8 +1,8 @@
-export declare const APP_VERSION = "3.0.0";
+export declare const APP_VERSION = "3.0.3";
 export declare const APP_RELEASE_DATE = "September 2026";
 export declare const BRAND_CONFIG: {
     readonly name: "BuildCost Connect";
-    readonly version: "3.0.0";
+    readonly version: "3.0.3";
     readonly releaseDate: "September 2026";
     readonly tagline: "Plan. Calculate. Estimate. Build.";
     readonly positioning: "Pakistan Construction Cost Intelligence Platform";

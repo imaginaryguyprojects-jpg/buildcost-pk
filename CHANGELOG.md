@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.0.3] - 2026-09-17 (Version Code 13)
+
+### Added & Enhanced
+- **Authentication Improvements**:
+  - Full Google OAuth Sign-In and Email/Password registration and login via Supabase.
+  - Secure password recovery and reset flows without token leakage.
+  - Automated login security email notifications (`New Sign-In — Email & Password` and `New Sign-In — Google`).
+  - Session persistence and biometric quick-unlock with AES/biometric prompt integration.
+- **Advanced PRO Exact Construction Calculation Engine**:
+  - Configurable exact wall height (8–20 ft) dynamically recalculating brickwork, mortar, plaster, and labour.
+  - Dynamic bathroom dimensional modeling with 4.5-inch partition wall surface calculations.
+  - Sub-structure Bunyad (Foundation) modeling with depth, width, and footing classification (Strip / Raft).
+  - Structural RCC column grid configuration (count, dimensions, height, rebar density).
+  - Structural RCC beam grid configuration (count, cross-sections, span lengths).
+  - Strict anti-double-counting engine deducting structural column/beam volumes from masonry.
+- **Realistic Architectural Layout Plans**:
+  - 1 verified modern architectural layout plan for FREE members.
+  - 3+ premium residential architectural layouts (multi-storey, luxury, corner-plot) with complete zoning (bedrooms, bathrooms, drawing/dining, lounge, kitchen, porch, stairs, doors/windows) for PRO members.
+- **Google AdMob Monetization (SDK v23.3.0)**:
+  - Anchored adaptive bottom banners for FREE users with zero UI overlap.
+  - Interstitial transition ads triggered upon calculation completion with strict 90s cooldown.
+  - Rewarded ads for temporary premium layout previews without altering permanent entitlement.
+  - 100% Ad-Free experience for verified PRO subscribers, enforced server-side.
+- **Automatic Backend Data Synchronization & Offline Resilience**:
+  - Live background sync for material prices, labour benchmarks, and city rates without app reinstall.
+  - Transparent timestamping: `Last Synced: [date/time]` and `Offline — Last synced data` (no fabricated live data).
+  - Offline-first caching preserving last verified rates and recent calculations.
+- **Google Play In-App Updates (SDK v2.1.0)**:
+  - Official Google Play Flexible In-App Update support for background downloads.
+  - Immediate update support for critical security or rate database updates.
+  - Zero silent APK sideloading inside production Google Play builds.
+- **Diagnostics, Analytics & Crash Reporting**:
+  - Native uncaught exception crash handler logging app version, Android API, and device model without sensitive tokens.
+  - JavaScript bridge analytics recording key user events.
+  - In-app "Report a Problem" and "What's New in v3.0.3" modal dialogs.
+- **Verified Production Artifacts**:
+  - Signed release AAB (`BuildCost-PK-v3.0.3-release.aab`) for Google Play Store upload.
+  - Signed standalone release APK (`BuildCost-PK-v3.0.3-offline.apk`) verified via APK Signature Scheme v2.
+  - Clean OTA hot-patch bundles (`buildcost-ota-v3.0.3.zip` and `buildcost-ota-latest.zip`).
+
+---
+
 ## [3.0.0] - 2026-09-17 (Version Code 12)
 
 ### Added

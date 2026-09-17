@@ -73,6 +73,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        setupCrashReporting();
         initViews();
         setupAssetLoader();
         setupFilePicker();
@@ -87,6 +88,19 @@ public class MainActivity extends AppCompatActivity {
 
         loadTargetUrl();
         OtaUpdateManager.checkForUpdates(this, webView);
+    }
+
+    private void setupCrashReporting() {
+        Thread.UncaughtExceptionHandler defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+            android.util.Log.e("BuildCostCrash", "FATAL CRASH in thread: " + thread.getName()
+                + " | App: BuildCost.pk v3.0.3 (13)"
+                + " | Android: " + android.os.Build.VERSION.RELEASE + " (API " + android.os.Build.VERSION.SDK_INT + ")"
+                + " | Device: " + android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL, throwable);
+            if (defaultHandler != null) {
+                defaultHandler.uncaughtException(thread, throwable);
+            }
+        });
     }
 
     private void initViews() {
@@ -298,7 +312,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Custom user agent identifier for offline Android app
         String defaultUA = settings.getUserAgentString();
-        settings.setUserAgentString(defaultUA + " BuildCostApp/3.0.0 (Android)");
+        settings.setUserAgentString(defaultUA + " BuildCostApp/3.0.3 (Android)");
 
         // Register Native JavaScript Bridges
         webView.addJavascriptInterface(new BiometricBridge(this), "AndroidBiometrics");

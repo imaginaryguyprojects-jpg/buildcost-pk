@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BRAND_CONFIG = exports.APP_RELEASE_DATE = exports.APP_VERSION = void 0;
-exports.APP_VERSION = "3.0.0";
+exports.APP_VERSION = "3.0.3";
 exports.APP_RELEASE_DATE = "September 2026";
 exports.BRAND_CONFIG = {
     name: "BuildCost Connect",
