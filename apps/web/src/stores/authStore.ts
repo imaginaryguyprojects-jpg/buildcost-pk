@@ -272,6 +272,11 @@ export const useAuthStore = create<AuthState>()(
             subscriptionStatus: isPro ? "PRO_ACTIVE" : "FREE",
             is_pro: isPro,
             emailConfirmed: isConfirmed,
+            avatarUrl:
+              profile?.avatar_url ||
+              session.user.user_metadata?.avatar_url ||
+              session.user.user_metadata?.picture ||
+              undefined,
             createdAt: profile?.created_at || session.user.created_at,
             updatedAt: profile?.updated_at || new Date().toISOString(),
           };
