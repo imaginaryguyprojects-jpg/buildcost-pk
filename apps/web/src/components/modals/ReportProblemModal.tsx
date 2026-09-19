@@ -140,7 +140,7 @@ export const ReportProblemModal: React.FC<ReportProblemModalProps> = ({ isOpen, 
           <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3 text-xs text-slate-400 space-y-1">
             <div className="flex justify-between">
               <span>App Version:</span>
-              <span className="font-mono text-emerald-400">3.0.5 (Code 14)</span>
+              <span className="font-mono text-emerald-400">3.0.7 (Code 16)</span>
             </div>
             <div className="flex justify-between">
               <span>Target:</span>

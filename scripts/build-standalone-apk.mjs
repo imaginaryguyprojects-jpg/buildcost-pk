@@ -41,9 +41,11 @@ if (!fs.existsSync(tempApk)) {
 }
 
 // Step 3: Copy artifacts to project root
-const versionedApkName = 'BuildCost-PK-v3.0.5-offline.apk';
+const pkg = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'));
+const version = pkg.version || '3.0.6';
+const versionedApkName = `BuildCost-PK-v${version}-offline.apk`;
 const genericApkName = 'BuildCost-PK.apk';
-const versionedAabName = 'BuildCost-PK-v3.0.5-release.aab';
+const versionedAabName = `BuildCost-PK-v${version}-release.aab`;
 const genericAabName = 'BuildCost-PK.aab';
 const directAabName = 'app-release.aab';
 
