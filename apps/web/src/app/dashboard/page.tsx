@@ -1,379 +1,397 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import Link from "next/link";
-import {
-  Calculator,
-  Plus,
-  ArrowRight,
-  TrendingUp,
-  CreditCard,
-  Building,
-  CheckCircle2,
+import React, { useState, useMemo } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { 
+  Building2, 
+  Layers, 
+  Calculator, 
+  Settings, 
+  User, 
+  ChevronDown,
   Clock,
-  AlertCircle,
-  Calendar,
-  DollarSign,
-  ShoppingCart,
-  FileSpreadsheet,
-  Check,
-  User,
-  PieChart as PieChartIcon,
-  Zap,
-  ShieldCheck,
-  X,
-  Boxes,
-  Hammer,
-  Truck,
-  Layers,
-  Bot,
-  Compass,
+  CheckCircle2,
   Sparkles,
-  Lock,
-  ExternalLink
-} from "lucide-react";
-import { useProjectStore } from "@/stores/projectStore";
-import { useAuthStore } from "@/stores/authStore";
-import { useSystemSettingsStore } from "@/stores/systemSettingsStore";
-import { SUPER_ADMIN_EMAILS, PAKISTANI_CITIES } from "@buildcost/config";
-import { formatPKR, formatNumber, formatCurrency } from "@/lib/formatters";
-import { PrimaryPropertyCalculator } from "@/components/dashboard/PrimaryPropertyCalculator";
-import { DashboardProCard } from "@/components/pro/DashboardProCard";
-import { cn } from "@/lib/utils";
+  ArrowRight
+} from 'lucide-react';
+import { useAuthStore } from '@/stores/authStore';
+
+// شہر کے لحاظ سے مرلہ کے رقبے کا معیار (Sq Ft)
+const MARLA_STANDARDS = {
+  islamabad: { name: 'اسلام آباد (CDA)', sqft: 272.25 },
+  lahore: { name: 'لاہور (LDA)', sqft: 250 },
+  karachi: { name: 'کراچی / سندھ', sqft: 225 },
+} as const;
+
+type CityKey = keyof typeof MARLA_STANDARDS;
+
+// پاکستانی معیاری پلاٹ سائز (لمبائی x چوڑائی)
+const PLOT_PRESETS: Record<number, { length: number; width: number; label: string }> = {
+  5: { length: 45, width: 25, label: '5 Marla' },
+  10: { length: 65, width: 35, label: '10 Marla' },
+  20: { length: 90, width: 50, label: '1 Kanal' },
+};
 
 export default function DashboardPage() {
-  const {
-    projects,
-    activeProjectId,
-    setActiveProjectId,
-    getActiveProject,
-    reminders,
-    purchases,
-    siteDiary,
-    materialRates,
-    vendors
-  } = useProjectStore();
+  const router = useRouter();
+  const { user } = useAuthStore();
 
-  const { user, isSuperAdmin, openCheckoutModal, openProjectUpgradeModal } = useAuthStore();
-  const isSuper = isSuperAdmin();
-  const [superAdminBannerDismissed, setSuperAdminBannerDismissed] = useState(false);
+  const [city, setCity] = useState<CityKey>('islamabad');
+  const [selectedMarla, setSelectedMarla] = useState<number>(5);
+  const [length, setLength] = useState<number>(45);
+  const [width, setWidth] = useState<number>(25);
+  const [activeTab, setActiveTab] = useState<'home' | 'projects' | 'calculator' | 'settings'>('home');
+  const [showCalculateSuccess, setShowCalculateSuccess] = useState<boolean>(false);
 
-  const activeProject = getActiveProject();
+  // ڈسپلے نام (لاگ ان صارف یا ڈیفالٹ)
+  const userName = user?.fullName || (user?.email ? user.email.split('@')[0] : 'احمد خان');
 
-  // Next upcoming reminders (only next 3 items)
-  const upcomingReminders = reminders.slice(0, 3);
+  // کل رقبہ (Sq Ft)
+  const plotArea = useMemo(() => {
+    return Math.max(0, (length || 0) * (width || 0));
+  }, [length, width]);
 
-  // Quick live benchmarks for the compact lower section
-  const sampleRates = materialRates.slice(0, 4);
+  // مرلہ کا حساب
+  const marlaSize = MARLA_STANDARDS[city].sqft;
+  const calculatedMarla = useMemo(() => {
+    return plotArea > 0 ? (plotArea / marlaSize).toFixed(1) : '0';
+  }, [plotArea, marlaSize]);
+
+  // تخمینہ شدہ کورڈ ایریا (ڈبل اسٹوری مکان کا اوسط ~1.4 گنا)
+  const coveredArea = useMemo(() => {
+    return Math.round(plotArea * 1.4);
+  }, [plotArea]);
+
+  // پاکستانی کنسٹرکشن معیارات کے مطابق مٹیریل کھپت (Material Consumption)
+  const materials = useMemo(() => {
+    return {
+      bricks: Math.round(coveredArea * 27),        // ~27 اینٹیں فی مربع فٹ کورڈ ایریا
+      steelKg: Math.round(coveredArea * 3.4),       // ~3.4 کلو سریا (Grade 60)
+      sandCft: Math.round(coveredArea * 0.72),      // ~0.72 مکعب فٹ چناب/راوی ریت
+      crushCft: Math.round(coveredArea * 0.60),     // ~0.60 مکعب فٹ مارگلہ/سرگودھا بجری
+      cementBags: Math.round(coveredArea * 0.52),   // ~0.52 بیگز سیمنٹ
+    };
+  }, [coveredArea]);
+
+  // تخمینہ شدہ لاگت اور بریک ڈاؤن (PKR)
+  const costBreakdown = useMemo(() => {
+    // موجودہ پاکستانی مارکیٹ ریٹ: ~4,500 PKR فی مربع فٹ (گرے اسٹرکچر + معیاری فنشنگ)
+    const ratePerSqFt = 4500;
+    const totalCost = coveredArea * ratePerSqFt;
+
+    return {
+      totalCost,
+      totalInMillion: (totalCost / 1000000).toFixed(2),
+      bricksPercent: 38,
+      steelPercent: 28,
+      cementPercent: 18,
+      laborPercent: 16,
+    };
+  }, [coveredArea]);
+
+  // تعمیراتی وقت کا تخمینہ
+  const timelineDays = useMemo(() => {
+    if (plotArea <= 1250) return { days: 180, text: '4 / 6 months', progress: 65 };
+    if (plotArea <= 2500) return { days: 270, text: '5 / 9 months', progress: 55 };
+    return { days: 365, text: '6 / 12 months', progress: 50 };
+  }, [plotArea]);
+
+  // پلاٹ سائز تبدیل کرنے کا ہینڈلر
+  const handleMarlaSelect = (marla: number) => {
+    setSelectedMarla(marla);
+    if (PLOT_PRESETS[marla]) {
+      setLength(PLOT_PRESETS[marla].length);
+      setWidth(PLOT_PRESETS[marla].width);
+    }
+  };
+
+  const handleCalculateNow = () => {
+    setShowCalculateSuccess(true);
+    setTimeout(() => setShowCalculateSuccess(false), 2500);
+  };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto text-slate-900 dark:text-slate-100 pb-12">
-      {/* 1-Line Compact Dismissible Super Admin Banner */}
-      {isSuper && !superAdminBannerDismissed && (
-        <div className="p-2.5 px-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs text-amber-800 dark:text-amber-300">
-          <div className="flex items-center gap-2 min-w-0">
-            <Zap className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-            <span className="truncate">
-              Super Admin God-Mode Active — Logged in as <strong>{user?.email}</strong>
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-24 md:pb-12 transition-colors">
+      {/* موبائل و ویب کے لیے ریسپانسیو فریم کنٹینر */}
+      <main className="max-w-md mx-auto px-4 pt-4 space-y-4">
+        
+        {/* ہیڈر (Header) */}
+        <header className="flex items-center justify-between pb-1">
+          <div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">خوش آمدید،</p>
+            <h1 className="text-base font-bold text-slate-800 dark:text-slate-100">{userName}</h1>
+          </div>
+          <div className="text-center">
+            <span className="text-sm font-bold tracking-tight text-slate-700 dark:text-slate-300">Dashboard</span>
+          </div>
+          <Link 
+            href="/profile"
+            className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-sm hover:ring-2 hover:ring-teal-500 transition"
+          >
+            <User className="w-5 h-5" />
+          </Link>
+        </header>
+
+        {/* شہر اور کرنسی کا انتخاب */}
+        <div className="flex items-center justify-between text-xs px-0.5">
+          <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 text-slate-700 dark:text-slate-200 shadow-xs">
+            <span className="text-slate-400">شہر:</span>
+            <select 
+              value={city} 
+              onChange={(e) => setCity(e.target.value as CityKey)}
+              className="bg-transparent font-medium text-xs focus:outline-none cursor-pointer text-slate-800 dark:text-slate-100"
+            >
+              <option value="islamabad" className="dark:bg-slate-900">{MARLA_STANDARDS.islamabad.name} (272.25 sq ft)</option>
+              <option value="lahore" className="dark:bg-slate-900">{MARLA_STANDARDS.lahore.name} (250 sq ft)</option>
+              <option value="karachi" className="dark:bg-slate-900">{MARLA_STANDARDS.karachi.name} (225 sq ft)</option>
+            </select>
+          </div>
+          <span className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 shadow-xs text-xs">
+            PKR <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+          </span>
+        </div>
+
+        {/* پلاٹ کیلکولیٹر کارڈ */}
+        <section className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-100 dark:border-slate-800 shadow-xs space-y-3.5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">Estimate Your Build Cost</h2>
+            <span className="text-[11px] text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 font-semibold px-2 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/50">
+              Live Rates
             </span>
           </div>
-          <div className="flex items-center gap-3 shrink-0 ml-2">
-            <Link
-              href="/admin/control-center"
-              className="text-[11px] font-bold text-amber-700 dark:text-amber-300 underline hover:text-amber-500"
-            >
-              Control Center
-            </Link>
-            <Link
-              href="/admin?tab=accounts"
-              className="text-[11px] font-bold text-amber-700 dark:text-amber-300 underline hover:text-amber-500"
-            >
-              Payment Accounts
-            </Link>
-            <button
-              onClick={() => setSuperAdminBannerDismissed(true)}
-              className="p-1 text-amber-500 hover:text-amber-700 dark:hover:text-amber-200"
-              title="Dismiss"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
+
+          {/* لمبائی اور چوڑائی کے خانے */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">Length (لمبائی)</label>
+              <div className="relative flex items-center">
+                <input 
+                  type="number" 
+                  min="1"
+                  value={length || ''}
+                  onChange={(e) => setLength(Math.max(0, Number(e.target.value)))}
+                  className="w-full text-sm font-semibold bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 pr-8 focus:outline-none focus:border-slate-800 dark:focus:border-teal-500 transition"
+                  placeholder="0"
+                />
+                <span className="absolute right-3 text-xs text-slate-400 font-medium">ft</span>
+              </div>
+            </div>
+            <div>
+              <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">Width (چوڑائی)</label>
+              <div className="relative flex items-center">
+                <input 
+                  type="number" 
+                  min="1"
+                  value={width || ''}
+                  onChange={(e) => setWidth(Math.max(0, Number(e.target.value)))}
+                  className="w-full text-sm font-semibold bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 pr-8 focus:outline-none focus:border-slate-800 dark:focus:border-teal-500 transition"
+                  placeholder="0"
+                />
+                <span className="absolute right-3 text-xs text-slate-400 font-medium">ft</span>
+              </div>
+            </div>
+          </div>
+
+          {/* پری سیٹ سائز بٹنز (5 مرلہ، 10 مرلہ، 1 کنال) */}
+          <div>
+            <span className="text-[11px] text-slate-400 block mb-1.5 font-medium">Standard Plot Presets</span>
+            <div className="flex gap-2">
+              {[
+                { label: '5 Marla (25×45)', value: 5 },
+                { label: '10 Marla (35×65)', value: 10 },
+                { label: '1 Kanal (50×90)', value: 20 }
+              ].map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  onClick={() => handleMarlaSelect(item.value)}
+                  className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                    selectedMarla === item.value 
+                      ? 'bg-[#1E293B] dark:bg-teal-600 text-white shadow-xs' 
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* کل رقبہ اور مرلہ سمری */}
+          <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800 text-xs">
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500 dark:text-slate-400 font-medium">Plot Area:</span>
+              <span className="text-slate-800 dark:text-slate-100 font-bold">{plotArea.toLocaleString()} sq ft</span>
+            </div>
+            <span className="text-xs font-bold text-[#0F766E] dark:text-teal-400 bg-teal-50 dark:bg-teal-950/60 px-2 py-0.5 rounded-md border border-teal-200/50 dark:border-teal-800/50">
+              {calculatedMarla} Marla
+            </span>
+          </div>
+
+          {/* Calculate Now بٹن */}
+          <button 
+            type="button"
+            onClick={handleCalculateNow}
+            className="w-full py-2.5 bg-[#1E293B] dark:bg-teal-600 text-white text-xs font-bold rounded-xl shadow-xs hover:bg-slate-800 dark:hover:bg-teal-500 active:scale-[0.99] transition flex items-center justify-center gap-1.5"
+          >
+            {showCalculateSuccess ? (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5 text-teal-400 dark:text-white animate-bounce" />
+                <span>Updated Successfully!</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5 text-teal-400 dark:text-white" />
+                <span>Calculate Now</span>
+              </>
+            )}
+          </button>
+        </section>
+
+        {/* مٹیریل کنزمپشن اور کاسٹ بریک ڈاؤن */}
+        <div className="grid grid-cols-2 gap-3">
+          
+          {/* Material Consumption (خودکار حساب) */}
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-3 border border-slate-100 dark:border-slate-800 shadow-xs space-y-2">
+            <h3 className="text-xs font-bold text-slate-800 dark:text-slate-100 border-b border-slate-100 dark:border-slate-800 pb-1.5 flex justify-between items-center">
+              <span>Materials</span>
+              <span className="text-[9px] text-slate-400 font-normal">Est.</span>
+            </h3>
+            <div className="space-y-1.5 text-[11px]">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-600 dark:text-slate-400">Bricks (اینٹیں)</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">{materials.bricks.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-600 dark:text-slate-400">Steel (سریا)</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">{materials.steelKg.toLocaleString()} kg</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-600 dark:text-slate-400">Sand (ریت)</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">{materials.sandCft.toLocaleString()} cft</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-600 dark:text-slate-400">Crush (بجری)</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">{materials.crushCft.toLocaleString()} cft</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-600 dark:text-slate-400">Cement (سیمنٹ)</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">{materials.cementBags.toLocaleString()} bags</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Cost Breakdown (خودکار ڈونٹ چارٹ) */}
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-3 border border-slate-100 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+            <div>
+              <h3 className="text-xs font-bold text-slate-800 dark:text-slate-100">Cost Breakdown</h3>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold truncate">
+                PKR {costBreakdown.totalCost.toLocaleString()}
+              </p>
+            </div>
+
+            {/* SVG ڈونٹ چارٹ */}
+            <div className="relative flex items-center justify-center my-2">
+              <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
+                {/* Background Ring */}
+                <circle cx="18" cy="18" r="14" fill="transparent" stroke="currentColor" className="text-slate-100 dark:text-slate-800" strokeWidth="4" />
+                {/* Bricks (38%) */}
+                <circle cx="18" cy="18" r="14" fill="transparent" stroke="#0F766E" strokeWidth="4" strokeDasharray="38 100" strokeDashoffset="0" />
+                {/* Steel (28%) */}
+                <circle cx="18" cy="18" r="14" fill="transparent" stroke="#14B8A6" strokeWidth="4" strokeDasharray="28 100" strokeDashoffset="-38" />
+                {/* Cement (18%) */}
+                <circle cx="18" cy="18" r="14" fill="transparent" stroke="#2DD4BF" strokeWidth="4" strokeDasharray="18 100" strokeDashoffset="-66" />
+                {/* Labor (16%) */}
+                <circle cx="18" cy="18" r="14" fill="transparent" stroke="#FBBF24" strokeWidth="4" strokeDasharray="16 100" strokeDashoffset="-84" />
+              </svg>
+              <div className="absolute text-center flex flex-col items-center">
+                <span className="text-[10px] font-bold text-slate-800 dark:text-slate-100">{costBreakdown.totalInMillion}M</span>
+                <span className="text-[8px] text-slate-400">PKR</span>
+              </div>
+            </div>
+
+            {/* لیجنڈز */}
+            <div className="grid grid-cols-2 gap-1 text-[9px] text-slate-600 dark:text-slate-400 font-medium pt-1 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#0F766E] shrink-0"></span>Bricks ({costBreakdown.bricksPercent}%)</div>
+              <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#14B8A6] shrink-0"></span>Steel ({costBreakdown.steelPercent}%)</div>
+              <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#2DD4BF] shrink-0"></span>Cement ({costBreakdown.cementPercent}%)</div>
+              <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#FBBF24] shrink-0"></span>Labor ({costBreakdown.laborPercent}%)</div>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* ======================================================== */}
-      {/* SECTION 1: PRIMARY PROPERTY CALCULATOR (HERO PLACEMENT) */}
-      {/* ======================================================== */}
-      <PrimaryPropertyCalculator />
-
-      {/* ======================================================== */}
-      {/* SECTION 2: COMPACT SECONDARY DASHBOARD MODULES */}
-      {/* (Carefully sized so they do NOT compete with Calculator) */}
-      {/* ======================================================== */}
-      <div className="space-y-4 pt-4 border-t border-slate-200/80 dark:border-slate-800/80">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-              <Boxes className="w-4 h-4 text-emerald-500" />
-              <span>Construction Suite &amp; Market Intelligence</span>
-            </h2>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Deep-dive civil engineering modules, daily trade rates, and project khata.
-            </p>
+        {/* پروجیکٹ ٹائم لائن کارڈ */}
+        <section className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-100 dark:border-slate-800 shadow-xs space-y-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-[#0F766E] dark:text-teal-400" /> Project Timeline
+            </h3>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">{timelineDays.text}</span>
           </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold text-slate-700 dark:text-slate-300">Days to Completion: {timelineDays.days} Days</span>
+            <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded">On Schedule</span>
+          </div>
+          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+            <div 
+              className="bg-[#0F766E] dark:bg-teal-500 h-2 rounded-full transition-all duration-500" 
+              style={{ width: `${timelineDays.progress}%` }}
+            ></div>
+          </div>
+        </section>
 
+        {/* تفصیلی کیلکولیٹرز کے فوری لنکس */}
+        <div className="pt-2">
           <Link
             href="/calculator"
-            className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+            className="w-full py-2.5 px-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-teal-500 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center justify-between shadow-xs transition group"
           >
-            <span>All Calculators</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-2">
+              <Calculator className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+              <span>تمام تفصیلی سول انجینئرنگ کیلکولیٹرز دیکھیں</span>
+            </div>
+            <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-1 transition" />
           </Link>
         </div>
 
-        {/* 8 Compact Supporting Tool Cards (2 Rows of 4 on Desktop, 2x2 on Mobile) */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-          {/* 1. Material Rates */}
-          <Link
-            href="/rates/materials"
-            className="p-3.5 rounded-2xl bg-white dark:bg-[#0d1629] border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Market Feeds</span>
-              <div className="w-7 h-7 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
-                <TrendingUp className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <div>
-              <span className="font-bold text-slate-800 dark:text-white block group-hover:text-emerald-400 transition-colors">
-                Material Rates
-              </span>
-              <span className="text-[10px] text-slate-400">
-                Cement, Steel, Bricks across 13 cities
-              </span>
-            </div>
-          </Link>
+      </main>
 
-          {/* 2. Labour Rates */}
-          <Link
-            href="/labour"
-            className="p-3.5 rounded-2xl bg-white dark:bg-[#0d1629] border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Daily Wages</span>
-              <div className="w-7 h-7 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
-                <Hammer className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <div>
-              <span className="font-bold text-slate-800 dark:text-white block group-hover:text-emerald-400 transition-colors">
-                Labour &amp; Mistri
-              </span>
-              <span className="text-[10px] text-slate-400">
-                Mason, helper, plumber, electrician
-              </span>
-            </div>
-          </Link>
-
-          {/* 3. Grey Structure Estimator */}
-          <Link
-            href="/calculator/concrete"
-            className="p-3.5 rounded-2xl bg-white dark:bg-[#0d1629] border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Civil Shell</span>
-              <div className="w-7 h-7 rounded-xl bg-cyan-500/10 text-cyan-500 flex items-center justify-center">
-                <Building className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <div>
-              <span className="font-bold text-slate-800 dark:text-white block group-hover:text-emerald-400 transition-colors">
-                Grey Structure
-              </span>
-              <span className="text-[10px] text-slate-400">
-                RCC slabs, columns, beams, brickwork
-              </span>
-            </div>
-          </Link>
-
-          {/* 4. Finishing Works */}
-          <Link
-            href="/calculator/paint"
-            className="p-3.5 rounded-2xl bg-white dark:bg-[#0d1629] border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">17 Categories</span>
-              <div className="w-7 h-7 rounded-xl bg-teal-500/10 text-teal-500 flex items-center justify-center">
-                <Layers className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <div>
-              <span className="font-bold text-slate-800 dark:text-white block group-hover:text-emerald-400 transition-colors">
-                Finishing Package
-              </span>
-              <span className="text-[10px] text-slate-400">
-                Tiles, marble, sanitary, woodwork
-              </span>
-            </div>
-          </Link>
-
-          {/* 5. BOQ Studio */}
-          <Link
-            href="/boq"
-            className="p-3.5 rounded-2xl bg-white dark:bg-[#0d1629] border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                <span>Formal Bills</span>
-                <span className="px-1 py-0.2 rounded bg-amber-500/20 text-amber-500 text-[8px] font-bold">PRO</span>
-              </span>
-              <div className="w-7 h-7 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center">
-                <FileSpreadsheet className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <div>
-              <span className="font-bold text-slate-800 dark:text-white block group-hover:text-emerald-400 transition-colors">
-                BOQ Generator
-              </span>
-              <span className="text-[10px] text-slate-400">
-                Itemized Bill of Quantities export
-              </span>
-            </div>
-          </Link>
-
-          {/* 6. Vendor Khata */}
-          <Link
-            href="/vendors"
-            className="p-3.5 rounded-2xl bg-white dark:bg-[#0d1629] border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                <span>Khata</span>
-                <span className="px-1 py-0.2 rounded bg-amber-500/20 text-amber-500 text-[8px] font-bold">PRO</span>
-              </span>
-              <div className="w-7 h-7 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
-                <Building className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <div>
-              <span className="font-bold text-slate-800 dark:text-white block group-hover:text-emerald-400 transition-colors">
-                Vendor Directory
-              </span>
-              <span className="text-[10px] text-slate-400">
-                Supplier ledger, dues &amp; purchases
-              </span>
-            </div>
-          </Link>
-
-          {/* 7. Transport & Freight */}
-          <Link
-            href="/transport"
-            className="p-3.5 rounded-2xl bg-white dark:bg-[#0d1629] border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Logistics</span>
-              <div className="w-7 h-7 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
-                <Truck className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <div>
-              <span className="font-bold text-slate-800 dark:text-white block group-hover:text-emerald-400 transition-colors">
-                Transport Calculator
-              </span>
-              <span className="text-[10px] text-slate-400">
-                Dumper, Mazada &amp; Shahzore tariffs
-              </span>
-            </div>
-          </Link>
-
-          {/* 8. AI Advisor */}
-          <Link
-            href="/advisor"
-            className="p-3.5 rounded-2xl bg-white dark:bg-[#0d1629] border border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50 transition-all shadow-xs group flex flex-col justify-between h-28"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                <span>Civil AI</span>
-                <span className="px-1 py-0.2 rounded bg-amber-500/20 text-amber-500 text-[8px] font-bold">PRO</span>
-              </span>
-              <div className="w-7 h-7 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-                <Bot className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <div>
-              <span className="font-bold text-slate-800 dark:text-white block group-hover:text-emerald-400 transition-colors">
-                AI Construction Advisor
-              </span>
-              <span className="text-[10px] text-slate-400">
-                Smart cost reduction recommendations
-              </span>
-            </div>
-          </Link>
-        </div>
-      </div>
-
-      {/* ======================================================== */}
-      {/* SECTION 3: PROJECT ACTIVITY & REMINDERS (COMPACT FOOTER) */}
-      {/* ======================================================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 text-xs pt-2">
-        {/* Active Project Card */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-[#0d1629] border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Active Workspace</span>
-            <Link href="/projects" className="text-emerald-500 text-[11px] font-semibold hover:underline">
-              View All ({projects.length})
-            </Link>
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-              {activeProject?.projectName || "Default Estimator"}
-            </h3>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              {activeProject?.location || "Islamabad"} • {activeProject?.coveredArea || 2000} sqft
-            </p>
-          </div>
-          <div className="flex items-center gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
-            <Link
-              href="/projects/new"
-              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] flex items-center gap-1 shadow-xs transition-all"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Create Project</span>
-            </Link>
-          </div>
-        </div>
-
-        {/* Site Reminders Card */}
-        <div className="lg:col-span-2 p-4 rounded-2xl bg-white dark:bg-[#0d1629] border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-2.5">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-amber-500" />
-              <span>Upcoming Construction Reminders</span>
-            </span>
-            <Link href="/reminders" className="text-emerald-500 text-[11px] font-semibold hover:underline">
-              View All
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            {upcomingReminders.length > 0 ? (
-              upcomingReminders.map((rem) => (
-                <div key={rem.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#090f1d] border border-slate-100 dark:border-slate-800/80 space-y-1">
-                  <span className="font-semibold text-slate-800 dark:text-slate-200 block truncate text-[11px]">
-                    {rem.title}
-                  </span>
-                  <span className="text-[10px] text-slate-400 block truncate">
-                    Date: {rem.reminderDate}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <div className="col-span-3 text-center py-2 text-slate-400 text-xs">
-                No pending site alerts. Ready for next construction stage.
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* باٹم نیویگیشن بار (موبائل و کیپیسیٹر ایپ) */}
+      <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-6 py-2 flex justify-between items-center z-40 shadow-lg">
+        <Link 
+          href="/dashboard"
+          onClick={() => setActiveTab('home')}
+          className={`flex flex-col items-center transition ${activeTab === 'home' ? 'text-[#0F766E] dark:text-teal-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
+        >
+          <Building2 className="w-5 h-5" />
+          <span className="text-[10px] font-bold mt-0.5">Home</span>
+        </Link>
+        <Link 
+          href="/projects"
+          onClick={() => setActiveTab('projects')}
+          className={`flex flex-col items-center transition ${activeTab === 'projects' ? 'text-[#0F766E] dark:text-teal-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
+        >
+          <Layers className="w-5 h-5" />
+          <span className="text-[10px] font-medium mt-0.5">Projects</span>
+        </Link>
+        <Link 
+          href="/calculator"
+          onClick={() => setActiveTab('calculator')}
+          className={`flex flex-col items-center transition ${activeTab === 'calculator' ? 'text-[#0F766E] dark:text-teal-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
+        >
+          <Calculator className="w-5 h-5" />
+          <span className="text-[10px] font-medium mt-0.5">Calculator</span>
+        </Link>
+        <Link 
+          href="/settings"
+          onClick={() => setActiveTab('settings')}
+          className={`flex flex-col items-center transition ${activeTab === 'settings' ? 'text-[#0F766E] dark:text-teal-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
+        >
+          <Settings className="w-5 h-5" />
+          <span className="text-[10px] font-medium mt-0.5">Settings</span>
+        </Link>
+      </nav>
     </div>
   );
 }

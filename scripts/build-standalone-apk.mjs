@@ -41,16 +41,17 @@ if (!fs.existsSync(tempApk)) {
 }
 
 // Step 3: Copy artifacts to project root
-const versionedApkName = 'BuildCost-PK-v3.0.3-offline.apk';
+const versionedApkName = 'BuildCost-PK-v3.0.5-offline.apk';
 const genericApkName = 'BuildCost-PK.apk';
-const versionedAabName = 'BuildCost-PK-v3.0.3-release.aab';
+const versionedAabName = 'BuildCost-PK-v3.0.5-release.aab';
 const genericAabName = 'BuildCost-PK.aab';
-
+const directAabName = 'app-release.aab';
 
 const targetVersionedApk = path.join(rootDir, versionedApkName);
 const targetGenericApk = path.join(rootDir, genericApkName);
 const targetVersionedAab = path.join(rootDir, versionedAabName);
 const targetGenericAab = path.join(rootDir, genericAabName);
+const targetDirectAab = path.join(rootDir, directAabName);
 
 fs.copyFileSync(tempApk, targetVersionedApk);
 fs.copyFileSync(tempApk, targetGenericApk);
@@ -59,6 +60,7 @@ let aabSizeMb = 'N/A';
 if (fs.existsSync(tempAab)) {
   fs.copyFileSync(tempAab, targetVersionedAab);
   fs.copyFileSync(tempAab, targetGenericAab);
+  fs.copyFileSync(tempAab, targetDirectAab);
   const aabStats = fs.statSync(targetVersionedAab);
   aabSizeMb = (aabStats.size / (1024 * 1024)).toFixed(2);
 }
