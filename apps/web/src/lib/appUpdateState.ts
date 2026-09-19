@@ -15,15 +15,15 @@ export interface AppReleaseConfig {
 export const fallbackAppReleases: Record<string, AppReleaseConfig> = {
   android: {
     platform: "android",
-    latestVersion: "3.0.3",
-    latestVersionCode: 13,
-    minimumVersionCode: 12,
+    latestVersion: "3.0.5",
+    latestVersionCode: 14,
+    minimumVersionCode: 14,
     mandatoryUpdate: false,
     otaAvailable: false,
     otaBundleUrl: "",
     otaChannel: "production",
-    apkDownloadUrl: "https://github.com/imaginaryguyprojects-jpg/buildcost-pk/releases/download/v3.0.3/BuildCost-PK-v3.0.3-offline.apk",
-    releaseNotes: "BuildCost.pk v3.0.3:\n• Advanced construction calculation with wall height, foundation, beams, columns, and bathrooms\n• Modern architectural layout plans (Free & Pro tiers)\n• Official Google AdMob monetization for Free users & ad-free Pro experience\n• Official Google Play In-App Updates (Flexible & Immediate)\n• Enhanced offline-first synchronization with real-time rate verification\n• Supabase authentication & security hardening",
+    apkDownloadUrl: "https://github.com/imaginaryguyprojects-jpg/buildcost-pk/releases/download/v3.0.5/BuildCost-PK-v3.0.5-offline.apk",
+    releaseNotes: "BuildCost Connect v3.0.5:\n• Real-time reactive construction cost & plot calculator\n• Authentic Pakistani plot presets (5 Marla 25×45, 10 Marla 35×65, 1 Kanal 50×90)\n• Dynamic material consumption (Bricks, Steel, Sand, Crush, Cement)\n• Dynamic SVG cost breakdown chart and project completion timeline\n• Offline stability improvements and non-blocking updates",
     updatedAt: new Date().toISOString()
   },
 

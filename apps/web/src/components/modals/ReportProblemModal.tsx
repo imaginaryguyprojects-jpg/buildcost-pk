@@ -44,8 +44,8 @@ export const ReportProblemModal: React.FC<ReportProblemModalProps> = ({ isOpen, 
     setIsSubmitting(true);
     try {
       const safeMetadata = {
-        appVersion: "3.0.0",
-        versionCode: 12,
+        appVersion: "3.0.5",
+        versionCode: 14,
         platform: typeof navigator !== "undefined" ? navigator.userAgent : "Android",
         screenResolution: typeof window !== "undefined" ? `${window.innerWidth}x${window.innerHeight}` : "Unknown",
         isOnline: typeof navigator !== "undefined" ? navigator.onLine : true,
@@ -140,7 +140,7 @@ export const ReportProblemModal: React.FC<ReportProblemModalProps> = ({ isOpen, 
           <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3 text-xs text-slate-400 space-y-1">
             <div className="flex justify-between">
               <span>App Version:</span>
-              <span className="font-mono text-emerald-400">3.0.0 (Code 12)</span>
+              <span className="font-mono text-emerald-400">3.0.5 (Code 14)</span>
             </div>
             <div className="flex justify-between">
               <span>Target:</span>

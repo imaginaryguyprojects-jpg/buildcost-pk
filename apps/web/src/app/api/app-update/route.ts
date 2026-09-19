@@ -29,29 +29,32 @@ export async function GET(request: NextRequest) {
         .single();
 
       if (!error && data) {
-        releaseConfig = {
-          platform: data.platform,
-          latestVersion: data.latest_version,
-          latestVersionCode: Number(data.latest_version_code),
-          minimumVersionCode: Number(data.minimum_version_code),
-          mandatoryUpdate: Boolean(data.mandatory_update),
-          otaAvailable: Boolean(data.ota_available),
-          otaBundleUrl: data.ota_bundle_url || "",
-          otaChannel: data.ota_channel || "production",
-          apkDownloadUrl: data.apk_download_url || "",
-          releaseNotes: data.release_notes || "",
-          updatedAt: data.updated_at || new Date().toISOString()
-        };
-        source = "database";
+        // Only use database record if it is newer or equal to our codebase target (Build 14)
+        if (Number(data.latest_version_code) >= releaseConfig.latestVersionCode) {
+          releaseConfig = {
+            platform: data.platform,
+            latestVersion: data.latest_version,
+            latestVersionCode: Number(data.latest_version_code),
+            minimumVersionCode: Number(data.minimum_version_code),
+            mandatoryUpdate: false, // Non-blocking per requirement
+            otaAvailable: Boolean(data.ota_available),
+            otaBundleUrl: data.ota_bundle_url || "",
+            otaChannel: data.ota_channel || "production",
+            apkDownloadUrl: data.apk_download_url || releaseConfig.apkDownloadUrl,
+            releaseNotes: data.release_notes || "",
+            updatedAt: data.updated_at || new Date().toISOString()
+          };
+          source = "database";
+        }
       }
     }
   } catch (err: any) {
     console.error("Error fetching app release from database:", err?.message);
   }
 
-  // Calculate update requirement flags
+  // Calculate update requirement flags (strictly newer only, non-blocking)
   const updateAvailable = currentVersionCode > 0 && currentVersionCode < releaseConfig.latestVersionCode;
-  const isMandatory = releaseConfig.mandatoryUpdate || (currentVersionCode > 0 && currentVersionCode < releaseConfig.minimumVersionCode);
+  const isMandatory = false; // Bypass/disable blocking modal so users access dashboard directly
 
   const payload = {
     platform: releaseConfig.platform,
@@ -59,7 +62,7 @@ export async function GET(request: NextRequest) {
     latestVersionCode: releaseConfig.latestVersionCode,
     minimumVersionCode: releaseConfig.minimumVersionCode,
     updateAvailable,
-    mandatoryUpdate: isMandatory,
+    mandatoryUpdate: false,
     otaAvailable: releaseConfig.otaAvailable,
     otaBundleUrl: releaseConfig.otaBundleUrl,
     otaChannel: releaseConfig.otaChannel,

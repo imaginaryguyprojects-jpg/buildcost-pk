@@ -3,14 +3,11 @@
 import React, { useEffect, useState } from "react";
 import {
   Download,
-  AlertTriangle,
   Sparkles,
   ArrowRight,
   X,
-  ExternalLink,
-  ShieldAlert,
-  Smartphone,
-  CheckCircle2
+  ShieldCheck,
+  Smartphone
 } from "lucide-react";
 import { checkAppUpdate, UpdateCheckResult, CURRENT_CLIENT_INFO } from "@/lib/appUpdateChecker";
 import { cn } from "@/lib/utils";
@@ -23,12 +20,18 @@ export function AppUpdateModal() {
   useEffect(() => {
     // Check for updates on mount
     const runCheck = async () => {
-      // Check session storage to avoid prompting on every page change if dismissed
+      // Check session storage to avoid prompting repeatedly if dismissed
       const dismissed = sessionStorage.getItem("app_update_dismissed");
       const result = await checkAppUpdate();
 
       if (result && result.hasUpdate) {
-        if (result.isMandatory || !dismissed) {
+        // Guard: Never display update modal if client is already on or ahead of target release
+        if (CURRENT_CLIENT_INFO.versionCode >= result.latestVersionCode) {
+          return;
+        }
+
+        // Only show if not dismissed in current session
+        if (!dismissed) {
           setUpdateInfo(result);
           setIsOpen(true);
         }
@@ -40,8 +43,8 @@ export function AppUpdateModal() {
 
   if (!isOpen || !updateInfo) return null;
 
+  // Always allow dismissing — never block user access to dashboard
   const handleDismiss = () => {
-    if (updateInfo.isMandatory) return; // Cannot dismiss mandatory update
     sessionStorage.setItem("app_update_dismissed", "true");
     setIsOpen(false);
   };
@@ -53,56 +56,31 @@ export function AppUpdateModal() {
     }
     setTimeout(() => {
       setDownloading(false);
-      if (!updateInfo.isMandatory) {
-        setIsOpen(false);
-      }
+      setIsOpen(false);
     }, 2000);
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
       <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5 text-slate-100 selection:bg-emerald-500">
-        {/* Close Button (Disabled if Mandatory) */}
-        {!updateInfo.isMandatory && (
-          <button
-            type="button"
-            onClick={handleDismiss}
-            className="absolute top-4 right-4 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        )}
+        {/* Close Button — Always available so user is never trapped */}
+        <button
+          type="button"
+          onClick={handleDismiss}
+          className="absolute top-4 right-4 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          aria-label="Close"
+        >
+          <X className="w-5 h-5" />
+        </button>
 
         {/* Header Badge & Icon */}
         <div className="flex items-center gap-3">
-          <div
-            className={cn(
-              "w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg",
-              updateInfo.isMandatory
-                ? "bg-rose-500/20 border border-rose-500/30 text-rose-400 shadow-rose-950/40"
-                : "bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 shadow-emerald-950/40"
-            )}
-          >
-            {updateInfo.isMandatory ? (
-              <ShieldAlert className="w-6 h-6" />
-            ) : (
-              <Sparkles className="w-6 h-6" />
-            )}
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 shadow-emerald-950/40">
+            <Sparkles className="w-6 h-6" />
           </div>
           <div>
-            <span
-              className={cn(
-                "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full inline-block mb-1",
-                updateInfo.isMandatory
-                  ? "bg-rose-950 text-rose-300 border border-rose-800"
-                  : "bg-emerald-950 text-emerald-300 border border-emerald-800"
-              )}
-            >
-              {updateInfo.isMandatory
-                ? "Critical Native Update Required"
-                : updateInfo.isOta
-                ? "Over-The-Air Patch Available"
-                : "New Version Available"}
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full inline-block mb-1 bg-emerald-950 text-emerald-300 border border-emerald-800">
+              {updateInfo.isOta ? "Over-The-Air Patch Available" : "New Version Available"}
             </span>
             <h2 className="text-lg font-bold text-white tracking-tight">
               BuildCost Connect v{updateInfo.latestVersion}
@@ -143,32 +121,24 @@ export function AppUpdateModal() {
             type="button"
             onClick={handleDownload}
             disabled={downloading}
-            className={cn(
-              "w-full py-3 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition-all",
-              updateInfo.isMandatory
-                ? "bg-rose-600 hover:bg-rose-500 text-white shadow-rose-950/40"
-                : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/40"
-            )}
+            className="w-full py-3 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition-all bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/40"
           >
             <Download className="w-4 h-4" />
             <span>
               {downloading
                 ? "Opening Direct APK Download..."
-                : updateInfo.isMandatory
-                ? "Download & Install Required APK"
                 : "Update to Latest Version (APK)"}
             </span>
           </button>
 
-          {!updateInfo.isMandatory && (
-            <button
-              type="button"
-              onClick={handleDismiss}
-              className="w-full py-2.5 px-4 rounded-xl font-medium text-xs text-slate-400 hover:text-slate-200 transition-colors"
-            >
-              Remind Me Later
-            </button>
-          )}
+          {/* Continue to Dashboard / Dismiss — Always Available */}
+          <button
+            type="button"
+            onClick={handleDismiss}
+            className="w-full py-2.5 px-4 rounded-xl font-medium text-xs text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 transition-colors"
+          >
+            Continue to Dashboard
+          </button>
         </div>
       </div>
     </div>

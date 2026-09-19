@@ -14,8 +14,8 @@ export interface UpdateCheckResult {
 
 export const CURRENT_CLIENT_INFO = {
   platform: "android",
-  version: "3.0.4",
-  versionCode: 11
+  version: "3.0.5",
+  versionCode: 14
 };
 
 
@@ -50,17 +50,16 @@ export async function checkAppUpdate(
         .maybeSingle();
 
       if (!error && dbData) {
-        const updateAvailable = currentVersionCode > 0 && currentVersionCode < Number(dbData.latest_version_code);
-        const mandatoryUpdate =
-          Boolean(dbData.mandatory_update) ||
-          (currentVersionCode > 0 && currentVersionCode < Number(dbData.minimum_version_code));
+        const latestCode = Number(dbData.latest_version_code || 0);
+        // Only trigger update if remote is strictly newer than client
+        const updateAvailable = currentVersionCode > 0 && latestCode > currentVersionCode;
         data = {
           updateAvailable,
-          mandatoryUpdate,
+          mandatoryUpdate: false, // Non-blocking
           otaAvailable: Boolean(dbData.ota_available),
           latestVersion: dbData.latest_version,
-          latestVersionCode: Number(dbData.latest_version_code),
-          minimumVersionCode: Number(dbData.minimum_version_code),
+          latestVersionCode: latestCode,
+          minimumVersionCode: Number(dbData.minimum_version_code || latestCode),
           releaseNotes: dbData.release_notes || "",
           downloadUrl: dbData.apk_download_url || "",
           otaBundleUrl: dbData.ota_bundle_url || ""
@@ -70,17 +69,20 @@ export async function checkAppUpdate(
 
     if (!data) return null;
 
-    const hasUpdate = Boolean(data.updateAvailable);
-    const isMandatory = Boolean(data.mandatoryUpdate);
+    const latestVersionCode = Number(data.latestVersionCode || 0);
+    // Guard: remote version must be strictly greater than current client
+    const hasUpdate = currentVersionCode > 0 && latestVersionCode > currentVersionCode && Boolean(data.updateAvailable);
+    // Non-blocking so users can access dashboard directly without getting stuck
+    const isMandatory = false;
     const isOta = Boolean(data.otaAvailable && !isMandatory);
 
     return {
       hasUpdate,
       isMandatory,
       isOta,
-      latestVersion: data.latestVersion || "1.3.0",
-      latestVersionCode: Number(data.latestVersionCode || 4),
-      minimumVersionCode: Number(data.minimumVersionCode || 4),
+      latestVersion: data.latestVersion || "3.0.5",
+      latestVersionCode: latestVersionCode || 14,
+      minimumVersionCode: Number(data.minimumVersionCode || 14),
       releaseNotes: data.releaseNotes || "",
       downloadUrl: data.downloadUrl || "",
       otaBundleUrl: data.otaBundleUrl || ""

@@ -283,7 +283,7 @@ export default function SettingsPage() {
           </div>
           <div className="text-right">
             <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-xs font-mono font-bold text-emerald-400">
-              v3.0.0 (Code 12)
+              v3.0.5 (Code 14)
             </span>
             <span className="block text-[10px] text-slate-400 mt-1">Target: Android API 36</span>
           </div>
