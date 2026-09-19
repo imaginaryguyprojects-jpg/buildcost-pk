@@ -493,7 +493,6 @@ export default function DashboardPage() {
                 title="Click to change profile picture or company logo"
               >
                 {avatarPreview ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img 
                     src={avatarPreview} 
                     alt={userName} 
