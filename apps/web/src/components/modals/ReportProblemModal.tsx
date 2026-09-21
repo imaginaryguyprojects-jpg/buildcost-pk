@@ -44,8 +44,8 @@ export const ReportProblemModal: React.FC<ReportProblemModalProps> = ({ isOpen, 
     setIsSubmitting(true);
     try {
       const safeMetadata = {
-        appVersion: "3.0.5",
-        versionCode: 14,
+        appVersion: "3.0.8",
+        versionCode: 17,
         platform: typeof navigator !== "undefined" ? navigator.userAgent : "Android",
         screenResolution: typeof window !== "undefined" ? `${window.innerWidth}x${window.innerHeight}` : "Unknown",
         isOnline: typeof navigator !== "undefined" ? navigator.onLine : true,

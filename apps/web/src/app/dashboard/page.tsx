@@ -550,7 +550,7 @@ export default function DashboardPage() {
         </header>
 
         {/* 2. City & Municipal Standard Card (Warm Sand / Amber Tone) */}
-        <section className="bg-amber-50/40 border border-amber-100/80 rounded-2xl p-4 shadow-sm space-y-3">
+        <section className="bg-amber-50/50 border border-amber-100 rounded-2xl p-4 shadow-sm space-y-3">
           <div className="flex items-center justify-between text-xs">
             <label className="font-bold text-slate-800 flex items-center gap-1.5">
               <MapPin className="w-4 h-4 text-amber-600" />
@@ -693,7 +693,7 @@ export default function DashboardPage() {
         </section>
 
         {/* 3. Plot Dimensions & Cost Engine Card (Mint / Emerald Tone) */}
-        <section className="bg-emerald-50/40 border border-emerald-100/80 rounded-2xl p-4 shadow-sm space-y-3.5">
+        <section className="bg-emerald-50/50 border border-emerald-100 rounded-2xl p-4 shadow-sm space-y-3.5">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
               <Maximize2 className="w-4 h-4 text-emerald-700" />
@@ -749,7 +749,7 @@ export default function DashboardPage() {
           {/* Area & Unit Conversion Summary Badges (Split Pastel Cards) */}
           <div className="grid grid-cols-2 gap-2.5">
             {/* Total Area Card */}
-            <div className="bg-cyan-50/70 border border-cyan-100 text-cyan-900 rounded-xl p-2.5 shadow-xs">
+            <div className="bg-cyan-50 border border-cyan-200 text-cyan-900 rounded-xl p-2.5 shadow-xs">
               <span className="text-[10px] font-semibold text-cyan-700 block uppercase tracking-wider">Total Area</span>
               <span className="text-sm font-extrabold text-cyan-950 block mt-0.5">
                 {plotArea.toLocaleString()} <span className="text-xs font-normal text-cyan-700">sq ft</span>
@@ -757,7 +757,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Equivalent Unit Card */}
-            <div className="bg-purple-50/70 border border-purple-100 text-purple-900 font-bold rounded-xl p-2.5 shadow-xs text-right">
+            <div className="bg-purple-50 border border-purple-200 text-purple-900 font-bold rounded-xl p-2.5 shadow-xs text-right">
               <span className="text-[10px] font-semibold text-purple-700 block uppercase tracking-wider">Equivalent Unit</span>
               <span className="text-xs font-bold text-purple-950 block mt-0.5">
                 {unitMode === 'marla' ? (

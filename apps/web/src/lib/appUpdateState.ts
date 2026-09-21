@@ -15,15 +15,15 @@ export interface AppReleaseConfig {
 export const fallbackAppReleases: Record<string, AppReleaseConfig> = {
   android: {
     platform: "android",
-    latestVersion: "3.0.5",
-    latestVersionCode: 14,
-    minimumVersionCode: 14,
+    latestVersion: "3.0.8",
+    latestVersionCode: 17,
+    minimumVersionCode: 17,
     mandatoryUpdate: false,
     otaAvailable: false,
     otaBundleUrl: "",
     otaChannel: "production",
-    apkDownloadUrl: "https://github.com/imaginaryguyprojects-jpg/buildcost-pk/releases/download/v3.0.5/BuildCost-PK-v3.0.5-offline.apk",
-    releaseNotes: "BuildCost Connect v3.0.5:\n• Real-time reactive construction cost & plot calculator\n• Authentic Pakistani plot presets (5 Marla 25×45, 10 Marla 35×65, 1 Kanal 50×90)\n• Dynamic material consumption (Bricks, Steel, Sand, Crush, Cement)\n• Dynamic SVG cost breakdown chart and project completion timeline\n• Offline stability improvements and non-blocking updates",
+    apkDownloadUrl: "https://github.com/imaginaryguyprojects-jpg/buildcost-pk/releases/download/v3.0.8/BuildCost-PK-v3.0.8-offline.apk",
+    releaseNotes: "BuildCost Connect v3.0.8:\n• Modern soft pastel dashboard palette\n• Real-time reactive construction cost & plot calculator\n• Authentic Pakistani plot presets (5 Marla 25×45, 10 Marla 35×65, 1 Kanal 50×90)\n• Dynamic material consumption (Bricks, Steel, Sand, Crush, Cement)\n• Dynamic SVG cost breakdown chart and project completion timeline\n• Offline stability improvements and non-blocking updates",
     updatedAt: new Date().toISOString()
   },
 

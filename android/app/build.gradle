@@ -11,8 +11,8 @@ android {
         applicationId "pk.buildcost.app"
         minSdk 24
         targetSdk 36
-        versionCode 16
-        versionName "3.0.7"
+        versionCode 17
+        versionName "3.0.8"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
