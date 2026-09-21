@@ -255,10 +255,11 @@ export default function DashboardPage() {
     const ratePerSqFt = 4500;
     const totalCost = coveredArea * ratePerSqFt;
 
-    const bricksCost = Math.round(totalCost * 0.38);
-    const steelCost = Math.round(totalCost * 0.28);
+    const bricksCost = Math.round(totalCost * 0.28);
+    const steelCost = Math.round(totalCost * 0.24);
     const cementCost = Math.round(totalCost * 0.18);
-    const laborCost = Math.max(0, totalCost - bricksCost - steelCost - cementCost); // 16%
+    const sandAggregateCost = Math.round(totalCost * 0.12);
+    const laborCost = Math.max(0, totalCost - bricksCost - steelCost - cementCost - sandAggregateCost); // ~18%
 
     return {
       totalCost,
@@ -267,11 +268,13 @@ export default function DashboardPage() {
       bricksCost,
       steelCost,
       cementCost,
+      sandAggregateCost,
       laborCost,
-      bricksPercent: 38,
-      steelPercent: 28,
+      bricksPercent: 28,
+      steelPercent: 24,
       cementPercent: 18,
-      laborPercent: 16,
+      sandAggregatePercent: 12,
+      laborPercent: 18,
     };
   }, [coveredArea]);
 
@@ -418,10 +421,11 @@ export default function DashboardPage() {
       doc.text('Capital Expenditure Breakdown (PKR)', 14, finalY);
 
       const costRows = [
-        ['Structural Bricks', `38%`, `PKR ${costBreakdown.bricksCost.toLocaleString()}`],
-        ['Grade-60 Steel Rebar', `28%`, `PKR ${costBreakdown.steelCost.toLocaleString()}`],
-        ['Cement Bags', `18%`, `PKR ${costBreakdown.cementCost.toLocaleString()}`],
-        ['Labor, Aggregate & Finishing Works', `16%`, `PKR ${costBreakdown.laborCost.toLocaleString()}`],
+        ['Bricks & Structural Masonry', `28%`, `PKR ${costBreakdown.bricksCost.toLocaleString()}`],
+        ['Grade-60 Deformed Steel Rebar', `24%`, `PKR ${costBreakdown.steelCost.toLocaleString()}`],
+        ['Grey Structure / Cement Bags', `18%`, `PKR ${costBreakdown.cementCost.toLocaleString()}`],
+        ['Sand & Aggregate (Chenab/Margalla)', `12%`, `PKR ${costBreakdown.sandAggregateCost.toLocaleString()}`],
+        ['Labor & Architectural Finishing', `18%`, `PKR ${costBreakdown.laborCost.toLocaleString()}`],
         ['Total Estimated Project Cost', '100%', `PKR ${costBreakdown.totalCost.toLocaleString()} (~${costBreakdown.totalInMillion}M PKR)`],
       ];
 
@@ -478,18 +482,18 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-24 md:pb-12 transition-colors font-sans">
+    <div className="min-h-screen bg-slate-50/60 text-slate-900 pb-24 md:pb-12 font-sans transition-colors">
       {/* Mobile-first responsive container */}
       <main className="max-w-md mx-auto px-4 pt-4 space-y-3.5">
         
-        {/* Header & User Identity (English Localization & Custom Avatar) */}
-        <header className="flex items-center justify-between pb-1">
+        {/* 1. Header & Welcome Profile Card (Refined Gradient) */}
+        <header className="bg-gradient-to-r from-sky-50 via-indigo-50/40 to-white border border-sky-100 rounded-2xl p-4 shadow-sm flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* Interactive Avatar with Upload Trigger */}
             <div className="relative group">
               <div 
                 onClick={() => fileInputRef.current?.click()}
-                className="w-11 h-11 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-800 border-2 border-white dark:border-slate-800 shadow-sm flex items-center justify-center cursor-pointer relative"
+                className="w-12 h-12 rounded-full overflow-hidden bg-white border-2 border-emerald-400 ring-2 ring-emerald-100 shadow-sm flex items-center justify-center cursor-pointer relative transition-transform group-hover:scale-105"
                 title="Click to change profile picture or company logo"
               >
                 {avatarPreview ? (
@@ -499,9 +503,9 @@ export default function DashboardPage() {
                     className="w-full h-full object-cover" 
                   />
                 ) : (
-                  <User className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+                  <User className="w-6 h-6 text-emerald-600" />
                 )}
-                {/* Subtle camera icon badge */}
+                {/* Subtle camera icon badge overlay on hover */}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <Camera className="w-4 h-4 text-white" />
                 </div>
@@ -509,7 +513,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#0F766E] dark:bg-teal-500 rounded-full border border-white dark:border-slate-900 flex items-center justify-center text-white shadow-xs hover:scale-110 transition"
+                className="absolute -bottom-1 -right-1 w-5 h-5 bg-teal-600 rounded-full border border-white flex items-center justify-center text-white shadow-xs hover:scale-110 transition"
                 title="Upload custom logo or profile image"
               >
                 <Camera className="w-2.5 h-2.5" />
@@ -524,20 +528,20 @@ export default function DashboardPage() {
             </div>
 
             <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Welcome,</p>
-              <h1 className="text-base font-bold text-slate-900 dark:text-slate-100 leading-tight">
+              <p className="text-slate-500 font-medium text-xs tracking-wider uppercase">Welcome,</p>
+              <h1 className="text-base font-bold text-slate-900 tracking-tight leading-tight">
                 {userName}
               </h1>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold px-2.5 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-700 dark:text-slate-300 shadow-xs">
+            <span className="text-xs font-semibold px-3 py-1 bg-white/80 border border-slate-200 text-emerald-700 rounded-lg shadow-sm">
               PKR
             </span>
             <Link 
               href="/profile"
-              className="w-9 h-9 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-xs hover:border-teal-500 transition"
+              className="w-9 h-9 rounded-full bg-white/90 border border-slate-200 flex items-center justify-center text-slate-600 shadow-sm hover:scale-105 hover:border-indigo-300 hover:text-indigo-600 transition"
               title="Profile Settings"
             >
               <Settings className="w-4 h-4" />
@@ -545,14 +549,14 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        {/* City & Municipal Standards Selector */}
-        <section className="bg-white dark:bg-slate-900 rounded-2xl p-3.5 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-3">
+        {/* 2. City & Municipal Standard Card (Warm Sand / Amber Tone) */}
+        <section className="bg-amber-50/40 border border-amber-100/80 rounded-2xl p-4 shadow-sm space-y-3">
           <div className="flex items-center justify-between text-xs">
-            <label className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-[#0F766E] dark:text-teal-400" />
+            <label className="font-bold text-slate-800 flex items-center gap-1.5">
+              <MapPin className="w-4 h-4 text-amber-600" />
               City & Municipal Standard
             </label>
-            <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+            <span className="text-[11px] font-semibold text-amber-900/80 bg-amber-100/70 border border-amber-200/70 px-2.5 py-0.5 rounded-full">
               {effectiveMarlaSqft} sq ft / Marla
             </span>
           </div>
@@ -562,7 +566,7 @@ export default function DashboardPage() {
             <select
               value={city}
               onChange={(e) => handleCityChange(e.target.value as CityOption)}
-              className="w-full text-xs font-semibold bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-800 dark:text-slate-100 appearance-none focus:outline-none focus:border-[#0F766E] dark:focus:border-teal-400 cursor-pointer"
+              className="w-full text-xs font-semibold bg-white border border-amber-200 focus:ring-2 focus:ring-amber-300 focus:border-amber-400 rounded-xl px-3 py-2.5 text-slate-800 appearance-none focus:outline-none cursor-pointer shadow-xs"
             >
               <option value="islamabad_rawalpindi">Rawalpindi / Islamabad (Default: 272.25 sq ft / Marla)</option>
               <option value="lahore">Lahore (Default: 250 sq ft / Marla)</option>
@@ -570,19 +574,19 @@ export default function DashboardPage() {
               <option value="peshawar">Peshawar (272.25 sq ft / Marla)</option>
               <option value="custom">Custom Municipal Standard</option>
             </select>
-            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ChevronDown className="w-4 h-4 text-amber-700 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
 
           {/* Marla Standard Override Pills & Custom input */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+              <span className="text-[11px] font-semibold text-slate-700">
                 Marla Standard Factor:
               </span>
               {city === 'custom' && (
                 <div className="flex items-center gap-1">
                   <input 
-                    type="number"
+                    type="number" 
                     step="0.25"
                     value={customMarlaInput}
                     onChange={(e) => {
@@ -590,10 +594,10 @@ export default function DashboardPage() {
                       const parsed = parseFloat(e.target.value);
                       if (parsed > 0) setMarlaSqft(parsed);
                     }}
-                    className="w-20 text-[11px] font-bold px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 text-right focus:outline-none"
+                    className="w-20 text-[11px] font-bold px-2 py-0.5 rounded border border-amber-200 bg-white text-slate-800 text-right focus:outline-none focus:ring-2 focus:ring-amber-300"
                     placeholder="272.25"
                   />
-                  <span className="text-[10px] text-slate-400">sq ft</span>
+                  <span className="text-[10px] text-amber-700">sq ft</span>
                 </div>
               )}
             </div>
@@ -617,14 +621,14 @@ export default function DashboardPage() {
                         handleMarlaStandardSelect(pill.value);
                       }
                     }}
-                    className={`py-1.5 px-2 rounded-lg text-center transition border ${
+                    className={`py-1.5 px-2 rounded-xl text-center transition border ${
                       isSelected
-                        ? 'bg-[#1E293B] dark:bg-teal-600 text-white border-[#1E293B] dark:border-teal-500 shadow-xs'
-                        : 'bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        ? 'bg-emerald-700 text-white shadow-sm font-semibold border-emerald-700'
+                        : 'bg-white/90 text-slate-600 border-amber-200/60 hover:bg-amber-100/50 shadow-xs'
                     }`}
                   >
                     <div className="text-xs font-bold leading-tight">{pill.label}</div>
-                    <div className={`text-[9px] ${isSelected ? 'text-teal-200 dark:text-white/80' : 'text-slate-400'}`}>
+                    <div className={`text-[9px] ${isSelected ? 'text-emerald-100' : 'text-slate-500'}`}>
                       {pill.sub}
                     </div>
                   </button>
@@ -634,19 +638,19 @@ export default function DashboardPage() {
           </div>
 
           {/* Unit Toggle: Marla / Kanal vs Sq Yards */}
-          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+          <div className="pt-2 border-t border-amber-200/40 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+              <span className="text-[11px] font-semibold text-slate-700">
                 Unit Mode:
               </span>
-              <div className="inline-flex p-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700">
+              <div className="inline-flex p-0.5 rounded-xl bg-white border border-amber-200/70 shadow-xs">
                 <button
                   type="button"
                   onClick={() => handleUnitToggle('marla')}
-                  className={`px-3 py-1 text-xs font-bold rounded-md transition ${
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition ${
                     unitMode === 'marla'
-                      ? 'bg-white dark:bg-teal-600 text-[#0F766E] dark:text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                      ? 'bg-emerald-700 text-white shadow-sm font-semibold'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   Marla / Kanal
@@ -654,10 +658,10 @@ export default function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => handleUnitToggle('yards')}
-                  className={`px-3 py-1 text-xs font-bold rounded-md transition ${
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition ${
                     unitMode === 'yards'
-                      ? 'bg-white dark:bg-teal-600 text-[#0F766E] dark:text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                      ? 'bg-emerald-700 text-white shadow-sm font-semibold'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   Sq Yards (گز)
@@ -667,7 +671,7 @@ export default function DashboardPage() {
 
             {/* Standard Presets Based on Mode */}
             <div>
-              <span className="text-[10px] text-slate-400 block mb-1 font-medium">Standard Plot Presets</span>
+              <span className="text-[10px] text-slate-500 block mb-1 font-semibold">Standard Plot Presets</span>
               <div className="grid grid-cols-3 gap-2">
                 {(unitMode === 'marla' ? MARLA_PRESETS : YARDS_PRESETS).map((preset) => (
                   <button
@@ -676,8 +680,8 @@ export default function DashboardPage() {
                     onClick={() => handlePresetSelect(preset)}
                     className={`py-2 px-1 text-xs font-semibold rounded-xl text-center transition border ${
                       selectedPresetId === preset.id
-                        ? 'bg-[#1E293B] dark:bg-teal-600 text-white border-[#1E293B] dark:border-teal-500 shadow-xs'
-                        : 'bg-slate-50 dark:bg-slate-800/70 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        ? 'bg-emerald-700 text-white shadow-sm font-semibold border-emerald-700'
+                        : 'bg-white/90 text-slate-600 border-amber-200/60 hover:bg-amber-100/50 shadow-xs'
                     }`}
                   >
                     {preset.label}
@@ -688,14 +692,14 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* Real-Time Custom Dimension Calculator Card */}
-        <section className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-3.5">
+        {/* 3. Plot Dimensions & Cost Engine Card (Mint / Emerald Tone) */}
+        <section className="bg-emerald-50/40 border border-emerald-100/80 rounded-2xl p-4 shadow-sm space-y-3.5">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-              <Maximize2 className="w-4 h-4 text-[#0F766E] dark:text-teal-400" />
+            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+              <Maximize2 className="w-4 h-4 text-emerald-700" />
               Plot Dimensions & Cost Engine
             </h2>
-            <span className="text-[10px] text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 font-semibold px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/60">
+            <span className="text-[10px] text-emerald-800 bg-emerald-100 font-bold px-2.5 py-0.5 rounded-full border border-emerald-200">
               Live Rates
             </span>
           </div>
@@ -703,7 +707,7 @@ export default function DashboardPage() {
           {/* Length & Width Real-time inputs */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block mb-1">
+              <label className="text-[11px] font-semibold text-slate-700 block mb-1">
                 Length (لمبائی)
               </label>
               <div className="relative flex items-center">
@@ -715,14 +719,14 @@ export default function DashboardPage() {
                     setSelectedPresetId('');
                     setLength(Math.max(0, Number(e.target.value)));
                   }}
-                  className="w-full text-sm font-bold bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 pr-8 focus:outline-none focus:border-[#0F766E] dark:focus:border-teal-400 transition"
+                  className="w-full text-sm font-bold bg-white border border-emerald-200 rounded-xl px-3 py-2 pr-8 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 transition shadow-xs"
                   placeholder="0"
                 />
                 <span className="absolute right-3 text-xs text-slate-400 font-medium">ft</span>
               </div>
             </div>
             <div>
-              <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block mb-1">
+              <label className="text-[11px] font-semibold text-slate-700 block mb-1">
                 Width (چوڑائی)
               </label>
               <div className="relative flex items-center">
@@ -734,7 +738,7 @@ export default function DashboardPage() {
                     setSelectedPresetId('');
                     setWidth(Math.max(0, Number(e.target.value)));
                   }}
-                  className="w-full text-sm font-bold bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 pr-8 focus:outline-none focus:border-[#0F766E] dark:focus:border-teal-400 transition"
+                  className="w-full text-sm font-bold bg-white border border-emerald-200 rounded-xl px-3 py-2 pr-8 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 transition shadow-xs"
                   placeholder="0"
                 />
                 <span className="absolute right-3 text-xs text-slate-400 font-medium">ft</span>
@@ -742,17 +746,20 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Area & Unit Conversion Summary Badges */}
-          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2.5 border border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-            <div className="space-y-0.5">
-              <span className="text-[10px] font-medium text-slate-400 block">Total Area</span>
-              <span className="text-sm font-extrabold text-slate-900 dark:text-slate-100">
-                {plotArea.toLocaleString()} <span className="text-xs font-normal text-slate-500">sq ft</span>
+          {/* Area & Unit Conversion Summary Badges (Split Pastel Cards) */}
+          <div className="grid grid-cols-2 gap-2.5">
+            {/* Total Area Card */}
+            <div className="bg-cyan-50/70 border border-cyan-100 text-cyan-900 rounded-xl p-2.5 shadow-xs">
+              <span className="text-[10px] font-semibold text-cyan-700 block uppercase tracking-wider">Total Area</span>
+              <span className="text-sm font-extrabold text-cyan-950 block mt-0.5">
+                {plotArea.toLocaleString()} <span className="text-xs font-normal text-cyan-700">sq ft</span>
               </span>
             </div>
-            <div className="text-right space-y-0.5">
-              <span className="text-[10px] font-medium text-slate-400 block">Equivalent Unit</span>
-              <span className="text-xs font-bold text-[#0F766E] dark:text-teal-400 bg-teal-50 dark:bg-teal-950/60 px-2.5 py-1 rounded-lg border border-teal-200/60 dark:border-teal-800/60 inline-block">
+
+            {/* Equivalent Unit Card */}
+            <div className="bg-purple-50/70 border border-purple-100 text-purple-900 font-bold rounded-xl p-2.5 shadow-xs text-right">
+              <span className="text-[10px] font-semibold text-purple-700 block uppercase tracking-wider">Equivalent Unit</span>
+              <span className="text-xs font-bold text-purple-950 block mt-0.5">
                 {unitMode === 'marla' ? (
                   calculatedMarla >= 20 ? (
                     `${calculatedMarla.toFixed(2)} Marla (${calculatedKanal.toFixed(2)} Kanal)`
@@ -766,21 +773,21 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Actions: Calculate Now & Export PDF Quote */}
+          {/* 5. Actions: Calculate Now & Export PDF Quote (Modern Floating Look) */}
           <div className="grid grid-cols-2 gap-2 pt-1">
             <button 
               type="button"
               onClick={handleCalculateNow}
-              className="py-2.5 px-3 bg-[#1E293B] dark:bg-teal-600 text-white text-xs font-bold rounded-xl shadow-xs hover:bg-slate-800 dark:hover:bg-teal-500 active:scale-[0.99] transition flex items-center justify-center gap-1.5"
+              className="py-2.5 px-3 bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-semibold text-xs rounded-xl shadow-md hover:from-emerald-700 hover:to-teal-800 active:scale-95 transition flex items-center justify-center gap-1.5"
             >
               {showCalculateSuccess ? (
                 <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-teal-400 dark:text-white animate-bounce" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-white animate-bounce" />
                   <span>Calculated!</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-3.5 h-3.5 text-teal-400 dark:text-white" />
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-200" />
                   <span>Calculate Now</span>
                 </>
               )}
@@ -790,7 +797,7 @@ export default function DashboardPage() {
               type="button"
               onClick={handleExportPDF}
               disabled={isExportingPdf || plotArea <= 0}
-              className="py-2.5 px-3 bg-white dark:bg-slate-800 text-[#0F766E] dark:text-teal-400 border border-teal-300 dark:border-teal-700/60 hover:bg-teal-50/50 dark:hover:bg-slate-700 text-xs font-bold rounded-xl shadow-xs active:scale-[0.99] transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+              className="py-2.5 px-3 bg-white text-teal-700 border-2 border-teal-500/30 hover:bg-teal-50/50 shadow-sm text-xs font-bold rounded-xl active:scale-95 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
             >
               <FileDown className="w-3.5 h-3.5" />
               <span>{isExportingPdf ? 'Exporting...' : 'Export PDF Quote'}</span>
@@ -798,53 +805,59 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* Dynamic Materials Breakdown & Cost Donut Card */}
+        {/* 4. Cost Breakdown & Charts Section (Pastel Multi-Color Scheme) */}
         <div className="grid grid-cols-2 gap-3">
           
           {/* Real-Time Material Quantities */}
-          <div className="bg-white dark:bg-slate-900 rounded-2xl p-3.5 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-2.5">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-              <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1">
-                <Boxes className="w-3.5 h-3.5 text-[#0F766E] dark:text-teal-400" />
-                Materials
-              </h3>
-              <span className="text-[9px] text-slate-400 font-medium">Est. Quantities</span>
-            </div>
+          <div className="bg-slate-50 border border-slate-200/70 rounded-2xl p-3.5 shadow-sm flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                <h3 className="text-xs font-bold text-slate-800 flex items-center gap-1">
+                  <Boxes className="w-3.5 h-3.5 text-indigo-600" />
+                  Materials
+                </h3>
+                <span className="text-[9px] text-slate-500 font-semibold bg-white border border-slate-200/60 px-1.5 py-0.5 rounded-md">Est. Qty</span>
+              </div>
 
-            <div className="space-y-1.5 text-[11px]">
-              <div className="flex justify-between items-center py-0.5">
-                <span className="text-slate-600 dark:text-slate-400">Bricks (اینٹیں)</span>
-                <span className="font-bold text-slate-900 dark:text-slate-100">{materials.bricks.toLocaleString()}</span>
+              <div className="space-y-1.5 text-[11px] pt-2">
+                <div className="flex justify-between items-center py-0.5">
+                  <span className="text-slate-600">Bricks (اینٹیں)</span>
+                  <span className="font-bold text-slate-900">{materials.bricks.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center py-0.5">
+                  <span className="text-slate-600">Steel (60-Grade)</span>
+                  <span className="font-bold text-slate-900">{materials.steelKg.toLocaleString()} kg</span>
+                </div>
+                <div className="flex justify-between items-center py-0.5">
+                  <span className="text-slate-600">Sand (ریت)</span>
+                  <span className="font-bold text-slate-900">{materials.sandCft.toLocaleString()} cft</span>
+                </div>
+                <div className="flex justify-between items-center py-0.5">
+                  <span className="text-slate-600">Crush (بجری)</span>
+                  <span className="font-bold text-slate-900">{materials.crushCft.toLocaleString()} cft</span>
+                </div>
+                <div className="flex justify-between items-center py-0.5">
+                  <span className="text-slate-600">Cement (سیمنٹ)</span>
+                  <span className="font-bold text-slate-900">{materials.cementBags.toLocaleString()} bags</span>
+                </div>
               </div>
-              <div className="flex justify-between items-center py-0.5">
-                <span className="text-slate-600 dark:text-slate-400">Steel (60-Grade)</span>
-                <span className="font-bold text-slate-900 dark:text-slate-100">{materials.steelKg.toLocaleString()} kg</span>
-              </div>
-              <div className="flex justify-between items-center py-0.5">
-                <span className="text-slate-600 dark:text-slate-400">Sand (ریت)</span>
-                <span className="font-bold text-slate-900 dark:text-slate-100">{materials.sandCft.toLocaleString()} cft</span>
-              </div>
-              <div className="flex justify-between items-center py-0.5">
-                <span className="text-slate-600 dark:text-slate-400">Crush (بجری)</span>
-                <span className="font-bold text-slate-900 dark:text-slate-100">{materials.crushCft.toLocaleString()} cft</span>
-              </div>
-              <div className="flex justify-between items-center py-0.5">
-                <span className="text-slate-600 dark:text-slate-400">Cement (سیمنٹ)</span>
-                <span className="font-bold text-slate-900 dark:text-slate-100">{materials.cementBags.toLocaleString()} bags</span>
-              </div>
+            </div>
+            
+            <div className="pt-2 border-t border-slate-200/60 text-[10px] text-slate-500 text-center font-medium">
+              Covered Area: <span className="font-bold text-slate-800">{coveredArea.toLocaleString()} sq ft</span>
             </div>
           </div>
 
           {/* Real-time SVG Cost Donut Chart Card */}
-          <div className="bg-white dark:bg-slate-900 rounded-2xl p-3.5 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+          <div className="bg-slate-50 border border-slate-200/70 rounded-2xl p-3.5 shadow-sm flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1">
-                  <PieChartIcon className="w-3.5 h-3.5 text-[#0F766E] dark:text-teal-400" />
+                <h3 className="text-xs font-bold text-slate-800 flex items-center gap-1">
+                  <PieChartIcon className="w-3.5 h-3.5 text-teal-600" />
                   Cost Share
                 </h3>
               </div>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold mt-0.5">
+              <p className="text-[11px] text-slate-900 font-extrabold mt-0.5">
                 PKR {costBreakdown.totalCost.toLocaleString()}
               </p>
             </div>
@@ -858,109 +871,138 @@ export default function DashboardPage() {
                   cy="18" 
                   r="15.9155" 
                   fill="transparent" 
-                  stroke="currentColor" 
-                  className="text-slate-100 dark:text-slate-800" 
+                  stroke="#e2e8f0" 
                   strokeWidth="3.8" 
                 />
-                {/* Bricks (38%) */}
+                {/* 1. Bricks & Masonry (28%) - Warm Terra-cotta / Orange #fb923c */}
                 <circle 
                   cx="18" 
                   cy="18" 
                   r="15.9155" 
                   fill="transparent" 
-                  stroke="#0F766E" 
+                  stroke="#fb923c" 
                   strokeWidth="3.8" 
                   strokeDasharray={`${costBreakdown.bricksPercent} 100`} 
                   strokeDashoffset="0" 
                 />
-                {/* Steel (28%) */}
+                {/* 2. Steel (60-Grade) (24%) - Slate Indigo #818cf8 */}
                 <circle 
                   cx="18" 
                   cy="18" 
                   r="15.9155" 
                   fill="transparent" 
-                  stroke="#14B8A6" 
+                  stroke="#818cf8" 
                   strokeWidth="3.8" 
                   strokeDasharray={`${costBreakdown.steelPercent} 100`} 
                   strokeDashoffset={`-${costBreakdown.bricksPercent}`} 
                 />
-                {/* Cement (18%) */}
+                {/* 3. Grey Structure / Cement (18%) - Soft Blue #38bdf8 */}
                 <circle 
                   cx="18" 
                   cy="18" 
                   r="15.9155" 
                   fill="transparent" 
-                  stroke="#2DD4BF" 
+                  stroke="#38bdf8" 
                   strokeWidth="3.8" 
                   strokeDasharray={`${costBreakdown.cementPercent} 100`} 
                   strokeDashoffset={`-${costBreakdown.bricksPercent + costBreakdown.steelPercent}`} 
                 />
-                {/* Labor (16%) */}
+                {/* 4. Sand & Aggregate (12%) - Soft Amber #facc15 */}
                 <circle 
                   cx="18" 
                   cy="18" 
                   r="15.9155" 
                   fill="transparent" 
-                  stroke="#F59E0B" 
+                  stroke="#facc15" 
+                  strokeWidth="3.8" 
+                  strokeDasharray={`${costBreakdown.sandAggregatePercent} 100`} 
+                  strokeDashoffset={`-${costBreakdown.bricksPercent + costBreakdown.steelPercent + costBreakdown.cementPercent}`} 
+                />
+                {/* 5. Labor & Finishing (18%) - Fresh Emerald #34d399 */}
+                <circle 
+                  cx="18" 
+                  cy="18" 
+                  r="15.9155" 
+                  fill="transparent" 
+                  stroke="#34d399" 
                   strokeWidth="3.8" 
                   strokeDasharray={`${costBreakdown.laborPercent} 100`} 
-                  strokeDashoffset={`-${costBreakdown.bricksPercent + costBreakdown.steelPercent + costBreakdown.cementPercent}`} 
+                  strokeDashoffset={`-${costBreakdown.bricksPercent + costBreakdown.steelPercent + costBreakdown.cementPercent + costBreakdown.sandAggregatePercent}`} 
                 />
               </svg>
               <div className="absolute text-center flex flex-col items-center">
-                <span className="text-[11px] font-extrabold text-slate-900 dark:text-slate-100">
+                <span className="text-[11px] font-extrabold text-slate-900">
                   {costBreakdown.totalInMillion}M
                 </span>
-                <span className="text-[8px] font-semibold text-slate-400">PKR</span>
+                <span className="text-[8px] font-semibold text-slate-500">PKR</span>
               </div>
             </div>
 
-            {/* Donut Legend Tags */}
-            <div className="grid grid-cols-2 gap-1 text-[9px] text-slate-600 dark:text-slate-400 font-semibold pt-1.5 border-t border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-[#0F766E] shrink-0"></span>
-                Bricks 38%
+            {/* Donut Legend Tags with Pastel Badges */}
+            <div className="space-y-1 text-[9px] font-semibold pt-1.5 border-t border-slate-200/60">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1 text-slate-700">
+                  <span className="w-2 h-2 rounded-full bg-[#fb923c] shrink-0"></span>
+                  Bricks
+                </span>
+                <span className="bg-orange-100 text-orange-800 px-1 rounded text-[8px] font-bold">28%</span>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-[#14B8A6] shrink-0"></span>
-                Steel 28%
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1 text-slate-700">
+                  <span className="w-2 h-2 rounded-full bg-[#818cf8] shrink-0"></span>
+                  Steel 60-G
+                </span>
+                <span className="bg-indigo-100 text-indigo-800 px-1 rounded text-[8px] font-bold">24%</span>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-[#2DD4BF] shrink-0"></span>
-                Cement 18%
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1 text-slate-700">
+                  <span className="w-2 h-2 rounded-full bg-[#38bdf8] shrink-0"></span>
+                  Cement
+                </span>
+                <span className="bg-sky-100 text-sky-800 px-1 rounded text-[8px] font-bold">18%</span>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-[#F59E0B] shrink-0"></span>
-                Labor 16%
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1 text-slate-700">
+                  <span className="w-2 h-2 rounded-full bg-[#facc15] shrink-0"></span>
+                  Sand/Agg
+                </span>
+                <span className="bg-yellow-100 text-yellow-800 px-1 rounded text-[8px] font-bold">12%</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1 text-slate-700">
+                  <span className="w-2 h-2 rounded-full bg-[#34d399] shrink-0"></span>
+                  Labor/Finish
+                </span>
+                <span className="bg-emerald-100 text-emerald-800 px-1 rounded text-[8px] font-bold">18%</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Project Timeline Card */}
-        <section className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-2.5">
+        <section className="bg-indigo-50/30 border border-indigo-100/70 rounded-2xl p-4 shadow-sm space-y-2.5">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-[#0F766E] dark:text-teal-400" />
+            <h3 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-indigo-600" />
               Project Timeline
             </h3>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+            <span className="text-[11px] text-slate-600 font-medium">
               {timeline.label}
             </span>
           </div>
 
           <div className="flex items-center justify-between text-xs">
-            <span className="font-bold text-slate-800 dark:text-slate-200">
-              Days to Completion: <span className="text-[#0F766E] dark:text-teal-400">{timeline.days} Days</span>
+            <span className="font-bold text-slate-800">
+              Days to Completion: <span className="text-teal-700 font-extrabold">{timeline.days} Days</span>
             </span>
-            <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-200/50">
+            <span className="text-[10px] text-emerald-800 font-bold bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-200">
               {timeline.status}
             </span>
           </div>
 
-          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+          <div className="w-full bg-slate-200/70 rounded-full h-2 overflow-hidden">
             <div 
-              className="bg-[#0F766E] dark:bg-teal-500 h-2 rounded-full transition-all duration-500" 
+              className="bg-gradient-to-r from-teal-500 to-emerald-600 h-2 rounded-full transition-all duration-500" 
               style={{ width: `${timeline.progress}%` }}
             ></div>
           </div>
@@ -970,27 +1012,29 @@ export default function DashboardPage() {
         <div>
           <Link
             href="/calculator"
-            className="w-full py-2.5 px-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-teal-500 text-slate-800 dark:text-slate-200 text-xs font-bold flex items-center justify-between shadow-xs transition group"
+            className="w-full py-3 px-4 rounded-xl bg-white border border-slate-200/80 hover:border-teal-400 text-slate-800 text-xs font-bold flex items-center justify-between shadow-sm hover:shadow-md transition group"
           >
             <div className="flex items-center gap-2">
-              <Calculator className="w-4 h-4 text-[#0F766E] dark:text-teal-400" />
+              <div className="w-7 h-7 rounded-lg bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-700">
+                <Calculator className="w-4 h-4" />
+              </div>
               <span>Explore All Detailed Civil Engineering Calculators</span>
             </div>
-            <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-1 transition" />
+            <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-teal-600 group-hover:translate-x-1 transition" />
           </Link>
         </div>
 
       </main>
 
       {/* Modern Active Bottom Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-6 py-2 flex justify-between items-center z-40 shadow-lg">
+      <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/95 backdrop-blur-md border-t border-slate-200 px-6 py-2 flex justify-between items-center z-40 shadow-lg">
         <Link 
           href="/dashboard"
           onClick={() => setActiveTab('home')}
           className={`flex flex-col items-center transition ${
             activeTab === 'home' 
-              ? 'text-[#0F766E] dark:text-teal-400' 
-              : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+              ? 'text-teal-700 font-bold' 
+              : 'text-slate-400 hover:text-slate-600'
           }`}
         >
           <Building2 className="w-5 h-5" />
@@ -1001,8 +1045,8 @@ export default function DashboardPage() {
           onClick={() => setActiveTab('projects')}
           className={`flex flex-col items-center transition ${
             activeTab === 'projects' 
-              ? 'text-[#0F766E] dark:text-teal-400' 
-              : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+              ? 'text-teal-700 font-bold' 
+              : 'text-slate-400 hover:text-slate-600'
           }`}
         >
           <Layers className="w-5 h-5" />
@@ -1013,8 +1057,8 @@ export default function DashboardPage() {
           onClick={() => setActiveTab('calculator')}
           className={`flex flex-col items-center transition ${
             activeTab === 'calculator' 
-              ? 'text-[#0F766E] dark:text-teal-400' 
-              : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+              ? 'text-teal-700 font-bold' 
+              : 'text-slate-400 hover:text-slate-600'
           }`}
         >
           <Calculator className="w-5 h-5" />
@@ -1025,8 +1069,8 @@ export default function DashboardPage() {
           onClick={() => setActiveTab('settings')}
           className={`flex flex-col items-center transition ${
             activeTab === 'settings' 
-              ? 'text-[#0F766E] dark:text-teal-400' 
-              : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+              ? 'text-teal-700 font-bold' 
+              : 'text-slate-400 hover:text-slate-600'
           }`}
         >
           <Settings className="w-5 h-5" />
